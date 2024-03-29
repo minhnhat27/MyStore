@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MyStore.Infrastructure.Repositories
+namespace MyStore.Persistence.Repositories
 {
     internal interface IUserRepository
     {

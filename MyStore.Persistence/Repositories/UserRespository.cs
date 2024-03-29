@@ -1,14 +1,14 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using MyStore.Domain.Entities;
-using MyStore.Infrastructure.DbContext;
+using MyStore.Persistence.DbContext;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MyStore.Infrastructure.Repositories
+namespace MyStore.Persistence.Repositories
 {
     internal class UserRespository : IUserRepository
     {
