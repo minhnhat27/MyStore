@@ -1,16 +1,16 @@
-﻿using Microsoft.AspNetCore.Identity;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace MyStore.Domain.Entities
 {
-    public class User : IdentityUser
+    public class OrderStatus
     {
-        public string? Fullname { get; set; }
-        public ICollection<Address> Addresses { get; } = new HashSet<Address>();
+        [Key]
+        public required string Name { get; set; }
         public ICollection<Order> Orders { get; } = new HashSet<Order>();
     }
 }
