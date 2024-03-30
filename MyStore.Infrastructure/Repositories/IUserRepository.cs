@@ -8,12 +8,13 @@ using System.Threading.Tasks;
 
 namespace MyStore.Infrastructure.Repositories
 {
-    internal interface IUserRepository
+    public interface IUserRepository
     {
         Task<List<User>> GetAll();
         Task<User?> GetUserById(string id);
         Task<User?> GetUserByEmail(string email);
         Task<User?> GetUserByUsername(string username);
-        Task<IdentityResult> CreateUser(User user);
+        Task<IdentityResult> CreateUserAsync(User user, string password);
+        Task<IdentityResult> UpdateUserAsync(User user);
     }
 }

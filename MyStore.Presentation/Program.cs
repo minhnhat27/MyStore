@@ -2,8 +2,10 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using MyStore.Application.Services;
 using MyStore.Domain.Entities;
 using MyStore.Infrastructure.DbContext;
+using MyStore.Infrastructure.Repositories;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,13 +22,17 @@ builder.Services.AddCors(opt => opt.AddPolicy("MyCors", opt =>
     opt.WithOrigins("http://localhost:3000").AllowAnyHeader().AllowAnyMethod().AllowCredentials();
 }));
 
-
 builder.Services.AddDbContext<ApplicationContext>(opt =>
 {
     opt.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"), 
-        m => m.MigrationsAssembly("MyStore.Persistence"));
+        m => m.MigrationsAssembly("MyStore.Infrastructure"));
 });
-builder.Services.AddIdentity<User, IdentityRole>().AddEntityFrameworkStores<ApplicationContext>();
+builder.Services.AddIdentity<User, IdentityRole>(opt =>
+{
+    opt.Password.RequireNonAlphanumeric = false;
+    opt.Password.RequiredLength = 6;
+}).AddEntityFrameworkStores<ApplicationContext>();
+
 builder.Services.AddAuthentication(opt =>
 {
     opt.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -46,6 +52,11 @@ builder.Services.AddAuthentication(opt =>
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWT:SerectKey"] ?? ""))
     };
 });
+
+builder.Services.AddScoped<IUserRepository, UserRespository>();
+builder.Services.AddScoped<IAccountService, AccountService>();
+
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

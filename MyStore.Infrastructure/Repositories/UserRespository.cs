@@ -10,19 +10,12 @@ using System.Threading.Tasks;
 
 namespace MyStore.Infrastructure.Repositories
 {
-    internal class UserRespository : IUserRepository
+    public class UserRespository : IUserRepository
     {
-        private readonly ApplicationContext _dbContext;
         private readonly UserManager<User> _userManager;
-        public UserRespository(ApplicationContext context, UserManager<User> user)
+        public UserRespository(UserManager<User> user)
         {
-            _dbContext = context;
             _userManager = user;
-        }
-
-        public async Task<IdentityResult> CreateUser(User user)
-        {
-            return await _userManager.CreateAsync(user);
         }
 
         public async Task<List<User>> GetAll()
@@ -43,6 +36,16 @@ namespace MyStore.Infrastructure.Repositories
         public async Task<User?> GetUserByUsername(string username)
         {
             return await _userManager.FindByNameAsync(username);
+        }
+
+        public async Task<IdentityResult> CreateUserAsync(User user, string password)
+        {
+            return await _userManager.CreateAsync(user, password);
+        }
+
+        public async Task<IdentityResult> UpdateUserAsync(User user)
+        {
+            return await _userManager.UpdateAsync(user);
         }
     }
 }

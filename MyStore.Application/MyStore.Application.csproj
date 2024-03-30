@@ -7,11 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MyStore.Domain\MyStore.Domain.csproj" />
+    <ProjectReference Include="..\MyStore.Infrastructure\MyStore.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Response\" />
     <Folder Include="Queries\" />
   </ItemGroup>
 
