@@ -4,10 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MyStore.Application.Commands
+namespace MyStore.Application.Request
 {
-    public class LoginCommand
+    public class StringRequest
     {
-
+        public required string Id { get; set; }
     }
 }

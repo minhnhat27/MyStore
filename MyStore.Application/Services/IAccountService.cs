@@ -12,5 +12,6 @@ namespace MyStore.Application.Services
     {
         Task<HttpResponseMessage> Login(LoginRequest request);
         Task<HttpResponseMessage> Register(RegisterRequest request);
+        Task<HttpResponseMessage> SendCode(StringRequest request);
     }
 }

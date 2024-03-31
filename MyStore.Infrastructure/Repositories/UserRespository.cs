@@ -13,27 +13,29 @@ namespace MyStore.Infrastructure.Repositories
     public class UserRespository : IUserRepository
     {
         private readonly UserManager<User> _userManager;
-        public UserRespository(UserManager<User> user)
+        private readonly SignInManager<User> _signInManager;
+        public UserRespository(UserManager<User> user, SignInManager<User> signInManager)
         {
             _userManager = user;
+            _signInManager = signInManager;
         }
 
-        public async Task<List<User>> GetAll()
+        public async Task<List<User>> GetAllAsync()
         {
             return await _userManager.Users.ToListAsync();
         }
 
-        public async Task<User?> GetUserByEmail(string email)
+        public async Task<User?> GetUserByEmailAsync(string email)
         {
             return await _userManager.FindByEmailAsync(email);
         }
 
-        public async Task<User?> GetUserById(string id)
+        public async Task<User?> GetUserByIdAsync(string id)
         {
             return await _userManager.FindByIdAsync(id);
         }
 
-        public async Task<User?> GetUserByUsername(string username)
+        public async Task<User?> GetUserByUsernameAsync(string username)
         {
             return await _userManager.FindByNameAsync(username);
         }
@@ -46,6 +48,16 @@ namespace MyStore.Infrastructure.Repositories
         public async Task<IdentityResult> UpdateUserAsync(User user)
         {
             return await _userManager.UpdateAsync(user);
+        }
+
+        public async Task<SignInResult> LoginAsync(string username, string password)
+        {
+            return await _signInManager.PasswordSignInAsync(username, password, false, false);
+        }
+
+        public async Task<IList<string>> GetRolesAsync(User user)
+        {
+            return await _userManager.GetRolesAsync(user);
         }
     }
 }

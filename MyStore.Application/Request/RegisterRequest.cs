@@ -11,6 +11,6 @@ namespace MyStore.Application.Request
         public required string Name { get; set; }
         public required string Password { get; set; }
         public required string Email { get; set; }
-        public required string VerifyCode { get; set; }
+        public required int VerifyCode { get; set; }
     }
 }

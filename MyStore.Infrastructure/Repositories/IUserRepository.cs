@@ -10,11 +10,13 @@ namespace MyStore.Infrastructure.Repositories
 {
     public interface IUserRepository
     {
-        Task<List<User>> GetAll();
-        Task<User?> GetUserById(string id);
-        Task<User?> GetUserByEmail(string email);
-        Task<User?> GetUserByUsername(string username);
+        Task<List<User>> GetAllAsync();
+        Task<User?> GetUserByIdAsync(string id);
+        Task<User?> GetUserByEmailAsync(string email);
+        Task<User?> GetUserByUsernameAsync(string username);
         Task<IdentityResult> CreateUserAsync(User user, string password);
         Task<IdentityResult> UpdateUserAsync(User user);
+        Task<SignInResult> LoginAsync(string username, string password);
+        Task<IList<string>> GetRolesAsync(User user);
     }
 }

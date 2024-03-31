@@ -4,7 +4,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using MyStore.Application.Services;
 using MyStore.Domain.Entities;
+using MyStore.Infrastructure.Caching;
 using MyStore.Infrastructure.DbContext;
+using MyStore.Infrastructure.Email;
 using MyStore.Infrastructure.Repositories;
 using System.Text;
 
@@ -31,7 +33,7 @@ builder.Services.AddIdentity<User, IdentityRole>(opt =>
 {
     opt.Password.RequireNonAlphanumeric = false;
     opt.Password.RequiredLength = 6;
-}).AddEntityFrameworkStores<ApplicationContext>();
+}).AddEntityFrameworkStores<ApplicationContext>().AddDefaultTokenProviders();
 
 builder.Services.AddAuthentication(opt =>
 {
@@ -52,10 +54,13 @@ builder.Services.AddAuthentication(opt =>
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWT:SerectKey"] ?? ""))
     };
 });
+builder.Services.Configure<SenderSettings>(builder.Configuration.GetSection("SenderSettings"));
+builder.Services.AddSingleton<ISendMailService, SendMailService>();
+builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<ICodeCaching, CodeCaching>();
 
 builder.Services.AddScoped<IUserRepository, UserRespository>();
 builder.Services.AddScoped<IAccountService, AccountService>();
-
 
 var app = builder.Build();
 
