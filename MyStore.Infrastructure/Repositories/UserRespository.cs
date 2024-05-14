@@ -1,12 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using MyStore.Application.IRepository;
 using MyStore.Domain.Entities;
-using MyStore.Infrastructure.DbContext;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MyStore.Infrastructure.Repositories
 {
@@ -58,6 +53,16 @@ namespace MyStore.Infrastructure.Repositories
         public async Task<IList<string>> GetRolesAsync(User user)
         {
             return await _userManager.GetRolesAsync(user);
+        }
+
+        public async Task<SignInResult> ExternalLoginSignInAsync(string loginProvider, string providerKey)
+        {
+            return await _signInManager.ExternalLoginSignInAsync(loginProvider, providerKey, false);
+        }
+
+        public async Task<IdentityResult> AddLoginAsync(User user, string loginProvider, string providerKey)
+        {
+            return await _userManager.AddLoginAsync(user, new UserLoginInfo(loginProvider, providerKey, loginProvider));
         }
     }
 }

@@ -1,13 +1,8 @@
 ﻿using MailKit.Net.Smtp;
 using MailKit.Security;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using MimeKit;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using MyStore.Application.IRepository.SendMail;
 
 namespace MyStore.Infrastructure.Email
 {
@@ -48,8 +43,10 @@ namespace MyStore.Infrastructure.Email
                 }
                 catch (Exception ex)
                 {
-                    Directory.CreateDirectory("./ErrorMail");
-                    var savefile = string.Format($"./ErrorMail/{0}", email + '_' + Guid.NewGuid());
+                    var path = Path.Combine(Directory.GetParent(Directory.GetCurrentDirectory())!.FullName, "MyStore.Infrastructure", "Email", "ErrorMail");
+                    Directory.CreateDirectory(path);
+
+                    var savefile = Path.Combine(path, email + '_' + Guid.NewGuid());
                     await message.WriteToAsync(savefile);
                     await File.AppendAllTextAsync(savefile, '\n' + ex.Message);
                 }
@@ -85,8 +82,10 @@ namespace MyStore.Infrastructure.Email
                 }
                 catch (Exception ex)
                 {
-                    Directory.CreateDirectory("./ErrorMail");
-                    var savefile = string.Format("./ErrorMail/{0}", "List_" + emails.Count.ToString() + '_' + Guid.NewGuid());
+                    var path = Path.Combine(Directory.GetParent(Directory.GetCurrentDirectory())!.FullName, "MyStore.Infrastructure", "Email", "ErrorMail");
+                    Directory.CreateDirectory(path);
+
+                    var savefile = Path.Combine(path, "List_" + emails.Count.ToString() + '_' + Guid.NewGuid());
                     await message.WriteToAsync(savefile);
                     await File.AppendAllTextAsync(savefile, '\n' + ex.Message);
                 }

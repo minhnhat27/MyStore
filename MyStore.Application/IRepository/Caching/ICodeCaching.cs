@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MyStore.Infrastructure.Caching
+namespace MyStore.Application.IRepository.Caching
 {
     public interface ICodeCaching
     {

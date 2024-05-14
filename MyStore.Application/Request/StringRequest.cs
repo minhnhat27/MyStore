@@ -8,6 +8,6 @@ namespace MyStore.Application.Request
 {
     public class StringRequest
     {
-        public required string Id { get; set; }
+        public string Id { get; set; }
     }
 }

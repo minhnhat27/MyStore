@@ -12,6 +12,6 @@ namespace MyStore.Domain.Entities
         public int Id { get; set; }
         public required string Name { get; set; }
 
-        public ICollection<Product> Products { get; } = new HashSet<Product>();
+        public ICollection<ProductMaterial> Products { get; } = new HashSet<ProductMaterial>();
     }
 }

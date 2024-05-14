@@ -113,6 +113,19 @@ namespace MyStore.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Sizes",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Sizes", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "AspNetRoleClaims",
                 columns: table => new
                 {
@@ -246,10 +259,8 @@ namespace MyStore.Infrastructure.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Price = table.Column<double>(type: "float", nullable: false),
                     Enable = table.Column<bool>(type: "bit", nullable: false),
-                    Size = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    InStock = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Sold = table.Column<int>(type: "int", nullable: false),
                     CategoryId = table.Column<int>(type: "int", nullable: false),
                     BrandId = table.Column<int>(type: "int", nullable: false),
                     MaterialId = table.Column<int>(type: "int", nullable: false)
@@ -382,6 +393,33 @@ namespace MyStore.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "ProductSize",
+                columns: table => new
+                {
+                    ProductId = table.Column<int>(type: "int", nullable: false),
+                    SizeId = table.Column<int>(type: "int", nullable: false),
+                    Price = table.Column<double>(type: "float", nullable: false),
+                    InStock = table.Column<int>(type: "int", nullable: false),
+                    DiscountPercent = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ProductSize", x => new { x.ProductId, x.SizeId });
+                    table.ForeignKey(
+                        name: "FK_ProductSize_Products_ProductId",
+                        column: x => x.ProductId,
+                        principalTable: "Products",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ProductSize_Sizes_SizeId",
+                        column: x => x.SizeId,
+                        principalTable: "Sizes",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "OrderDetails",
                 columns: table => new
                 {
@@ -500,6 +538,11 @@ namespace MyStore.Infrastructure.Migrations
                 name: "IX_Products_MaterialId",
                 table: "Products",
                 column: "MaterialId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProductSize_SizeId",
+                table: "ProductSize",
+                column: "SizeId");
         }
 
         /// <inheritdoc />
@@ -536,6 +579,9 @@ namespace MyStore.Infrastructure.Migrations
                 name: "ProductReviews");
 
             migrationBuilder.DropTable(
+                name: "ProductSize");
+
+            migrationBuilder.DropTable(
                 name: "AspNetRoles");
 
             migrationBuilder.DropTable(
@@ -543,6 +589,9 @@ namespace MyStore.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "Products");
+
+            migrationBuilder.DropTable(
+                name: "Sizes");
 
             migrationBuilder.DropTable(
                 name: "AspNetUsers");

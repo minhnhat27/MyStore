@@ -13,6 +13,6 @@ namespace MyStore.Domain.Entities
         public int ProductId { get; set; }
         public Product? Product { get; set; }
 
-        public required string URI { get; set; }
+        public required string ImageName { get; set; }
     }
 }

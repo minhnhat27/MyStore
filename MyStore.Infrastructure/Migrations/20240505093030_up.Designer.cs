@@ -12,15 +12,15 @@ using MyStore.Infrastructure.DbContext;
 namespace MyStore.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationContext))]
-    [Migration("20240330125925_initial")]
-    partial class initial
+    [Migration("20240505093030_up")]
+    partial class up
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.3")
+                .HasAnnotation("ProductVersion", "8.0.4")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -189,6 +189,10 @@ namespace MyStore.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("ImageName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -241,12 +245,12 @@ namespace MyStore.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("ProductId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("URI")
+                    b.Property<string>("ImageName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -379,28 +383,23 @@ namespace MyStore.Infrastructure.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<bool>("Enable")
                         .HasColumnType("bit");
 
-                    b.Property<string>("InStock")
+                    b.Property<string>("Gender")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("MaterialId")
-                        .HasColumnType("int");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
 
-                    b.Property<double>("Price")
-                        .HasColumnType("float");
-
-                    b.Property<string>("Size")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("Sold")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -408,9 +407,22 @@ namespace MyStore.Infrastructure.Migrations
 
                     b.HasIndex("CategoryId");
 
+                    b.ToTable("Products");
+                });
+
+            modelBuilder.Entity("MyStore.Domain.Entities.ProductMaterial", b =>
+                {
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MaterialId")
+                        .HasColumnType("int");
+
+                    b.HasKey("ProductId", "MaterialId");
+
                     b.HasIndex("MaterialId");
 
-                    b.ToTable("Products");
+                    b.ToTable("ProductMaterials");
                 });
 
             modelBuilder.Entity("MyStore.Domain.Entities.ProductReview", b =>
@@ -433,6 +445,47 @@ namespace MyStore.Infrastructure.Migrations
                     b.HasIndex("ProductId");
 
                     b.ToTable("ProductReviews");
+                });
+
+            modelBuilder.Entity("MyStore.Domain.Entities.ProductSize", b =>
+                {
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SizeId")
+                        .HasColumnType("int");
+
+                    b.Property<double>("DiscountPercent")
+                        .HasColumnType("float");
+
+                    b.Property<int>("InStock")
+                        .HasColumnType("int");
+
+                    b.Property<double>("Price")
+                        .HasColumnType("float");
+
+                    b.HasKey("ProductId", "SizeId");
+
+                    b.HasIndex("SizeId");
+
+                    b.ToTable("ProductSizes");
+                });
+
+            modelBuilder.Entity("MyStore.Domain.Entities.Size", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Sizes");
                 });
 
             modelBuilder.Entity("MyStore.Domain.Entities.User", b =>
@@ -655,17 +708,28 @@ namespace MyStore.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("Brand");
+
+                    b.Navigation("Category");
+                });
+
+            modelBuilder.Entity("MyStore.Domain.Entities.ProductMaterial", b =>
+                {
                     b.HasOne("MyStore.Domain.Entities.Material", "Material")
                         .WithMany("Products")
                         .HasForeignKey("MaterialId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Brand");
-
-                    b.Navigation("Category");
+                    b.HasOne("MyStore.Domain.Entities.Product", "Product")
+                        .WithMany("Materials")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Material");
+
+                    b.Navigation("Product");
                 });
 
             modelBuilder.Entity("MyStore.Domain.Entities.ProductReview", b =>
@@ -677,6 +741,25 @@ namespace MyStore.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("MyStore.Domain.Entities.ProductSize", b =>
+                {
+                    b.HasOne("MyStore.Domain.Entities.Product", "Product")
+                        .WithMany("Sizes")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MyStore.Domain.Entities.Size", "Size")
+                        .WithMany("Products")
+                        .HasForeignKey("SizeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+
+                    b.Navigation("Size");
                 });
 
             modelBuilder.Entity("MyStore.Domain.Entities.Brand", b =>
@@ -713,9 +796,18 @@ namespace MyStore.Infrastructure.Migrations
                 {
                     b.Navigation("Images");
 
+                    b.Navigation("Materials");
+
                     b.Navigation("OrderDetails");
 
                     b.Navigation("ProductReviews");
+
+                    b.Navigation("Sizes");
+                });
+
+            modelBuilder.Entity("MyStore.Domain.Entities.Size", b =>
+                {
+                    b.Navigation("Products");
                 });
 
             modelBuilder.Entity("MyStore.Domain.Entities.User", b =>

@@ -2,7 +2,11 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using MyStore.Application.Services;
+using MyStore.Application.IRepository;
+using MyStore.Application.IRepository.Caching;
+using MyStore.Application.IRepository.SendMail;
+using MyStore.Application.Services.Accounts;
+using MyStore.Application.Services.Products;
 using MyStore.Domain.Entities;
 using MyStore.Infrastructure.Caching;
 using MyStore.Infrastructure.DbContext;
@@ -18,12 +22,11 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
 builder.Services.AddCors(opt => opt.AddPolicy("MyCors", opt =>
 {
+    opt.WithOrigins("http://localhost:3001").AllowAnyHeader().AllowAnyMethod().AllowCredentials();
     opt.WithOrigins("http://localhost:3000").AllowAnyHeader().AllowAnyMethod().AllowCredentials();
 }));
-
 builder.Services.AddDbContext<ApplicationContext>(opt =>
 {
     opt.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"), 
@@ -51,7 +54,7 @@ builder.Services.AddAuthentication(opt =>
         ValidateIssuerSigningKey = true,
         ValidIssuer = builder.Configuration["JWT:Issuer"],
         ValidAudience = builder.Configuration["JWT:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWT:SerectKey"] ?? ""))
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWT:SecretKey"] ?? ""))
     };
 });
 builder.Services.Configure<SenderSettings>(builder.Configuration.GetSection("SenderSettings"));
@@ -59,8 +62,14 @@ builder.Services.AddSingleton<ISendMailService, SendMailService>();
 builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<ICodeCaching, CodeCaching>();
 
-builder.Services.AddScoped<IUserRepository, UserRespository>();
-builder.Services.AddScoped<IAccountService, AccountService>();
+builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
+
+builder.Services.AddTransient<IUserRepository, UserRespository>();
+builder.Services.AddTransient<IAccountService, AccountService>();
+
+builder.Services.AddTransient<IImageRepository, ImageRepository>();
+builder.Services.AddTransient<IProductRepository, ProductRepository>();
+builder.Services.AddTransient<IProductService, ProductService>();
 
 var app = builder.Build();
 

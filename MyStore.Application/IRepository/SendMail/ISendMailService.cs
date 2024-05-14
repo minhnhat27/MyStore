@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MyStore.Infrastructure.Email
+namespace MyStore.Application.IRepository.SendMail
 {
     public interface ISendMailService
     {

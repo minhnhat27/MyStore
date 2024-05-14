@@ -10,6 +10,7 @@ namespace MyStore.Domain.Entities
     {
         public int Id { get; set; }
         public required string Name { get; set; }
+        public required string ImageName { get; set; }
 
         public ICollection<Product> Products { get; } = new HashSet<Product>();
     }

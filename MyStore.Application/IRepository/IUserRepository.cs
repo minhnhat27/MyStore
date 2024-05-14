@@ -1,12 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using MyStore.Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace MyStore.Infrastructure.Repositories
+namespace MyStore.Application.IRepository
 {
     public interface IUserRepository
     {
@@ -17,6 +12,8 @@ namespace MyStore.Infrastructure.Repositories
         Task<IdentityResult> CreateUserAsync(User user, string password);
         Task<IdentityResult> UpdateUserAsync(User user);
         Task<SignInResult> LoginAsync(string username, string password);
+        Task<SignInResult> ExternalLoginSignInAsync(string loginProvider, string providerKey);
+        Task<IdentityResult> AddLoginAsync(User user, string loginProvider, string providerKey);
         Task<IList<string>> GetRolesAsync(User user);
     }
 }

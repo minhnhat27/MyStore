@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
+using MyStore.Application.IRepository.Caching;
 using System;
 using System.Collections.Generic;
 using System.Linq;
