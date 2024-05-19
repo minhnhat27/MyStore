@@ -1,10 +1,11 @@
 ﻿using Google.Apis.Auth;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
-using MyStore.Application.IRepository;
 using MyStore.Application.IRepository.Caching;
 using MyStore.Application.IRepository.SendMail;
 using MyStore.Application.Request;
+using MyStore.Application.Response;
 using MyStore.Domain.Entities;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
@@ -15,14 +16,20 @@ namespace MyStore.Application.Services.Accounts
 {
     public class AccountService : IAccountService
     {
-        private readonly IUserRepository _userRepository;
+        private readonly UserManager<User> _userManager;
+        private readonly SignInManager<User> _signInManager;
+
         private readonly ISendMailService _sendMailService;
+
         private readonly ICodeCaching _codeCaching;
         private readonly IConfiguration _configuration;
-        public AccountService(IUserRepository userRepository, ISendMailService sendMailService,
+        public AccountService(UserManager<User> userManager,
+            SignInManager<User> signInManager,
+            ISendMailService sendMailService,
             ICodeCaching codeCaching, IConfiguration configuration)
         {
-            _userRepository = userRepository;
+            _userManager = userManager;
+            _signInManager = signInManager;
             _sendMailService = sendMailService;
             _codeCaching = codeCaching;
             _configuration = configuration;
@@ -30,7 +37,7 @@ namespace MyStore.Application.Services.Accounts
 
         private async Task<string> CreateJwtToken(User user)
         {
-            var roles = await _userRepository.GetRolesAsync(user);
+            var roles = await _userManager.GetRolesAsync(user);
             var claims = new List<Claim>
                 {
                     new Claim(ClaimTypes.NameIdentifier, user.Id),
@@ -50,41 +57,31 @@ namespace MyStore.Application.Services.Accounts
             return new JwtSecurityTokenHandler().WriteToken(jwtToken);
         }
 
-        public async Task<HttpResponseMessage> Login(LoginRequest request)
+        public async Task<JwtResponse?> Login(LoginRequest request)
         {
-            try
+            var result = await _signInManager.PasswordSignInAsync(request.Email, request.Password, false, false);
+            if (result.Succeeded)
             {
-                var result = await _userRepository.LoginAsync(request.Email, request.Password);
-                if (result.Succeeded)
+                var user = await _userManager.FindByEmailAsync(request.Email);
+                if (user == null)
                 {
-                    var user = await _userRepository.GetUserByEmailAsync(request.Email);
-                    if (user == null)
-                    {
-                        return new HttpResponseMessage(HttpStatusCode.NotFound);
-                    }
-                    var jwtToken = await CreateJwtToken(user);
-                    return new HttpResponseMessage
-                    {
-                        StatusCode = HttpStatusCode.OK,
-                        Content = new StringContent(jwtToken)
-                    };
+                    throw new Exception();
                 }
-                else
+                var jwtToken = await CreateJwtToken(user);
+                return new JwtResponse
                 {
-                    return new HttpResponseMessage(HttpStatusCode.Conflict);
-                }
-            }
-            catch (Exception ex)
-            {
-                return new HttpResponseMessage
-                {
-                    StatusCode = HttpStatusCode.InternalServerError,
-                    Content = new StringContent(ex.Message)
+                    Jwt = jwtToken,
+                    Email = user.Email,
+                    FullName = user.Fullname,
                 };
+            }
+            else
+            {
+                return null;
             }
         }
 
-        public async Task<HttpResponseMessage> LoginGoogle(StringRequest request)
+        public async Task<JwtResponse?> LoginGoogle(StringRequest request)
         {
             try
             {
@@ -92,46 +89,39 @@ namespace MyStore.Application.Services.Accounts
                     await GoogleJsonWebSignature.ValidateAsync(request.Id);
 
                 string provider = "Google";
-                var user = await _userRepository.GetUserByEmailAsync(google.Email);
+                var user = await _userManager.FindByEmailAsync(google.Email);
                 if (user == null)
                 {
-                    return new HttpResponseMessage(HttpStatusCode.NotFound);
+                    return null;
                 }
 
-                var result = await _userRepository.ExternalLoginSignInAsync(provider, google.Subject);
+                var result = await _signInManager.ExternalLoginSignInAsync(provider, google.Subject, false);
                 if (!result.Succeeded)
                 {
-                    await _userRepository.AddLoginAsync(user, provider, google.Subject);
+                    var userInfo = new UserLoginInfo(provider, provider, google.Subject);
+                    await _userManager.AddLoginAsync(user, userInfo);
                 }
                 var jwtToken = await CreateJwtToken(user);
-                return new HttpResponseMessage
+                return new JwtResponse
                 {
-                    StatusCode = HttpStatusCode.OK,
-                    Content = new StringContent(jwtToken)
+                    Jwt = jwtToken,
+                    Email = user.Email,
+                    FullName = user.Fullname,
                 };
             }
             catch (Exception ex)
             {
-                return new HttpResponseMessage
-                {
-                    StatusCode = HttpStatusCode.InternalServerError,
-                    Content = new StringContent(ex.Message)
-                };
+                throw new Exception(ex.Message);
             }
         }
 
-        public async Task<HttpResponseMessage> Register(RegisterRequest request)
+        public async Task<ApiResponse> Register(RegisterRequest request)
         {
             try
             {
-                var exist = await _userRepository.GetUserByEmailAsync(request.Email);
-                if (exist != null)
-                {
-                    return new HttpResponseMessage(HttpStatusCode.Conflict);
-                }
                 if (!_codeCaching.GetCodeFromEmail(request.Email).Equals(request.VerifyCode))
                 {
-                    return new HttpResponseMessage(HttpStatusCode.ExpectationFailed);
+                    return new ApiResponse { Success = false, Message = "Incorrect verification code" };
                 }
                 var user = new User
                 {
@@ -143,37 +133,36 @@ namespace MyStore.Application.Services.Accounts
                     EmailConfirmed = true,
                     SecurityStamp = Guid.NewGuid().ToString(),
                 };
-                var result = await _userRepository.CreateUserAsync(user, request.Password);
+                var result = await _userManager.CreateAsync(user, request.Password);
                 if (!result.Succeeded)
                 {
-                    //"Minimum 6 characters at least 1 uppercase letter, 1 lowercase letter and 1 number."
-                    return new HttpResponseMessage(HttpStatusCode.LengthRequired);
+                    string err = "";
+                    foreach(var item in result.Errors)
+                    {
+                        err += item + "\n";
+                    }
+                    return new ApiResponse { Success = false, Message = err };
                 }
                 _codeCaching.RemoveCode(request.Email);
-                return new HttpResponseMessage(HttpStatusCode.Created);
+                return new ApiResponse { Success = true };
             }
             catch (Exception ex)
             {
-                return new HttpResponseMessage
-                {
-                    StatusCode = HttpStatusCode.InternalServerError,
-                    Content = new StringContent(ex.Message)
-                };
+                throw new Exception(ex.Message);
             }
         }
 
-        public async Task<HttpResponseMessage> SendCode(StringRequest request)
+        public async Task<ApiResponse> SendCode(StringRequest request)
         {
             try
             {
-                var user = await _userRepository.GetUserByEmailAsync(request.Id);
+                var user = await _userManager.FindByEmailAsync(request.Id);
                 if (user != null)
                 {
-                    return new HttpResponseMessage(HttpStatusCode.Conflict);
+                    return new ApiResponse { Success = false, Message = "User already exists" };
                 }
 
-                _codeCaching.SetCodeForEmail(request.Id);
-                var code = _codeCaching.GetCodeFromEmail(request.Id);
+                var code = _codeCaching.SetCodeForEmail(request.Id);
 
                 var subject = code.ToString() + " is your verification code";
                 var body = $"Hi!<br/><br/>" +
@@ -182,15 +171,11 @@ namespace MyStore.Application.Services.Accounts
                     "This is an automated email. Please do not reply to this email.";
 
                 await _sendMailService.SendMailToOne(request.Id, subject, body);
-                return new HttpResponseMessage(HttpStatusCode.OK);
+                return new ApiResponse { Success = true };
             }
             catch (Exception ex)
             {
-                return new HttpResponseMessage
-                {
-                    StatusCode = HttpStatusCode.InternalServerError,
-                    Content = new StringContent(ex.Message)
-                };
+                throw new Exception(ex.Message);
             }
         }
     }

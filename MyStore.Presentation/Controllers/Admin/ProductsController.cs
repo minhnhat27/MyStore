@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 using MyStore.Application.Admin.Request;
 using MyStore.Application.Request;
 using MyStore.Application.Services.Products;
@@ -16,9 +17,9 @@ namespace MyStore.Presentation.Controllers.Admin
 
         [HttpGet("getProducts")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetProducts()
+        public async Task<IActionResult> GetProducts([FromQuery] PageRequest request)
         {
-            return Ok(await _productService.GetProductsAsync());
+            return Ok(await _productService.GetProductsAsync(request.Page, request.PageSize, request.Key));
         }
 
         [HttpGet("getProduct/{id}")]

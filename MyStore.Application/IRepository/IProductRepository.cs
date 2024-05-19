@@ -27,7 +27,11 @@ namespace MyStore.Application.IRepository
 
         Task AddProductAsync(Product product);
         Task<Product?> GetProductWithProductAttributesAsync(int id);
-        Task<IList<Product>> GetProductsWithBrandAndCategoryAndImagesAsync();
+        Task<IList<Product>> GetProductsWithProductAttributesAsync();
+        Task<IList<Product>> GetProductsWithProductAttributesAsync(int page, int pageSize);
+        Task<IList<Product>> GetProductsWithProductAttributesAsync(int page, int pageSize, string key);
+        Task<int> CountAsync();
+        Task<int> CountAsync(string key);
         Task<Product?> FindProductByIdAsync(int id);
         Task UpdateProductAsync(Product product);
         Task DeleteProductAsync(Product product);

@@ -33,11 +33,12 @@ namespace MyStore.Infrastructure.Caching
             }
         }
 
-        public void SetCodeForEmail(string email)
+        public int SetCodeForEmail(string email)
         {
             Random random = new Random();
             int val = random.Next(100000, 999999);
             _memoryCache.Set(email, val, TimeSpan.FromMinutes(30));
+            return val;
         }
     }
 }

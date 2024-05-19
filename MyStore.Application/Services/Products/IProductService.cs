@@ -10,6 +10,7 @@ namespace MyStore.Application.Services.Products
     {
         Task CreateProductAsync(CreateProductRequest request, IFormFileCollection images);
         Task<List<ProductResponse>> GetProductsAsync();
+        Task<PageResponse<ProductResponse>> GetProductsAsync(int page, int pageSize, string? keySearch);
         Task<ProductDetailResponse?> GetProductAsync(int id);
         Task<bool> UpdateProductAsync(UpdateProductRequest request, IFormFileCollection images);
         Task<bool> DeleteProductAsync(int id);

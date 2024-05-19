@@ -1,4 +1,5 @@
 ﻿using MyStore.Application.Request;
+using MyStore.Application.Response;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,9 +11,9 @@ namespace MyStore.Application.Services.Accounts
 {
     public interface IAccountService
     {
-        Task<HttpResponseMessage> Login(LoginRequest request);
-        Task<HttpResponseMessage> Register(RegisterRequest request);
-        Task<HttpResponseMessage> SendCode(StringRequest request);
-        Task<HttpResponseMessage> LoginGoogle(StringRequest request);
+        Task<JwtResponse?> Login(LoginRequest request);
+        Task<ApiResponse> Register(RegisterRequest request);
+        Task<ApiResponse> SendCode(StringRequest request);
+        Task<JwtResponse?> LoginGoogle(StringRequest request);
     }
 }

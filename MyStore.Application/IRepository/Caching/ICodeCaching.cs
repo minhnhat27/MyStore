@@ -8,7 +8,7 @@ namespace MyStore.Application.IRepository.Caching
 {
     public interface ICodeCaching
     {
-        void SetCodeForEmail(string email);
+        int SetCodeForEmail(string email);
         int GetCodeFromEmail(string email);
         void RemoveCode(string email);
     }

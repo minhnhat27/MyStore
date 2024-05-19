@@ -6,6 +6,7 @@ using MyStore.Application.IRepository;
 using MyStore.Application.IRepository.Caching;
 using MyStore.Application.IRepository.SendMail;
 using MyStore.Application.Services.Accounts;
+using MyStore.Application.Services.Orders;
 using MyStore.Application.Services.Products;
 using MyStore.Domain.Entities;
 using MyStore.Infrastructure.Caching;
@@ -17,11 +18,12 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
 builder.Services.AddControllers();
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
 builder.Services.AddCors(opt => opt.AddPolicy("MyCors", opt =>
 {
     opt.WithOrigins("http://localhost:3001").AllowAnyHeader().AllowAnyMethod().AllowCredentials();
@@ -29,13 +31,14 @@ builder.Services.AddCors(opt => opt.AddPolicy("MyCors", opt =>
 }));
 builder.Services.AddDbContext<ApplicationContext>(opt =>
 {
-    opt.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"), 
+    opt.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
         m => m.MigrationsAssembly("MyStore.Infrastructure"));
 });
 builder.Services.AddIdentity<User, IdentityRole>(opt =>
 {
     opt.Password.RequireNonAlphanumeric = false;
     opt.Password.RequiredLength = 6;
+    opt.User.RequireUniqueEmail = true;
 }).AddEntityFrameworkStores<ApplicationContext>().AddDefaultTokenProviders();
 
 builder.Services.AddAuthentication(opt =>
@@ -63,13 +66,14 @@ builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<ICodeCaching, CodeCaching>();
 
 builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
-
-builder.Services.AddTransient<IUserRepository, UserRespository>();
 builder.Services.AddTransient<IAccountService, AccountService>();
 
 builder.Services.AddTransient<IImageRepository, ImageRepository>();
 builder.Services.AddTransient<IProductRepository, ProductRepository>();
 builder.Services.AddTransient<IProductService, ProductService>();
+
+builder.Services.AddTransient<IOrderRepository, OrderRepository>();
+builder.Services.AddTransient<IOrderService, OrderService>();
 
 var app = builder.Build();
 

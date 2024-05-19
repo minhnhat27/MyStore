@@ -15,7 +15,7 @@ namespace MyStore.Application.Services.Products
         private readonly IProductRepository _productRepository;
         private readonly IImageRepository _imageRepository;
         private readonly ITransactionRepository _transactionRepository;
-        public ProductService(IProductRepository productRepository, 
+        public ProductService(IProductRepository productRepository,
             IImageRepository imageRepository, ITransactionRepository transactionRepository)
         {
             _productRepository = productRepository;
@@ -95,7 +95,7 @@ namespace MyStore.Application.Services.Products
         {
             try
             {
-                var products = await _productRepository.GetProductsWithBrandAndCategoryAndImagesAsync();
+                var products = await _productRepository.GetProductsWithProductAttributesAsync();
                 var res = products.Select(e => new ProductResponse
                 {
                     Id = e.Id,
@@ -111,7 +111,7 @@ namespace MyStore.Application.Services.Products
                 for (int i = 0; i < products.Count; i++)
                 {
                     var image = await _productRepository.GetFirstImageByProductIdAsync(products[i].Id);
-                    if(image != null)
+                    if (image != null)
                     {
                         var base64 = await _imageRepository.GetImageBase64Async(ImageType.Products.ToString(), image.ImageName);
                         res[i].base64String = base64;
@@ -122,6 +122,57 @@ namespace MyStore.Application.Services.Products
             catch
             {
                 return new List<ProductResponse>();
+            }
+        }
+        public async Task<PageResponse<ProductResponse>> GetProductsAsync(int page, int pageSize, string? keySearch)
+        {
+            try
+            {
+                int totalProduct;
+                IList<Product> products;
+                if (keySearch == null)
+                {
+                    totalProduct = await _productRepository.CountAsync();
+                    products = await _productRepository.GetProductsWithProductAttributesAsync(page, pageSize);
+                }
+                else
+                {
+                    totalProduct = await _productRepository.CountAsync(keySearch);
+                    products = await _productRepository.GetProductsWithProductAttributesAsync(page, pageSize, keySearch);
+                }
+                var res = products.Select(e => new ProductResponse
+                {
+                    Id = e.Id,
+                    Name = e.Name,
+                    Enable = e.Enable,
+                    Gender = e.Gender,
+                    Sold = e.Sold,
+                    BrandName = e.Brand.Name,
+                    CategoryName = e.Category.Name,
+                }).ToList();
+
+                List<Base64Response> images = new();
+                for (int i = 0; i < products.Count; i++)
+                {
+                    var image = await _productRepository.GetFirstImageByProductIdAsync(products[i].Id);
+                    if (image != null)
+                    {
+                        var base64 = await _imageRepository.GetImageBase64Async(ImageType.Products.ToString(), image.ImageName);
+                        res[i].base64String = base64;
+                    }
+                }
+
+                return new PageResponse<ProductResponse>
+                {
+                    Items = res,
+                    Page = page,
+                    PageSize = pageSize,
+                    TotalItems = totalProduct
+                };
+            }
+            catch
+            {
+                return new PageResponse<ProductResponse>();
             }
         }
 
@@ -178,7 +229,7 @@ namespace MyStore.Application.Services.Products
                         product.CategoryId = request.Category;
                         product.BrandId = request.Brand;
                         product.Enable = request.Enable;
-                        
+
                         List<ProductSize> sizes = new();
                         foreach (var s in request.Sizes)
                         {
@@ -206,7 +257,7 @@ namespace MyStore.Application.Services.Products
 
                         var oldProductSizes = await _productRepository.GetProductSizesAsync(product.Id);
                         var sizeId = request.Sizes.Select(e => e.Id);
-                        foreach(var old in oldProductSizes)
+                        foreach (var old in oldProductSizes)
                         {
                             if (!sizeId.Contains(old.SizeId))
                             {
@@ -265,7 +316,7 @@ namespace MyStore.Application.Services.Products
                         await transaction.CommitAsync();
                         return true;
                     }
-                    catch(Exception ex)
+                    catch (Exception ex)
                     {
                         await transaction.RollbackAsync();
                         throw new Exception(ex.Message);
@@ -298,7 +349,7 @@ namespace MyStore.Application.Services.Products
             var product = await _productRepository.FindProductByIdAsync(id);
             if (product != null)
             {
-                using(var transaction = await _transactionRepository.BeginTransactionAsync())
+                using (var transaction = await _transactionRepository.BeginTransactionAsync())
                 {
                     try
                     {
@@ -330,7 +381,7 @@ namespace MyStore.Application.Services.Products
                 Id = e.Id,
                 Name = e.Name
             }).ToList();
-            for(var i = 0; i < res.Count; i++)
+            for (var i = 0; i < res.Count; i++)
             {
                 res[i].Base64String = await _imageRepository.GetImageBase64Async(ImageType.Brands.ToString(), brands[i].ImageName);
             }
@@ -363,9 +414,9 @@ namespace MyStore.Application.Services.Products
                 {
                     await transaction.RollbackAsync();
                 }
-                
+
             }
-            
+
         }
 
         public async Task<bool> DeleteBrandAsync(int id)
@@ -413,7 +464,7 @@ namespace MyStore.Application.Services.Products
                 return false;
             }
         }
-        
+
         //--//
         public async Task<List<MaterialResponse>> GetMaterialsAsync()
         {

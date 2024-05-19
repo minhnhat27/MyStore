@@ -1,9 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
 using MyStore.Application.IRepository;
 using MyStore.Application.Request;
 using MyStore.Domain.Entities;
 using MyStore.Infrastructure.DbContext;
+using MyStore.Infrastructure.Paging;
 
 namespace MyStore.Infrastructure.Repositories
 {
@@ -25,15 +27,45 @@ namespace MyStore.Infrastructure.Repositories
                 .Include(e => e.Images)
                 .Include(e => e.Sizes)
                 .Include(e => e.Materials)
-                .FirstOrDefaultAsync(e => e.Id == id);
+                .SingleOrDefaultAsync(e => e.Id == id);
         }
-        public async Task<IList<Product>> GetProductsWithBrandAndCategoryAndImagesAsync()
+        public async Task<IList<Product>> GetProductsWithProductAttributesAsync()
         {
             return await _Dbcontext.Products
                 .Include(e => e.Brand)
                 .Include(e => e.Category)
                 .Include(e => e.Images)
                 .ToListAsync();
+        }
+        public async Task<IList<Product>> GetProductsWithProductAttributesAsync(int page, int pageSize)
+        {
+            return await _Dbcontext.Products
+                    .Paginate(page, pageSize)
+                    .Include(e => e.Brand)
+                    .Include(e => e.Category)
+                    .Include(e => e.Images)
+                    .ToListAsync();
+        }
+
+        public async Task<IList<Product>> GetProductsWithProductAttributesAsync(int page, int pageSize, string key)
+        {
+            return await _Dbcontext.Products
+                    .Where(e => e.Name.Contains(key) || e.Id.ToString().Contains(key))
+                    .Paginate(page, pageSize)
+                    .Include(e => e.Brand)
+                    .Include(e => e.Category)
+                    .Include(e => e.Images)
+                    .ToListAsync();
+        }
+        public async Task<int> CountAsync()
+        {
+            return await _Dbcontext.Products.CountAsync();
+        }
+        public async Task<int> CountAsync(string key)
+        {
+            return await _Dbcontext.Products
+                .Where(e => e.Name.Contains(key) || e.Id.ToString().Equals(key))
+                .CountAsync();
         }
         public async Task<Product?> FindProductByIdAsync(int id)
         {
