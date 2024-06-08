@@ -2,7 +2,7 @@
 using MailKit.Security;
 using Microsoft.Extensions.Options;
 using MimeKit;
-using MyStore.Application.IRepository.SendMail;
+using MyStore.Application.ISendMail;
 
 namespace MyStore.Infrastructure.Email
 {

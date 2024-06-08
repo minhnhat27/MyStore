@@ -5,7 +5,7 @@ using MyStore.Application.IRepository;
 using MyStore.Application.Request;
 using MyStore.Domain.Entities;
 using MyStore.Infrastructure.DbContext;
-using MyStore.Infrastructure.Paging;
+using MyStore.Infrastructure.IQueryableExtensions;
 
 namespace MyStore.Infrastructure.Repositories
 {

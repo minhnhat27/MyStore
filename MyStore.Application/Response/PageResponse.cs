@@ -8,7 +8,7 @@ namespace MyStore.Application.Response
 {
     public class PageResponse<T>
     {
-        public IList<T> Items { get; set; }
+        public IList<T> Items { get; set; } = new List<T>();
         public int TotalItems { get; set; }
         public int Page { get; set; }
         public int PageSize { get; set; }

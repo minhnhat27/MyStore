@@ -2,7 +2,7 @@
 using MyStore.Application.IRepository;
 using MyStore.Domain.Entities;
 using MyStore.Infrastructure.DbContext;
-using MyStore.Infrastructure.Paging;
+using MyStore.Infrastructure.IQueryableExtensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -73,6 +73,21 @@ namespace MyStore.Infrastructure.Repositories
                 .Where(e => e.Id.ToString().Equals(keySearch)
                     || e.OrderStatusName.Contains(keySearch)
                     || e.PaymentMethodName.Equals(keySearch)).CountAsync();
+        }
+
+        public Task AddOrderStatusAsync(OrderStatus status)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task DeleteOrderStatusAsync(OrderStatus status)
+        {
+            throw new NotImplementedException();
+        }
+
+        public async Task<IList<PaymentMethod>> GetPaymentMethodsAsync()
+        {
+            return await _DbContext.PaymentMethods.ToListAsync();
         }
     }
 }

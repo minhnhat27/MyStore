@@ -1,10 +1,11 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
+using MyStore.Application.ICaching;
 using MyStore.Application.IRepository;
-using MyStore.Application.IRepository.Caching;
-using MyStore.Application.IRepository.SendMail;
+using MyStore.Application.ISendMail;
 using MyStore.Application.Services.Accounts;
 using MyStore.Application.Services.Orders;
 using MyStore.Application.Services.Products;
@@ -61,19 +62,21 @@ builder.Services.AddAuthentication(opt =>
     };
 });
 builder.Services.Configure<SenderSettings>(builder.Configuration.GetSection("SenderSettings"));
-builder.Services.AddSingleton<ISendMailService, SendMailService>();
+
 builder.Services.AddMemoryCache();
-builder.Services.AddSingleton<ICodeCaching, CodeCaching>();
+builder.Services.AddSingleton<ISendMailService, SendMailService>();
+builder.Services.AddSingleton<ICodeCache, CodeCache>();
+builder.Services.AddSingleton<ICache, Cache>();
 
 builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
-builder.Services.AddTransient<IAccountService, AccountService>();
 
-builder.Services.AddTransient<IImageRepository, ImageRepository>();
-builder.Services.AddTransient<IProductRepository, ProductRepository>();
-builder.Services.AddTransient<IProductService, ProductService>();
+builder.Services.AddScoped<IImageRepository, ImageRepository>();
+builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 
-builder.Services.AddTransient<IOrderRepository, OrderRepository>();
-builder.Services.AddTransient<IOrderService, OrderService>();
+builder.Services.AddScoped<IAccountService, AccountService>();
+builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
 
 var app = builder.Build();
 
@@ -84,7 +87,16 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+
 app.UseHttpsRedirection();
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(
+           Path.Combine(Directory.GetParent(Directory.GetCurrentDirectory())!.FullName, "MyStore.Infrastructure", "Images")
+    ),
+    RequestPath = "/images"
+});
 
 app.UseCors("MyCors");
 app.UseAuthentication();

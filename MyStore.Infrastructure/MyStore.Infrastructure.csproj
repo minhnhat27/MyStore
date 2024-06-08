@@ -16,9 +16,4 @@
     <ProjectReference Include="..\MyStore.Domain\MyStore.Domain.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Images\" />
-    <Folder Include="Images\Products\" />
-  </ItemGroup>
-
 </Project>

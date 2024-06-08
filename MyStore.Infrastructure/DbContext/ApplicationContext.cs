@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using MyStore.Domain.Entities;
+using MyStore.Domain.Enumerations;
 
 namespace MyStore.Infrastructure.DbContext
 {
@@ -22,5 +24,52 @@ namespace MyStore.Infrastructure.DbContext
         public virtual DbSet<Size> Sizes { get; set; }
         public virtual DbSet<ProductSize> ProductSizes { get; set; }
         public virtual DbSet<ProductMaterial> ProductMaterials { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder builder)
+        {
+            base.OnModelCreating(builder);
+            var lstOrderStatus = new List<OrderStatus>();
+            foreach (var status in Enum.GetNames(typeof(DeliveryStatus)).ToList())
+            {
+                lstOrderStatus.Add(new OrderStatus { Name = status });
+            }
+            builder.Entity<OrderStatus>().HasData(lstOrderStatus.ToArray());
+
+            var lstPaymentMethod = new List<PaymentMethod>();
+            foreach (var method in Enum.GetNames(typeof(PaymentMethodEnum)).ToList())
+            {
+                lstPaymentMethod.Add(new PaymentMethod { Name = method, isActive = false });
+            }
+            builder.Entity<PaymentMethod>().HasData(lstPaymentMethod.ToArray());
+        }
+
+        private void UpdateTimestamps()
+        {
+            var entries = ChangeTracker.Entries()
+                .Where(e => e.Entity is IBaseEntity
+                    && (e.State == EntityState.Added || e.State == EntityState.Modified));
+
+            foreach (var entry in entries)
+            {
+                if (entry.State == EntityState.Added)
+                {
+                    ((IBaseEntity) entry.Entity).CreatedAt = DateTime.Now;
+                }
+                ((IBaseEntity) entry.Entity).UpdatedAt = DateTime.Now;
+            }
+        }
+
+        public override int SaveChanges(bool acceptAllChangesOnSuccess)
+        {
+            UpdateTimestamps();
+            return base.SaveChanges(acceptAllChangesOnSuccess);
+        }
+
+        public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+        {
+            UpdateTimestamps();
+            return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        }
+        
     }
 }

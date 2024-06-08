@@ -2,8 +2,8 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
-using MyStore.Application.IRepository.Caching;
-using MyStore.Application.IRepository.SendMail;
+using MyStore.Application.ICaching;
+using MyStore.Application.ISendMail;
 using MyStore.Application.Request;
 using MyStore.Application.Response;
 using MyStore.Domain.Entities;
@@ -21,12 +21,12 @@ namespace MyStore.Application.Services.Accounts
 
         private readonly ISendMailService _sendMailService;
 
-        private readonly ICodeCaching _codeCaching;
+        private readonly ICodeCache _codeCaching;
         private readonly IConfiguration _configuration;
         public AccountService(UserManager<User> userManager,
             SignInManager<User> signInManager,
             ISendMailService sendMailService,
-            ICodeCaching codeCaching, IConfiguration configuration)
+            ICodeCache codeCaching, IConfiguration configuration)
         {
             _userManager = userManager;
             _signInManager = signInManager;

@@ -4,12 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MyStore.Domain.Enumerations
+namespace MyStore.Application.Response
 {
-    public enum Gender
+    public class ListNameResponse
     {
-        Male,
-        Female,
-        Unisex
+        public IList<string> Name { get; set; }
     }
 }

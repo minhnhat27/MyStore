@@ -9,7 +9,6 @@ namespace MyStore.Application.Services.Products
     public interface IProductService
     {
         Task CreateProductAsync(CreateProductRequest request, IFormFileCollection images);
-        Task<List<ProductResponse>> GetProductsAsync();
         Task<PageResponse<ProductResponse>> GetProductsAsync(int page, int pageSize, string? keySearch);
         Task<ProductDetailResponse?> GetProductAsync(int id);
         Task<bool> UpdateProductAsync(UpdateProductRequest request, IFormFileCollection images);
@@ -17,7 +16,6 @@ namespace MyStore.Application.Services.Products
         Task<bool> UpdateProductEnableAsync(UpdateProductEnableRequest request);
 
         Task<List<BrandResponse>> GetBrandsAsync();
-        Task<List<BrandResponse>> GetBrandNamesAsync();
         Task AddBrandAsync(CreateBrandRequest brand);
         Task<bool> DeleteBrandAsync(int id);
 

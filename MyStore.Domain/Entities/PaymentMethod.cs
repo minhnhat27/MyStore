@@ -11,6 +11,7 @@ namespace MyStore.Domain.Entities
     {
         [Key]
         public required string Name { get; set; }
+        public bool isActive { get; set; } = false;
         public ICollection<Order> Orders { get; } = new HashSet<Order>();
     }
 }

@@ -39,15 +39,15 @@ namespace MyStore.Presentation.Controllers
         }
 
         [HttpPost("register")]
-        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
             try
             {
-                ApiResponse result = await _accountService.Register(request);
+                var result = await _accountService.Register(request);
                 if (result.Success)
-                    return Created();
+                    return NoContent();
                 else return BadRequest(result.Message);
             }
             catch (Exception ex)

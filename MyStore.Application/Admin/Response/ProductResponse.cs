@@ -18,6 +18,6 @@ namespace MyStore.Application.Admin.Response
         public string Gender { get; set; }
         public string? CategoryName { get; set; }
         public string? BrandName { get; set; }
-        public string base64String { get; set; }
+        public string ImageUrl { get; set; }
     }
 }

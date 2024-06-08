@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using MyStore.Application.Admin.Request;
 using MyStore.Application.Admin.Response;
+using MyStore.Application.ICaching;
 using MyStore.Application.IRepository;
 using MyStore.Application.Model;
 using MyStore.Application.Request;
@@ -15,14 +16,18 @@ namespace MyStore.Application.Services.Products
         private readonly IProductRepository _productRepository;
         private readonly IImageRepository _imageRepository;
         private readonly ITransactionRepository _transactionRepository;
-        public ProductService(IProductRepository productRepository,
-            IImageRepository imageRepository, ITransactionRepository transactionRepository)
+        private readonly ICache _productCache;
+        public ProductService(IProductRepository productRepository, IImageRepository imageRepository, 
+            ITransactionRepository transactionRepository,
+            ICache productAttributesCache)
         {
             _productRepository = productRepository;
             _imageRepository = imageRepository;
             _transactionRepository = transactionRepository;
+            _productCache = productAttributesCache;
         }
 
+        //-Products-//
         public async Task CreateProductAsync(CreateProductRequest request, IFormFileCollection images)
         {
             using (var transaction = await _transactionRepository.BeginTransactionAsync())
@@ -91,39 +96,7 @@ namespace MyStore.Application.Services.Products
                 }
             }
         }
-        public async Task<List<ProductResponse>> GetProductsAsync()
-        {
-            try
-            {
-                var products = await _productRepository.GetProductsWithProductAttributesAsync();
-                var res = products.Select(e => new ProductResponse
-                {
-                    Id = e.Id,
-                    Name = e.Name,
-                    Enable = e.Enable,
-                    Gender = e.Gender,
-                    Sold = e.Sold,
-                    BrandName = e.Brand.Name,
-                    CategoryName = e.Category.Name,
-                }).ToList();
-
-                List<Base64Response> images = new();
-                for (int i = 0; i < products.Count; i++)
-                {
-                    var image = await _productRepository.GetFirstImageByProductIdAsync(products[i].Id);
-                    if (image != null)
-                    {
-                        var base64 = await _imageRepository.GetImageBase64Async(ImageType.Products.ToString(), image.ImageName);
-                        res[i].base64String = base64;
-                    }
-                }
-                return res;
-            }
-            catch
-            {
-                return new List<ProductResponse>();
-            }
-        }
+        
         public async Task<PageResponse<ProductResponse>> GetProductsAsync(int page, int pageSize, string? keySearch)
         {
             try
@@ -151,14 +124,14 @@ namespace MyStore.Application.Services.Products
                     CategoryName = e.Category.Name,
                 }).ToList();
 
-                List<Base64Response> images = new();
                 for (int i = 0; i < products.Count; i++)
                 {
                     var image = await _productRepository.GetFirstImageByProductIdAsync(products[i].Id);
                     if (image != null)
                     {
-                        var base64 = await _imageRepository.GetImageBase64Async(ImageType.Products.ToString(), image.ImageName);
-                        res[i].base64String = base64;
+                        //var base64 = await _imageRepository.GetImageBase64Async(ImageType.Products.ToString(), image.ImageName);
+                        //res[i].base64String = base64;
+                        res[i].ImageUrl = image.ImageName;
                     }
                 }
 
@@ -200,15 +173,9 @@ namespace MyStore.Application.Services.Products
                     }).ToList(),
                     Description = product.Description,
                     Sizes = product.Sizes.Select(e => e.SizeId).ToList(),
+                    Images = product.Images.Select(e => e.ImageName).ToList(),
                 };
 
-                var images = await _productRepository.GetProductImagesAsync(product.Id);
-                if (images != null)
-                {
-                    var lst = images.Select(e => e.ImageName).ToList();
-                    var base64 = await _imageRepository.GetImagesBase64Async(ImageType.Products.ToString(), lst);
-                    res.Images = base64;
-                }
                 return res;
             }
             else return null;
@@ -292,9 +259,27 @@ namespace MyStore.Application.Services.Products
 
 
                         var olgImgs = await _productRepository.GetProductImagesAsync(product.Id);
-                        await _productRepository.DeleteAllImageByProductId(product.Id);
-                        var nameFiles = new List<string>();
-                        List<Image> imgs = new();
+                        List<Image> lstImaDel = new();
+
+                        if(request.ImagesUrl == null)
+                        {
+                            lstImaDel.AddRange(olgImgs);
+                        }
+                        else
+                        {
+                            foreach (var image in olgImgs)
+                            {
+                                if (!request.ImagesUrl.Contains(image.ImageName))
+                                {
+                                    lstImaDel.Add(image);
+                                }
+                            }
+                        }
+                        _imageRepository.DeleteImages(ImageType.Products.ToString(), lstImaDel.Select(e => e.ImageName).ToList());
+                        await _productRepository.DeleteProductImagesAsync(lstImaDel);
+
+                        var fileNames = new List<string>();
+                        List<Image> newImages = new();
                         foreach (var image in images)
                         {
                             var name = Guid.NewGuid().ToString() + Path.GetExtension(image.FileName);
@@ -303,13 +288,12 @@ namespace MyStore.Application.Services.Products
                                 ProductId = product.Id,
                                 ImageName = name
                             };
-                            nameFiles.Add(name);
-                            imgs.Add(img);
+                            fileNames.Add(name);
+                            newImages.Add(img);
                         }
-                        await _productRepository.AddProductImagesAsync(imgs);
+                        await _productRepository.AddProductImagesAsync(newImages);
 
-                        _imageRepository.DeleteImages(ImageType.Products.ToString(), olgImgs.Select(e => e.ImageName).ToList());
-                        await _imageRepository.SaveImagesAsync(ImageType.Products.ToString(), images, nameFiles);
+                        await _imageRepository.SaveImagesAsync(ImageType.Products.ToString(), images, fileNames);
 
                         await _productRepository.UpdateProductAsync(product);
 
@@ -371,31 +355,32 @@ namespace MyStore.Application.Services.Products
             else return false;
         }
 
+        //-Cache-//
+        private async Task UpdateCachedBrands() 
+            => _productCache.Set("Brands", await _productRepository.GetBrandsAsync());
+        private async Task UpdateCachedCategories()
+            => _productCache.Set("Categories", await _productRepository.GetCategoriesAsync());
+        private async Task UpdateCachedMaterials()
+            => _productCache.Set("Materials", await _productRepository.GetMaterialsAsync());
+        private async Task UpdateCachedSizes()
+            => _productCache.Set("Sizes", await _productRepository.GetSizesAsync());
 
-        //--//
+        //-Brands-//
         public async Task<List<BrandResponse>> GetBrandsAsync()
         {
-            var brands = await _productRepository.GetBrandsAsync();
-            var res = brands.Select(e => new BrandResponse
+            var brands = _productCache.Get<IList<Brand>>("Brands");
+            if(brands == null)
             {
-                Id = e.Id,
-                Name = e.Name
-            }).ToList();
-            for (var i = 0; i < res.Count; i++)
-            {
-                res[i].Base64String = await _imageRepository.GetImageBase64Async(ImageType.Brands.ToString(), brands[i].ImageName);
+                brands = await _productRepository.GetBrandsAsync();
+                _productCache.Set("Brands", brands);
             }
-            return res;
-        }
-        public async Task<List<BrandResponse>> GetBrandNamesAsync()
-        {
-            var brands = await _productRepository.GetBrandsAsync();
-            var res = brands.Select(e => new BrandResponse
+
+            return brands.Select(e => new BrandResponse
             {
                 Id = e.Id,
-                Name = e.Name
+                Name = e.Name,
+                ImageUrl = e.ImageName,
             }).ToList();
-            return res;
         }
 
         public async Task AddBrandAsync(CreateBrandRequest brand)
@@ -408,15 +393,15 @@ namespace MyStore.Application.Services.Products
                     Brand model = new() { Name = brand.Name, ImageName = fileName };
                     await _productRepository.AddBrandAsync(model);
                     await _imageRepository.SaveImageAsync(ImageType.Brands.ToString(), brand.Image, fileName);
+
+                    await UpdateCachedBrands();
                     await transaction.CommitAsync();
                 }
                 catch
                 {
                     await transaction.RollbackAsync();
                 }
-
             }
-
         }
 
         public async Task<bool> DeleteBrandAsync(int id)
@@ -425,6 +410,7 @@ namespace MyStore.Application.Services.Products
             if (brand != null)
             {
                 await _productRepository.DeleteBrandAsync(brand);
+                await UpdateCachedBrands();
                 _imageRepository.DeleteImage(ImageType.Brands.ToString(), brand.ImageName);
                 return true;
             }
@@ -434,10 +420,15 @@ namespace MyStore.Application.Services.Products
             }
         }
 
-        //--//
+        //-Categories-//
         public async Task<List<CategoryResponse>> GetCategoriesAsync()
         {
-            var categories = await _productRepository.GetCategoriesAsync();
+            var categories = _productCache.Get<IList<Category>>("Categories");
+            if(categories == null)
+            {
+                categories = await _productRepository.GetCategoriesAsync();
+                _productCache.Set("Categories", categories);
+            }
             return categories.Select(e => new CategoryResponse
             {
                 Id = e.Id,
@@ -449,6 +440,7 @@ namespace MyStore.Application.Services.Products
         {
             Category model = new() { Name = category.Name };
             await _productRepository.AddCategoryAsync(model);
+            await UpdateCachedCategories();
         }
 
         public async Task<bool> DeleteCategoryAsync(int id)
@@ -456,6 +448,7 @@ namespace MyStore.Application.Services.Products
             var category = await _productRepository.FindCategoryByIdAsync(id);
             if (category != null)
             {
+                await UpdateCachedCategories();
                 await _productRepository.DeleteCategoryAsync(category);
                 return true;
             }
@@ -465,10 +458,16 @@ namespace MyStore.Application.Services.Products
             }
         }
 
-        //--//
+        //-Materials-//
         public async Task<List<MaterialResponse>> GetMaterialsAsync()
         {
-            var materials = await _productRepository.GetMaterialsAsync();
+            var materials = _productCache.Get<IList<Material>>("Materials");
+            if (materials == null)
+            {
+                materials = await _productRepository.GetMaterialsAsync();
+                _productCache.Set("Materials", materials);
+            }
+
             return materials.Select(e => new MaterialResponse
             {
                 Id = e.Id,
@@ -480,6 +479,7 @@ namespace MyStore.Application.Services.Products
         {
             Material model = new() { Name = material.Name };
             await _productRepository.AddMaterialAsync(model);
+            await UpdateCachedMaterials();
         }
 
         public async Task<bool> DeleteMaterialAsync(int id)
@@ -487,6 +487,7 @@ namespace MyStore.Application.Services.Products
             var material = await _productRepository.FindMaterialByIdAsync(id);
             if (material != null)
             {
+                await UpdateCachedMaterials();
                 await _productRepository.DeleteMaterialAsync(material);
                 return true;
             }
@@ -495,11 +496,18 @@ namespace MyStore.Application.Services.Products
                 return false;
             }
         }
-
+        
+        //-Sizes-//
         public async Task<IList<SizeResponse>> GetSizesAsync()
         {
-            var result = await _productRepository.GetSizesAsync();
-            return result.Select(e => new SizeResponse
+            var sizes = _productCache.Get<IList<Size>>("Sizes");
+            if(sizes == null)
+            {
+                sizes = await _productRepository.GetSizesAsync();
+                _productCache.Set("Size", sizes);
+            }
+
+            return sizes.Select(e => new SizeResponse
             {
                 Id = e.Id,
                 Name = e.Name,
@@ -511,6 +519,7 @@ namespace MyStore.Application.Services.Products
         {
             Size model = new() { Name = request.Name, Description = request.Description };
             await _productRepository.AddSizeAsync(model);
+            await UpdateCachedSizes();
         }
 
         public async Task<bool> DeleteSizeAsync(int id)
@@ -518,6 +527,7 @@ namespace MyStore.Application.Services.Products
             var size = await _productRepository.FindSizeByIdAsync(id);
             if (size != null)
             {
+                await UpdateCachedSizes();
                 await _productRepository.DeleteSizeAsync(size);
                 return true;
             }

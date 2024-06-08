@@ -1,9 +1,4 @@
 ﻿using MyStore.Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MyStore.Application.IRepository
 {
@@ -19,5 +14,9 @@ namespace MyStore.Application.IRepository
         Task AddOrderAsync(Order order);
         Task UpdateOrderAsync(Order order);
         Task DeleteOrderAsync(Order order);
+
+        Task AddOrderStatusAsync(OrderStatus status);
+        Task DeleteOrderStatusAsync(OrderStatus status);
+        Task<IList<PaymentMethod>> GetPaymentMethodsAsync();
     }
 }

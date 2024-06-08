@@ -6,10 +6,11 @@ using System.Threading.Tasks;
 
 namespace MyStore.Domain.Enumerations
 {
-    public enum Gender
+    public enum PaymentMethodEnum
     {
-        Male,
-        Female,
-        Unisex
+        COD,
+        VnPay,
+        MoMo,
+        ZaloPay
     }
 }
