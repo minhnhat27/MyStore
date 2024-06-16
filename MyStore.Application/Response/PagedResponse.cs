@@ -4,19 +4,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MyStore.Application.Model
+namespace MyStore.Application.Response
 {
-    public class Paging
+    public class PagedResponse<T>
     {
+        public IEnumerable<T> Items { get; set; } = new List<T>();
         public int TotalItems { get; set; }
-        public int CurrentPage { get; set; }
+        public int Page { get; set; }
         public int PageSize { get; set; }
         public int TotalPages => (int)Math.Ceiling((double)TotalItems / PageSize);
-        public Paging(int totalItems, int currentPage, int pageSize)
-        {
-            TotalItems = totalItems;
-            CurrentPage = currentPage;
-            PageSize = pageSize;
-        }
     }
 }

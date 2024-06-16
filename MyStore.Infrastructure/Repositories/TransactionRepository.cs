@@ -6,8 +6,8 @@ namespace MyStore.Infrastructure.Repositories
 {
     public class TransactionRepository : ITransactionRepository
     {
-        private readonly ApplicationContext _Dbcontext;
-        public TransactionRepository(ApplicationContext dbcontext)
+        private readonly MyDbContext _Dbcontext;
+        public TransactionRepository(MyDbContext dbcontext)
         {
             _Dbcontext = dbcontext;
         }

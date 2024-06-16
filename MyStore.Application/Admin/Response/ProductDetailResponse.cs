@@ -18,9 +18,9 @@ namespace MyStore.Application.Admin.Response
         public string Gender { get; set; }
         public int Category { get; set; }
         public int Brand { get; set; }
-        public List<int> Materials { get; set; }
-        public List<int> Sizes { get; set; }
-        public List<SizeAndQuantity> SizeQuantity { get; set; }
-        public List<string> Images { get; set; }
+        public IEnumerable<int> Materials { get; set; }
+        public IEnumerable<int> Sizes { get; set; }
+        public IEnumerable<SizeAndQuantity> SizeQuantity { get; set; }
+        public IEnumerable<string> Images { get; set; }
     }
 }

@@ -5,9 +5,9 @@ namespace MyStore.Application.IRepository
 {
     public interface IProductRepository
     {
-        Task<IList<ProductMaterial>> GetProductMaterialsAsync(int id);
-        Task<IList<ProductSize>> GetProductSizesAsync(int id);
-        Task<IList<Image>> GetProductImagesAsync(int id);
+        Task<IEnumerable<ProductMaterial>> GetProductMaterialsAsync(int id);
+        Task<IEnumerable<ProductSize>> GetProductSizesAsync(int id);
+        Task<IEnumerable<Image>> GetProductImagesAsync(int id);
         Task<Image?> GetFirstImageByProductIdAsync(int id);
         Task AddProductImagesAsync(IList<Image> images);
         Task AddProductSizesAsync(IList<ProductSize> sizes);
@@ -27,31 +27,31 @@ namespace MyStore.Application.IRepository
 
         Task AddProductAsync(Product product);
         Task<Product?> GetProductWithProductAttributesAsync(int id);
-        Task<IList<Product>> GetProductsWithProductAttributesAsync();
-        Task<IList<Product>> GetProductsWithProductAttributesAsync(int page, int pageSize);
-        Task<IList<Product>> GetProductsWithProductAttributesAsync(int page, int pageSize, string key);
+        Task<IEnumerable<Product>> GetProductsWithProductAttributesAsync();
+        Task<IEnumerable<Product>> GetProductsWithProductAttributesAsync(int page, int pageSize);
+        Task<IEnumerable<Product>> GetProductsWithProductAttributesAsync(int page, int pageSize, string key);
         Task<int> CountAsync();
         Task<int> CountAsync(string key);
         Task<Product?> FindProductByIdAsync(int id);
         Task UpdateProductAsync(Product product);
         Task DeleteProductAsync(Product product);
 
-        Task<IList<Brand>> GetBrandsAsync();
+        Task<IEnumerable<Brand>> GetBrandsAsync();
         Task<Brand?> FindBrandByIdAsync(int id);
         Task AddBrandAsync(Brand brand);
         Task DeleteBrandAsync(Brand brand);
 
-        Task<IList<Category>> GetCategoriesAsync();
+        Task<IEnumerable<Category>> GetCategoriesAsync();
         Task<Category?> FindCategoryByIdAsync(int id);
         Task AddCategoryAsync(Category category);
         Task DeleteCategoryAsync(Category category);
 
-        Task<IList<Material>> GetMaterialsAsync();
+        Task<IEnumerable<Material>> GetMaterialsAsync();
         Task<Material?> FindMaterialByIdAsync(int id);
         Task AddMaterialAsync(Material material);
         Task DeleteMaterialAsync(Material material);
 
-        Task<IList<Size>> GetSizesAsync();
+        Task<IEnumerable<Size>> GetSizesAsync();
         Task<Size?> FindSizeByIdAsync(int id);
         Task AddSizeAsync(Size size);
         Task DeleteSizeAsync(Size size);

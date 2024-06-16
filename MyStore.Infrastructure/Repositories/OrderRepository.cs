@@ -13,8 +13,8 @@ namespace MyStore.Infrastructure.Repositories
 {
     public class OrderRepository : IOrderRepository
     {
-        private readonly ApplicationContext _DbContext;
-        public OrderRepository(ApplicationContext context) => _DbContext = context;
+        private readonly MyDbContext _DbContext;
+        public OrderRepository(MyDbContext context) => _DbContext = context;
         public async Task AddOrderAsync(Order order)
         {
             await _DbContext.AddAsync(order);

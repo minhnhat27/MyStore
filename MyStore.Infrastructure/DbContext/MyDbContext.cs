@@ -6,9 +6,9 @@ using MyStore.Domain.Enumerations;
 
 namespace MyStore.Infrastructure.DbContext
 {
-    public class ApplicationContext : IdentityDbContext<User>
+    public class MyDbContext : IdentityDbContext<User>
     {
-        public ApplicationContext(DbContextOptions<ApplicationContext> options) : base(options) { }
+        public MyDbContext(DbContextOptions<MyDbContext> options) : base(options) { }
         public virtual DbSet<Address> Addresses { get; set; }
         public virtual DbSet<Brand> Brands { get; set; }
         public virtual DbSet<CartItem> CartItems { get; set; }

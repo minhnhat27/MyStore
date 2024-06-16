@@ -9,25 +9,25 @@ namespace MyStore.Application.Services.Products
     public interface IProductService
     {
         Task CreateProductAsync(CreateProductRequest request, IFormFileCollection images);
-        Task<PageResponse<ProductResponse>> GetProductsAsync(int page, int pageSize, string? keySearch);
+        Task<PagedResponse<ProductResponse>> GetProductsAsync(int page, int pageSize, string? keySearch);
         Task<ProductDetailResponse?> GetProductAsync(int id);
         Task<bool> UpdateProductAsync(UpdateProductRequest request, IFormFileCollection images);
         Task<bool> DeleteProductAsync(int id);
         Task<bool> UpdateProductEnableAsync(UpdateProductEnableRequest request);
 
-        Task<List<BrandResponse>> GetBrandsAsync();
+        Task<IEnumerable<BrandResponse>> GetBrandsAsync();
         Task AddBrandAsync(CreateBrandRequest brand);
         Task<bool> DeleteBrandAsync(int id);
 
-        Task<List<CategoryResponse>> GetCategoriesAsync();
+        Task<IEnumerable<CategoryResponse>> GetCategoriesAsync();
         Task AddCategoryAsync(NameRequest category);
         Task<bool> DeleteCategoryAsync(int id);
 
-        Task<List<MaterialResponse>> GetMaterialsAsync();
+        Task<IEnumerable<MaterialResponse>> GetMaterialsAsync();
         Task AddMaterialAsync(NameRequest material);
         Task<bool> DeleteMaterialAsync(int id);
 
-        Task<IList<SizeResponse>> GetSizesAsync();
+        Task<IEnumerable<SizeResponse>> GetSizesAsync();
         Task AddSizeAsync(CreateSizeRequest request);
         Task<bool> DeleteSizeAsync(int id);
     }

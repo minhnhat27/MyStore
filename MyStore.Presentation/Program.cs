@@ -9,6 +9,7 @@ using MyStore.Application.ISendMail;
 using MyStore.Application.Services.Accounts;
 using MyStore.Application.Services.Orders;
 using MyStore.Application.Services.Products;
+using MyStore.Application.Services.Users;
 using MyStore.Domain.Entities;
 using MyStore.Infrastructure.Caching;
 using MyStore.Infrastructure.DbContext;
@@ -30,9 +31,11 @@ builder.Services.AddCors(opt => opt.AddPolicy("MyCors", opt =>
     opt.WithOrigins("http://localhost:3001").AllowAnyHeader().AllowAnyMethod().AllowCredentials();
     opt.WithOrigins("http://localhost:3000").AllowAnyHeader().AllowAnyMethod().AllowCredentials();
 }));
-builder.Services.AddDbContext<ApplicationContext>(opt =>
+builder.Services.AddDbContext<MyDbContext>(opt =>
 {
-    opt.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
+    //opt.UseSqlServer(builder.Configuration.GetConnectionString("SqlServerConnection"),
+    //    m => m.MigrationsAssembly("MyStore.Infrastructure"));
+    opt.UseNpgsql(builder.Configuration.GetConnectionString("PostgreSqlConnection"),
         m => m.MigrationsAssembly("MyStore.Infrastructure"));
 });
 builder.Services.AddIdentity<User, IdentityRole>(opt =>
@@ -40,7 +43,7 @@ builder.Services.AddIdentity<User, IdentityRole>(opt =>
     opt.Password.RequireNonAlphanumeric = false;
     opt.Password.RequiredLength = 6;
     opt.User.RequireUniqueEmail = true;
-}).AddEntityFrameworkStores<ApplicationContext>().AddDefaultTokenProviders();
+}).AddEntityFrameworkStores<MyDbContext>().AddDefaultTokenProviders();
 
 builder.Services.AddAuthentication(opt =>
 {
@@ -73,10 +76,12 @@ builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
 builder.Services.AddScoped<IImageRepository, ImageRepository>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 var app = builder.Build();
 

@@ -6,12 +6,12 @@ namespace MyStore.Application.Services.Orders
     public interface IOrderService
     {
         Task CreateOrderAsync(CreateOrderRequest request);
-        Task<List<OrderResponse>> GetOrdersAsync();
-        Task<PageResponse<OrderResponse>> GetOrdersAsync(int page, int pageSize, string? keySearch);
+        Task<IEnumerable<OrderResponse>> GetOrdersAsync();
+        Task<PagedResponse<OrderResponse>> GetOrdersAsync(int page, int pageSize, string? keySearch);
         Task<OrderResponse?> GetOrderAsync(int id);
-        Task<List<OrderResponse>> GetProductsByUserIdAsync(string userId);
+        Task<IEnumerable<OrderResponse>> GetProductsByUserIdAsync(string userId);
         Task<bool> UpdateProductAsync(UpdateOrderRequest request);
         Task<bool> DeleteProductAsync(int id);
-        Task<IList<string>> GetPaymentMethods();
+        Task<IEnumerable<string>> GetPaymentMethods();
     }
 }

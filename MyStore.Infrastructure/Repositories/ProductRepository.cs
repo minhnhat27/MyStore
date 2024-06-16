@@ -11,8 +11,8 @@ namespace MyStore.Infrastructure.Repositories
 {
     public class ProductRepository : IProductRepository
     {
-        private readonly ApplicationContext _Dbcontext;
-        public ProductRepository(ApplicationContext dbcontext)
+        private readonly MyDbContext _Dbcontext;
+        public ProductRepository(MyDbContext dbcontext)
         {
             _Dbcontext = dbcontext;
         }
@@ -29,7 +29,7 @@ namespace MyStore.Infrastructure.Repositories
                 .Include(e => e.Materials)
                 .SingleOrDefaultAsync(e => e.Id == id);
         }
-        public async Task<IList<Product>> GetProductsWithProductAttributesAsync()
+        public async Task<IEnumerable<Product>> GetProductsWithProductAttributesAsync()
         {
             return await _Dbcontext.Products
                 .Include(e => e.Brand)
@@ -37,7 +37,7 @@ namespace MyStore.Infrastructure.Repositories
                 .Include(e => e.Images)
                 .ToListAsync();
         }
-        public async Task<IList<Product>> GetProductsWithProductAttributesAsync(int page, int pageSize)
+        public async Task<IEnumerable<Product>> GetProductsWithProductAttributesAsync(int page, int pageSize)
         {
             return await _Dbcontext.Products
                     .Paginate(page, pageSize)
@@ -47,7 +47,7 @@ namespace MyStore.Infrastructure.Repositories
                     .ToListAsync();
         }
 
-        public async Task<IList<Product>> GetProductsWithProductAttributesAsync(int page, int pageSize, string key)
+        public async Task<IEnumerable<Product>> GetProductsWithProductAttributesAsync(int page, int pageSize, string key)
         {
             return await _Dbcontext.Products
                     .Where(e => e.Name.Contains(key) || e.Id.ToString().Contains(key))
@@ -96,7 +96,7 @@ namespace MyStore.Infrastructure.Repositories
         {
             return await _Dbcontext.Brands.FindAsync(id);
         }
-        public async Task<IList<Brand>> GetBrandsAsync()
+        public async Task<IEnumerable<Brand>> GetBrandsAsync()
         {
             return await _Dbcontext.Brands.ToListAsync();
         }
@@ -115,12 +115,12 @@ namespace MyStore.Infrastructure.Repositories
         {
             return await _Dbcontext.Categories.FindAsync(id);
         }
-        public async Task<IList<Category>> GetCategoriesAsync()
+        public async Task<IEnumerable<Category>> GetCategoriesAsync()
         {
             return await _Dbcontext.Categories.ToListAsync();
         }
 
-        public async Task<IList<Material>> GetMaterialsAsync()
+        public async Task<IEnumerable<Material>> GetMaterialsAsync()
         {
             return await _Dbcontext.Materials.ToListAsync();
         }
@@ -162,7 +162,7 @@ namespace MyStore.Infrastructure.Repositories
             await _Dbcontext.SaveChangesAsync();
         }
 
-        public async Task<IList<Size>> GetSizesAsync()
+        public async Task<IEnumerable<Size>> GetSizesAsync()
         {
             return await _Dbcontext.Sizes.ToListAsync();
         }
@@ -202,17 +202,17 @@ namespace MyStore.Infrastructure.Repositories
             await _Dbcontext.SaveChangesAsync();
         }
 
-        public async Task<IList<ProductMaterial>> GetProductMaterialsAsync(int id)
+        public async Task<IEnumerable<ProductMaterial>> GetProductMaterialsAsync(int id)
         {
             return await _Dbcontext.ProductMaterials.Where(e => e.ProductId == id).ToListAsync();
         }
 
-        public async Task<IList<ProductSize>> GetProductSizesAsync(int id)
+        public async Task<IEnumerable<ProductSize>> GetProductSizesAsync(int id)
         {
             return await _Dbcontext.ProductSizes.Where(e => e.ProductId == id).ToListAsync();
         }
 
-        public async Task<IList<Image>> GetProductImagesAsync(int id)
+        public async Task<IEnumerable<Image>> GetProductImagesAsync(int id)
         {
             return await _Dbcontext.Images.Where(e => e.ProductId == id).ToListAsync();
         }

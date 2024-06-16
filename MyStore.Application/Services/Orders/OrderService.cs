@@ -25,7 +25,7 @@ namespace MyStore.Application.Services.Orders
             throw new NotImplementedException();
         }
 
-        public async Task<List<OrderResponse>> GetOrdersAsync()
+        public async Task<IEnumerable<OrderResponse>> GetOrdersAsync()
         {
             var result = await _orderRepository.GetOrdersAsync();
             return result.Select(e => new OrderResponse
@@ -37,12 +37,12 @@ namespace MyStore.Application.Services.Orders
                 PaymentMethod = e.PaymentMethodName,
                 UserId = e.UserId,
                 Total = e.Total,
-            }).ToList();
+            });
         }
-        public async Task<PageResponse<OrderResponse>> GetOrdersAsync(int page, int pageSize, string? keySearch)
+        public async Task<PagedResponse<OrderResponse>> GetOrdersAsync(int page, int pageSize, string? keySearch)
         {
             int totalOrder;
-            IList<Order> orders;
+            IEnumerable<Order> orders;
             if (keySearch == null)
             {
                 totalOrder = await _orderRepository.CountAsync();
@@ -62,9 +62,9 @@ namespace MyStore.Application.Services.Orders
                 PaymentMethod = e.PaymentMethodName,
                 UserId = e.UserId,
                 Total = e.Total,
-            }).ToList();
+            });
 
-            return new PageResponse<OrderResponse>
+            return new PagedResponse<OrderResponse>
             {
                 Items = items,
                 Page = page,
@@ -78,7 +78,7 @@ namespace MyStore.Application.Services.Orders
             throw new NotImplementedException();
         }
 
-        public Task<List<OrderResponse>> GetProductsByUserIdAsync(string userId)
+        public Task<IEnumerable<OrderResponse>> GetProductsByUserIdAsync(string userId)
         {
             throw new NotImplementedException();
         }
@@ -91,16 +91,16 @@ namespace MyStore.Application.Services.Orders
         private async Task UpdateCachedPaymentMethods() 
             => _orderCache.Set("PaymentMethods", await _orderRepository.GetPaymentMethodsAsync());
 
-        public async Task<IList<string>> GetPaymentMethods()
+        public async Task<IEnumerable<string>> GetPaymentMethods()
         {
-            var payment = _orderCache.Get<IList<PaymentMethod>>("PaymentMethods");
+            var payment = _orderCache.Get<IEnumerable<PaymentMethod>>("PaymentMethods");
             if(payment == null)
             {
                 payment = await _orderRepository.GetPaymentMethodsAsync();
                 _orderCache.Set("PaymentMethods", payment);
             }
 
-            return payment.Select(e => e.Name).ToList();
+            return payment.Select(e => e.Name);
         }
     }
 }
