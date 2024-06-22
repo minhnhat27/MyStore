@@ -68,5 +68,19 @@ namespace MyStore.Application.Services.Users
         {
             throw new NotImplementedException();
         }
+
+        public async Task LockOut(LockOutRequest request)
+        {
+            var user = await _userManager.FindByIdAsync(request.UserId);
+            if (user == null)
+            {
+                throw new Exception("User not found");
+            }
+            if (request.EndDate != null)
+                user.LockoutEnd = request.EndDate.Value.AddDays(1);
+            else user.LockoutEnd = request.EndDate;
+
+            await _userManager.UpdateAsync(user);
+        }
     }
 }

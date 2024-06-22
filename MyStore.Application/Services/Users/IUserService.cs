@@ -1,4 +1,5 @@
-﻿using MyStore.Application.Response;
+﻿using MyStore.Application.Request;
+using MyStore.Application.Response;
 
 namespace MyStore.Application.Services.Users
 {
@@ -7,5 +8,6 @@ namespace MyStore.Application.Services.Users
         Task<PagedResponse<UserResponse>> GetAllUsersAsync(int page, int pageSize, string? keySearch);
         Task<UserResponse> GetUserByIdAsync(int id);
         Task<UserResponse> GetUserByEmailAsync(string email);
+        Task LockOut(LockOutRequest request);
     }
 }

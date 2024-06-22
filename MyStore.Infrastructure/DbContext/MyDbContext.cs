@@ -8,7 +8,10 @@ namespace MyStore.Infrastructure.DbContext
 {
     public class MyDbContext : IdentityDbContext<User>
     {
-        public MyDbContext(DbContextOptions<MyDbContext> options) : base(options) { }
+        public MyDbContext(DbContextOptions<MyDbContext> options) : base(options)
+        {
+            AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+        }
         public virtual DbSet<Address> Addresses { get; set; }
         public virtual DbSet<Brand> Brands { get; set; }
         public virtual DbSet<CartItem> CartItems { get; set; }
@@ -28,6 +31,7 @@ namespace MyStore.Infrastructure.DbContext
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
+
             var lstOrderStatus = new List<OrderStatus>();
             foreach (var status in Enum.GetNames(typeof(DeliveryStatus)).ToList())
             {
@@ -53,9 +57,12 @@ namespace MyStore.Infrastructure.DbContext
             {
                 if (entry.State == EntityState.Added)
                 {
-                    ((IBaseEntity) entry.Entity).CreatedAt = DateTime.Now;
+                    ((IBaseEntity)entry.Entity).CreatedAt = DateTime.UtcNow;
                 }
-                ((IBaseEntity) entry.Entity).UpdatedAt = DateTime.Now;
+                if (entry.State == EntityState.Modified)
+                {
+                    ((IBaseEntity)entry.Entity).UpdatedAt = DateTime.UtcNow;
+                }
             }
         }
 

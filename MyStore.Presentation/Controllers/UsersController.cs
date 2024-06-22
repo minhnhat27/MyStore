@@ -27,5 +27,20 @@ namespace MyStore.Presentation.Controllers
             }
 
         }
+
+        [HttpPut("lockOut")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> LockOut([FromBody] LockOutRequest request)
+        {
+            try
+            {
+                await _userService.LockOut(request);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
     }
 }
