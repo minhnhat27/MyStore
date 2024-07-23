@@ -1,19 +1,22 @@
-﻿using System;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
+
 namespace MyStore.Domain.Entities
 {
     public class Product : IBaseEntity
     {
         public int Id { get; set; }
         [MaxLength(60)]
-        public required string Name { get; set; }
+        public string Name { get; set; }
         [MaxLength(500)]
         public string? Description { get; set; }
         public bool Enable { get; set; }
         [Range(0, int.MaxValue)]
         public int Sold { get; set; }
         [MaxLength(10)]
-        public required string Gender { get; set; }
+        public string Gender { get; set; }
+
+        [Range(1000, double.MaxValue)]
+        public double Price { get; set; }
 
         public int CategoryId { get; set; }
         public Category Category { get; set; }
@@ -21,7 +24,7 @@ namespace MyStore.Domain.Entities
         public int BrandId { get; set; }
         public Brand Brand { get; set; }
 
-        public DateTime? CreatedAt { get; set; }
+        public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
 
         public ICollection<ProductMaterial> Materials { get; } = new HashSet<ProductMaterial>();

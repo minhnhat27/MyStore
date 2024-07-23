@@ -1,70 +1,69 @@
-﻿using MyStore.Application.ICaching;
+﻿using AutoMapper;
+using Microsoft.IdentityModel.Tokens;
+using MyStore.Application.DTO;
+using MyStore.Application.ICaching;
 using MyStore.Application.IRepository;
+using MyStore.Application.IRepository.Orders;
+using MyStore.Application.IRepository.Products;
+using MyStore.Application.ModelView;
 using MyStore.Application.Request;
 using MyStore.Application.Response;
+using MyStore.Domain.Constants;
 using MyStore.Domain.Entities;
+using MyStore.Domain.Enumerations;
 
 namespace MyStore.Application.Services.Orders
 {
     public class OrderService : IOrderService
     {
         private readonly IOrderRepository _orderRepository;
+        private readonly ICartItemRepository _cartItemRepository;
+        private readonly IOrderDetailRepository _orderDetailRepository;
+        private readonly IProductRepository _productRepository;
+        private readonly IProductSizeRepository _productSizeRepository;
         private readonly ICache _orderCache;
-        public OrderService(IOrderRepository orderRepository, ICache cache)
+        private readonly IMapper _mapper;
+        private readonly ITransactionRepository _transaction;
+        public OrderService(IOrderRepository orderRepository,
+            ICartItemRepository cartItemRepository,
+            IOrderDetailRepository orderDetailRepository,
+            IProductSizeRepository productSizeRepository,
+            IProductRepository productRepository,
+            ICache cache, IMapper mapper, ITransactionRepository transaction)
         {
             _orderRepository = orderRepository;
+            _cartItemRepository = cartItemRepository;
+            _orderDetailRepository = orderDetailRepository;
+            _productRepository = productRepository;
+            _productSizeRepository = productSizeRepository;
             _orderCache = cache;
-        }
-        public Task CreateOrderAsync(CreateOrderRequest request)
-        {
-            throw new NotImplementedException();
+            _mapper = mapper;
+            _transaction = transaction;
         }
 
-        public Task<bool> DeleteProductAsync(int id)
+        public async Task<IEnumerable<OrderDTO>> GetOrders()
         {
-            throw new NotImplementedException();
+            var orders = await _orderRepository.GetAllAsync();
+            return _mapper.Map<IEnumerable<OrderDTO>>(orders);
         }
-
-        public async Task<IEnumerable<OrderResponse>> GetOrdersAsync()
-        {
-            var result = await _orderRepository.GetOrdersAsync();
-            return result.Select(e => new OrderResponse
-            {
-                Id = e.Id,
-                OrderDate = e.OrderDate,
-                OrderStatus = e.OrderStatusName,
-                Paid = e.Paid,
-                PaymentMethod = e.PaymentMethodName,
-                UserId = e.UserId,
-                Total = e.Total,
-            });
-        }
-        public async Task<PagedResponse<OrderResponse>> GetOrdersAsync(int page, int pageSize, string? keySearch)
+        
+        public async Task<PagedResponse<OrderDTO>> GetOrders(int page, int pageSize, string? keySearch)
         {
             int totalOrder;
             IEnumerable<Order> orders;
-            if (keySearch == null)
+            if (string.IsNullOrEmpty(keySearch))
             {
                 totalOrder = await _orderRepository.CountAsync();
-                orders = await _orderRepository.GetOrdersAsync(page, pageSize);
+                orders = await _orderRepository.GetPagedAsync(page, pageSize);
             }
             else
             {
                 totalOrder = await _orderRepository.CountAsync(keySearch);
-                orders = await _orderRepository.GetOrdersAsync(page, pageSize, keySearch);
+                orders = await _orderRepository.GetPagedAsync(page, pageSize, keySearch);
             }
-            var items = orders.Select(e => new OrderResponse
-            {
-                Id = e.Id,
-                OrderDate = e.OrderDate,
-                OrderStatus = e.OrderStatusName,
-                Paid = e.Paid,
-                PaymentMethod = e.PaymentMethodName,
-                UserId = e.UserId,
-                Total = e.Total,
-            });
+            var items = _mapper.Map<IEnumerable<OrderDTO>>(orders);
 
-            return new PagedResponse<OrderResponse>
+            return new PagedResponse<OrderDTO>
             {
                 Items = items,
                 Page = page,
@@ -73,34 +72,134 @@ namespace MyStore.Application.Services.Orders
             };
         }
 
-        public Task<OrderResponse?> GetOrderAsync(int id)
+        public async Task<OrderDTO> GetOrder(int id)
         {
-            throw new NotImplementedException();
-        }
-
-        public Task<IEnumerable<OrderResponse>> GetProductsByUserIdAsync(string userId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<bool> UpdateProductAsync(UpdateOrderRequest request)
-        {
-            throw new NotImplementedException();
-        }
-
-        private async Task UpdateCachedPaymentMethods() 
-            => _orderCache.Set("PaymentMethods", await _orderRepository.GetPaymentMethodsAsync());
-
-        public async Task<IEnumerable<string>> GetPaymentMethods()
-        {
-            var payment = _orderCache.Get<IEnumerable<PaymentMethod>>("PaymentMethods");
-            if(payment == null)
+            var order = await _orderRepository.FindAsync(id);
+            if (order != null)
             {
-                payment = await _orderRepository.GetPaymentMethodsAsync();
-                _orderCache.Set("PaymentMethods", payment);
+                return _mapper.Map<OrderDTO>(order);
             }
+            else throw new ArgumentException($"Id {id}" + ErrorMessage.NOT_FOUND);
+        }
 
-            return payment.Select(e => e.Name);
+        public async Task<OrderDTO> CreateOrder(string userId, OrderRequest request)
+        {
+            try
+            {
+                using(var transaction = await _transaction.BeginTransactionAsync())
+                {
+                    var order = _mapper.Map<Order>(request);                                                   
+                    order.OrderDate = DateTime.Now;
+                    order.UserId = userId;
+                    double total = 0;
+
+                    var orderDetailsTasks = request.ProductsAndQuantities.Select(async e =>
+                    {
+                        var product = await _productRepository.FindAsync(e.ProductId);
+                        if(product != null)
+                        {
+                            var productSize = product.Sizes.SingleOrDefault(s => s.SizeId == e.SizeId);
+                            double discountPercent = productSize?.DiscountPercent ?? 0;
+                            double discount = discountPercent / 100.0 * product.Price;
+                            var price = product.Price - discount;
+                            total += price;
+
+                            return new OrderDetail
+                            {
+                                OrderId = order.Id,
+                                ProductId = e.ProductId,
+                                Size = e.SizeId,
+                                Quantity = e.Quantity,
+                                UnitPrice = price,
+                            };
+                        }
+                        return null;
+                    });
+                    var orderDetails = (await Task.WhenAll(orderDetailsTasks)).Where(e => e != null);
+                    order.Total = total;
+
+                    await _orderRepository.AddAsync(order);
+                    await _orderDetailRepository.AddAsync(orderDetails);
+
+                    await _cartItemRepository.DeleteRangeByUserId(userId, request.ProductsAndQuantities.Select(e => e.ProductId));
+
+                    await _transaction.CommitTransactionAsync();
+                    
+                    return _mapper.Map<OrderDTO>(order);
+                }
+            }
+            catch (Exception ex)
+            {
+                await _transaction.RollbackTransactionAsync();
+                throw new Exception(ex.InnerException?.Message ?? ex.Message);
+            }
+        }
+
+        public async Task<OrderDTO> UpdateOrder(int id, string userId, UpdateOrderRequest request)
+        {
+            var order = await _orderRepository.SingleOrDefaultAsync(e => e.Id == id && e.UserId == userId);
+            if(order != null && order.OrderStatusName.Equals(DeliveryStatus.Proccessing.ToString()))
+            {
+                if(request.ShippingAddress != null)
+                {
+                    order.ShippingAddress = request.ShippingAddress;
+                }
+                if(request.ReceiverInfo != null)
+                {
+                    order.ReceiverInfo = request.ReceiverInfo;
+                }
+                await _orderRepository.UpdateAsync(order);
+                return _mapper.Map<OrderDTO>(order);
+            }
+            else throw new ArgumentException($"Id {id} " + ErrorMessage.NOT_FOUND);
+        }
+
+        public async Task DeleteOrder(int id, string userId)
+        {
+            var order = await _orderRepository.SingleOrDefaultAsync(e => e.Id == id && e.UserId == userId);
+            if (order != null)
+            {
+                await _orderRepository.DeleteAsync(order);
+            }
+            else throw new ArgumentException($"Id {id} " + ErrorMessage.NOT_FOUND);
+        }
+
+        public async Task<IEnumerable<OrderDTO>> GetOrdersByUserId(string userId)
+        {
+            var orders = await _orderRepository.GetAsync(e => e.UserId == userId);
+            return _mapper.Map<IEnumerable<OrderDTO>>(orders);
+        }
+
+        public async Task CancelOrder(int id)
+        {
+            var order = await _orderRepository.FindAsync(id);
+            if (order != null)
+            {
+                if (order.OrderStatusName == DeliveryStatus.Proccessing.ToString()
+                    || order.OrderStatusName == DeliveryStatus.Confirmed.ToString())
+                {
+                    order.OrderStatusName = DeliveryStatus.Canceled.ToString();
+                    await _orderRepository.UpdateAsync(order);
+                }
+                else throw new Exception(ErrorMessage.CANNOT_CANCEL);
+            }
+            else throw new ArgumentException($"Id {id} " + ErrorMessage.NOT_FOUND);
+        }
+
+        public async Task<OrderDetailResponse> GetOrderDetail(int id)
+        {
+            var order = await _orderRepository.SingleOrDefaultAsync(e => e.Id == id);
+            if (order != null)
+            {
+                var orderDetail = await _orderDetailRepository.GetAsync(e => e.OrderId == id);
+                var products = _mapper.Map<IEnumerable<ProductsOrderDetail>>(orderDetail);
+
+                var res = _mapper.Map<OrderDetailResponse>(order);
+                res.Products = products;
+
+                return res;
+            }
+            else throw new ArgumentException($"Id {id} " + ErrorMessage.NOT_FOUND);
         }
     }
 }

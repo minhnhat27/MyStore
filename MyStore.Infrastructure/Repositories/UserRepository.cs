@@ -6,42 +6,29 @@ using MyStore.Infrastructure.IQueryableExtensions;
 
 namespace MyStore.Infrastructure.Repositories
 {
-    public class UserRepository : IUserRepository
+    public class UserRepository : Repository<User>, IUserRepository
     {
-        private readonly MyDbContext _Dbcontext;
-        public UserRepository(MyDbContext dbcontext) => _Dbcontext = dbcontext;
+        private readonly MyDbContext _dbContext;
+        public UserRepository(MyDbContext dbcontext) : base(dbcontext) => _dbContext = dbcontext;
 
-        public async Task<int> CountAsync()
+        public async Task<IEnumerable<User>> GetPagedAsync(int page, int pageSize, string key)
         {
-            return await _Dbcontext.Users.CountAsync();
+            return await _dbContext.Users
+                .Where(e => e.Id.Contains(key)
+                    || (e.Fullname != null && e.Fullname.Contains(key))
+                    || (e.Email != null && e.Email.Contains(key))
+                    || (e.PhoneNumber != null && e.PhoneNumber.Contains(key)))
+                .Paginate(page, pageSize)
+                .ToListAsync();
         }
-
         public async Task<int> CountAsync(string key)
         {
-            return await _Dbcontext.Users
+            return await _dbContext.Users
                 .Where(e => e.Id.Contains(key)
                     || (e.Fullname != null && e.Fullname.Contains(key))
                     || (e.Email != null && e.Email.Contains(key))
                     || (e.PhoneNumber != null && e.PhoneNumber.Contains(key)))
                 .CountAsync();
-        }
-
-        public async Task<IEnumerable<User>> GetAllUsersAsync(int page, int pageSize)
-        {
-            return await _Dbcontext.Users
-                .Paginate(page, pageSize)
-                .ToListAsync();
-        }
-
-        public async Task<IEnumerable<User>> GetAllUsersAsync(int page, int pageSize, string key)
-        {
-            return await _Dbcontext.Users
-                .Where(e => e.Id.Contains(key)
-                    || (e.Fullname != null && e.Fullname.Contains(key))
-                    || (e.Email != null && e.Email.Contains(key))
-                    || (e.PhoneNumber != null && e.PhoneNumber.Contains(key)))
-                .Paginate(page, pageSize)
-                .ToListAsync();
         }
     }
 }

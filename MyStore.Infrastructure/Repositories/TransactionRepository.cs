@@ -6,24 +6,24 @@ namespace MyStore.Infrastructure.Repositories
 {
     public class TransactionRepository : ITransactionRepository
     {
-        private readonly MyDbContext _Dbcontext;
+        private readonly MyDbContext _dbContext;
         public TransactionRepository(MyDbContext dbcontext)
         {
-            _Dbcontext = dbcontext;
+            _dbContext = dbcontext;
         }
         public async Task<IDbContextTransaction> BeginTransactionAsync()
         {
-            return await _Dbcontext.Database.BeginTransactionAsync();
+            return await _dbContext.Database.BeginTransactionAsync();
         }
 
         public async Task CommitTransactionAsync()
         {
-            await _Dbcontext.Database.CommitTransactionAsync();
+            await _dbContext.Database.CommitTransactionAsync();
         }
 
         public async Task RollbackTransactionAsync()
         {
-            await _Dbcontext.Database.RollbackTransactionAsync();
+            await _dbContext.Database.RollbackTransactionAsync();
         }
     }
 }

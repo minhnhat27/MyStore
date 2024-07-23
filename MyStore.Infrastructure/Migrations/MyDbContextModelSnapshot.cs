@@ -17,7 +17,7 @@ namespace MyStore.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.6")
+                .HasAnnotation("ProductVersion", "8.0.7")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -162,9 +162,15 @@ namespace MyStore.Infrastructure.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("UserId")
                         .IsRequired()
@@ -185,10 +191,10 @@ namespace MyStore.Infrastructure.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime?>("CreatedAt")
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
 
-                    b.Property<string>("ImageName")
+                    b.Property<string>("ImageUrl")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -212,8 +218,14 @@ namespace MyStore.Infrastructure.Migrations
                     b.Property<string>("UserId")
                         .HasColumnType("text");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
                     b.Property<int>("Quantity")
                         .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
 
                     b.HasKey("ProductId", "UserId");
 
@@ -230,7 +242,7 @@ namespace MyStore.Infrastructure.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime?>("CreatedAt")
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("Name")
@@ -253,12 +265,18 @@ namespace MyStore.Infrastructure.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("ImageName")
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("ImageUrl")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<int>("ProductId")
                         .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
 
                     b.HasKey("Id");
 
@@ -275,7 +293,7 @@ namespace MyStore.Infrastructure.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime?>("CreatedAt")
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("Name")
@@ -298,10 +316,8 @@ namespace MyStore.Infrastructure.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("DeliveryAddress")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<DateTime>("OrderDate")
                         .HasColumnType("timestamp without time zone");
@@ -322,11 +338,19 @@ namespace MyStore.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<string>("ShippingAddress")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<double>("ShippingCost")
                         .HasColumnType("double precision");
 
                     b.Property<double>("Total")
                         .HasColumnType("double precision");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("UserId")
                         .IsRequired()
@@ -354,6 +378,10 @@ namespace MyStore.Infrastructure.Migrations
                     b.Property<int>("Quantity")
                         .HasColumnType("integer");
 
+                    b.Property<string>("Size")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<double>("UnitPrice")
                         .HasColumnType("double precision");
 
@@ -372,28 +400,6 @@ namespace MyStore.Infrastructure.Migrations
                     b.HasKey("Name");
 
                     b.ToTable("OrderStatus");
-
-                    b.HasData(
-                        new
-                        {
-                            Name = "Proccessing"
-                        },
-                        new
-                        {
-                            Name = "Confirmed"
-                        },
-                        new
-                        {
-                            Name = "Shipping"
-                        },
-                        new
-                        {
-                            Name = "Received"
-                        },
-                        new
-                        {
-                            Name = "Canceled"
-                        });
                 });
 
             modelBuilder.Entity("MyStore.Domain.Entities.PaymentMethod", b =>
@@ -407,28 +413,6 @@ namespace MyStore.Infrastructure.Migrations
                     b.HasKey("Name");
 
                     b.ToTable("PaymentMethods");
-
-                    b.HasData(
-                        new
-                        {
-                            Name = "COD",
-                            isActive = false
-                        },
-                        new
-                        {
-                            Name = "VnPay",
-                            isActive = false
-                        },
-                        new
-                        {
-                            Name = "MoMo",
-                            isActive = false
-                        },
-                        new
-                        {
-                            Name = "ZaloPay",
-                            isActive = false
-                        });
                 });
 
             modelBuilder.Entity("MyStore.Domain.Entities.Product", b =>
@@ -445,7 +429,7 @@ namespace MyStore.Infrastructure.Migrations
                     b.Property<int>("CategoryId")
                         .HasColumnType("integer");
 
-                    b.Property<DateTime?>("CreatedAt")
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("Description")
@@ -464,6 +448,9 @@ namespace MyStore.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)");
+
+                    b.Property<double>("Price")
+                        .HasColumnType("double precision");
 
                     b.Property<int>("Sold")
                         .HasColumnType("integer");
@@ -488,6 +475,12 @@ namespace MyStore.Infrastructure.Migrations
                     b.Property<int>("MaterialId")
                         .HasColumnType("integer");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
                     b.HasKey("ProductId", "MaterialId");
 
                     b.HasIndex("MaterialId");
@@ -500,6 +493,9 @@ namespace MyStore.Infrastructure.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("text");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
                     b.Property<int>("ProductId")
                         .HasColumnType("integer");
 
@@ -509,6 +505,9 @@ namespace MyStore.Infrastructure.Migrations
 
                     b.Property<int>("Star")
                         .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
 
                     b.HasKey("Id");
 
@@ -522,8 +521,11 @@ namespace MyStore.Infrastructure.Migrations
                     b.Property<int>("ProductId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("SizeId")
-                        .HasColumnType("integer");
+                    b.Property<string>("SizeId")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<double>("DiscountPercent")
                         .HasColumnType("double precision");
@@ -531,8 +533,8 @@ namespace MyStore.Infrastructure.Migrations
                     b.Property<int>("InStock")
                         .HasColumnType("integer");
 
-                    b.Property<double>("Price")
-                        .HasColumnType("double precision");
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
 
                     b.HasKey("ProductId", "SizeId");
 
@@ -543,23 +545,12 @@ namespace MyStore.Infrastructure.Migrations
 
             modelBuilder.Entity("MyStore.Domain.Entities.Size", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime?>("CreatedAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(105)
-                        .HasColumnType("character varying(105)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
+                    b.Property<DateTime>("CreatedAt")
                         .HasMaxLength(15)
-                        .HasColumnType("character varying(15)");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp without time zone");
@@ -581,7 +572,7 @@ namespace MyStore.Infrastructure.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("text");
 
-                    b.Property<DateTime?>("CreatedAt")
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("Email")
@@ -839,7 +830,7 @@ namespace MyStore.Infrastructure.Migrations
                         .IsRequired();
 
                     b.HasOne("MyStore.Domain.Entities.Size", "Size")
-                        .WithMany("Products")
+                        .WithMany()
                         .HasForeignKey("SizeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -890,11 +881,6 @@ namespace MyStore.Infrastructure.Migrations
                     b.Navigation("ProductReviews");
 
                     b.Navigation("Sizes");
-                });
-
-            modelBuilder.Entity("MyStore.Domain.Entities.Size", b =>
-                {
-                    b.Navigation("Products");
                 });
 
             modelBuilder.Entity("MyStore.Domain.Entities.User", b =>

@@ -2,7 +2,6 @@
 {
     public class LockOutRequest
     {
-        public string UserId { get; set; }
         public DateTimeOffset? EndDate { get; set; }
     }
 }

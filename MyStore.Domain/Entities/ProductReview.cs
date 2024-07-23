@@ -1,13 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace MyStore.Domain.Entities
 {
-    public class ProductReview
+    public class ProductReview : IBaseEntity
     {
         [Key]
         public string Id { get; set; } = Guid.NewGuid().ToString();
@@ -15,6 +10,9 @@ namespace MyStore.Domain.Entities
         public int Star { get; set; } = 0;
 
         public int ProductId { get; set; }
-        public Product? Product { get; set; }
+        public Product Product { get; set; }
+
+        public DateTime CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
     }
 }

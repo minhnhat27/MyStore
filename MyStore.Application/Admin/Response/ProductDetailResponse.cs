@@ -1,10 +1,4 @@
-﻿using MyStore.Application.Model;
-using MyStore.Application.Response;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using MyStore.Application.ModelView;
 
 namespace MyStore.Application.Admin.Response
 {
@@ -14,13 +8,13 @@ namespace MyStore.Application.Admin.Response
         public string Name { get; set; }
         public string? Description { get; set; }
         public bool Enable { get; set; }
-        public int Sold { get; set; }
         public string Gender { get; set; }
-        public int Category { get; set; }
-        public int Brand { get; set; }
-        public IEnumerable<int> Materials { get; set; }
-        public IEnumerable<int> Sizes { get; set; }
-        public IEnumerable<SizeAndQuantity> SizeQuantity { get; set; }
-        public IEnumerable<string> Images { get; set; }
+        public int CategoryId { get; set; }
+        public int BrandId { get; set; }
+        public double Price { get; set; }
+        public IEnumerable<int> MaterialIds { get; set; }
+        public IEnumerable<string> SizeIds { get; set; }
+        public IEnumerable<SizeAndQuantity> SizesAndQuantities { get; set; }
+        public IEnumerable<string> ImageUrls { get; set; }
     }
 }

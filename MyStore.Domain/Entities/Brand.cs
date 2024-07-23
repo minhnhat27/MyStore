@@ -1,17 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MyStore.Domain.Entities
+﻿namespace MyStore.Domain.Entities
 {
     public class Brand : IBaseEntity
     {
         public int Id { get; set; }
-        public required string Name { get; set; }
-        public required string ImageName { get; set; }
-        public DateTime? CreatedAt { get; set; }
+        public string Name { get; set; }
+        public string ImageUrl { get; set; }
+        public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
 
         public ICollection<Product> Products { get; } = new HashSet<Product>();

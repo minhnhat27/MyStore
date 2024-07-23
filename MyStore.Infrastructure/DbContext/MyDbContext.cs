@@ -28,25 +28,6 @@ namespace MyStore.Infrastructure.DbContext
         public virtual DbSet<ProductSize> ProductSizes { get; set; }
         public virtual DbSet<ProductMaterial> ProductMaterials { get; set; }
 
-        protected override void OnModelCreating(ModelBuilder builder)
-        {
-            base.OnModelCreating(builder);
-
-            var lstOrderStatus = new List<OrderStatus>();
-            foreach (var status in Enum.GetNames(typeof(DeliveryStatus)).ToList())
-            {
-                lstOrderStatus.Add(new OrderStatus { Name = status });
-            }
-            builder.Entity<OrderStatus>().HasData(lstOrderStatus.ToArray());
-
-            var lstPaymentMethod = new List<PaymentMethod>();
-            foreach (var method in Enum.GetNames(typeof(PaymentMethodEnum)).ToList())
-            {
-                lstPaymentMethod.Add(new PaymentMethod { Name = method, isActive = false });
-            }
-            builder.Entity<PaymentMethod>().HasData(lstPaymentMethod.ToArray());
-        }
-
         private void UpdateTimestamps()
         {
             var entries = ChangeTracker.Entries()
@@ -57,11 +38,11 @@ namespace MyStore.Infrastructure.DbContext
             {
                 if (entry.State == EntityState.Added)
                 {
-                    ((IBaseEntity)entry.Entity).CreatedAt = DateTime.UtcNow;
+                    ((IBaseEntity)entry.Entity).CreatedAt = DateTime.Now;
                 }
                 if (entry.State == EntityState.Modified)
                 {
-                    ((IBaseEntity)entry.Entity).UpdatedAt = DateTime.UtcNow;
+                    ((IBaseEntity)entry.Entity).UpdatedAt = DateTime.Now;
                 }
             }
         }
