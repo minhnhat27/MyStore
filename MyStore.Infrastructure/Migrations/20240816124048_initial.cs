@@ -276,6 +276,7 @@ namespace MyStore.Infrastructure.Migrations
                     Sold = table.Column<int>(type: "integer", nullable: false),
                     Gender = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
                     Price = table.Column<double>(type: "double precision", nullable: false),
+                    DiscountPercent = table.Column<float>(type: "real", nullable: false),
                     CategoryId = table.Column<int>(type: "integer", nullable: false),
                     BrandId = table.Column<int>(type: "integer", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
@@ -307,7 +308,7 @@ namespace MyStore.Infrastructure.Migrations
                     Total = table.Column<double>(type: "double precision", nullable: false),
                     ShippingCost = table.Column<double>(type: "double precision", nullable: false),
                     OrderDate = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
-                    DeliveryAddress = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    ShippingAddress = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     ReceiverInfo = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     Paid = table.Column<bool>(type: "boolean", nullable: false),
                     PaymentMethodName = table.Column<string>(type: "text", nullable: false),
@@ -443,7 +444,6 @@ namespace MyStore.Infrastructure.Migrations
                     ProductId = table.Column<int>(type: "integer", nullable: false),
                     SizeId = table.Column<string>(type: "text", nullable: false),
                     InStock = table.Column<int>(type: "integer", nullable: false),
-                    DiscountPercent = table.Column<double>(type: "double precision", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: true)
                 },
@@ -470,6 +470,7 @@ namespace MyStore.Infrastructure.Migrations
                 {
                     OrderId = table.Column<int>(type: "integer", nullable: false),
                     ProductId = table.Column<int>(type: "integer", nullable: false),
+                    Size = table.Column<string>(type: "text", nullable: false),
                     Quantity = table.Column<int>(type: "integer", nullable: false),
                     UnitPrice = table.Column<double>(type: "double precision", nullable: false)
                 },

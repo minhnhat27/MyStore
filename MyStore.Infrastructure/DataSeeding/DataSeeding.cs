@@ -17,7 +17,6 @@ namespace MyStore.Infrastructure.DataSeeding
                 if (context != null && context.Database.GetPendingMigrations().Any())
                 {
                     context.Database.Migrate();
-
                     using (var transaction = await context.Database.BeginTransactionAsync())
                     {
                         try
@@ -48,7 +47,6 @@ namespace MyStore.Infrastructure.DataSeeding
                     await roleManager.CreateAsync(new IdentityRole(role));
                 }
             }
-
             await InitializeUsers(serviceProvider, context, roles);
         }
         private static async Task InitializeUsers(IServiceProvider serviceProvider, MyDbContext context, string[] roles)
@@ -77,7 +75,6 @@ namespace MyStore.Infrastructure.DataSeeding
                 }
             }
         }
-
         private static async Task InitializeProductAttributes(MyDbContext context)
         {
             var lstOrderStatus = Enum.GetNames(typeof(DeliveryStatus))

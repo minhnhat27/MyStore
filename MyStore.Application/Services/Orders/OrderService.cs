@@ -1,5 +1,4 @@
 ﻿using AutoMapper;
-using Microsoft.IdentityModel.Tokens;
 using MyStore.Application.DTO;
 using MyStore.Application.ICaching;
 using MyStore.Application.IRepository;
@@ -91,7 +90,7 @@ namespace MyStore.Application.Services.Orders
                     var order = _mapper.Map<Order>(request);                                                   
                     order.OrderDate = DateTime.Now;
                     order.UserId = userId;
-                    double total = 0;
+                    double total = 0;   
 
                     var orderDetailsTasks = request.ProductsAndQuantities.Select(async e =>
                     {
@@ -99,7 +98,7 @@ namespace MyStore.Application.Services.Orders
                         if(product != null)
                         {
                             var productSize = product.Sizes.SingleOrDefault(s => s.SizeId == e.SizeId);
-                            double discountPercent = productSize?.DiscountPercent ?? 0;
+                            double discountPercent = product.DiscountPercent;
                             double discount = discountPercent / 100.0 * product.Price;
                             var price = product.Price - discount;
                             total += price;

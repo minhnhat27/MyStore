@@ -1,8 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.IdentityModel.Tokens;
 using MyStore.Application.Admin.Request;
 using MyStore.Application.Admin.Response;
 using MyStore.Application.DTO;
@@ -11,6 +9,7 @@ using MyStore.Application.IRepository;
 using MyStore.Application.IRepository.Products;
 using MyStore.Application.IStorage;
 using MyStore.Application.ModelView;
+using MyStore.Application.Request;
 using MyStore.Application.Response;
 using MyStore.Domain.Constants;
 using MyStore.Domain.Entities;
@@ -140,6 +139,38 @@ namespace MyStore.Application.Services.Products
             }
         }
 
+        //public async Task<PagedResponse<ProductDTO>> GetFilterProductsAsync(Filters filters)
+        //{
+        //    try
+        //    {
+        //        var totalProduct = await _productRepository.CountAsync(keySearch);
+        //        var products = await _productRepository.GetPagedAsync(page, pageSize, keySearch);
+
+        //        var res = _mapper.Map<IEnumerable<ProductDTO>>(products);
+        //        foreach (var product in res)
+        //        {
+        //            var image = await _imageRepository.GetFirstImageByProductIdAsync(product.Id);
+        //            if (image != null)
+        //            {
+        //                product.ImageUrl = image.ImageUrl;
+        //            }
+        //        }
+
+        //        return new PagedResponse<ProductDTO>
+        //        {
+        //            Items = res,
+        //            Page = page,
+        //            PageSize = pageSize,
+        //            TotalItems = totalProduct
+        //        };
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        throw new Exception(ex.InnerException?.Message ?? ex.Message);
+        //    }
+        //}
+
+
         public async Task<ProductDetailResponse> GetProductAsync(int id)
         {
             var product = await _productRepository.SingleOrDefaultAsync(id);
@@ -195,7 +226,7 @@ namespace MyStore.Application.Services.Products
                         var oldImgs = await _imageRepository.GetImageByProductIdAsync(id);
                         
                         List<Image> imageDelete = new();
-                        if(request.ImageUrls.IsNullOrEmpty())
+                        if(request.ImageUrls == null || request.ImageUrls.Count() < 1)
                         {
                             imageDelete.AddRange(oldImgs);
                         }

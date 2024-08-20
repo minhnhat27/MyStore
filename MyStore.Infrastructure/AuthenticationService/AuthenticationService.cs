@@ -13,6 +13,10 @@ using MyStore.Domain.Entities;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Twilio;
+using Twilio.Rest.Api.V2010.Account;
+using Twilio.Types;
+using System.Text.RegularExpressions;
 
 namespace MyStore.Infrastructure.AuthenticationService
 {
@@ -37,19 +41,22 @@ namespace MyStore.Infrastructure.AuthenticationService
             _mapper = mapper;
         }
 
-        private async Task<string> CreateJwtToken(User user)
+        private async Task<string> CreateJwtToken(User user, bool isRefreshToken = false)
         {
             var roles = await _userManager.GetRolesAsync(user);
             var claims = new List<Claim>
                 {
                     new Claim(JwtRegisteredClaimNames.Jti, user.Id),
                     new Claim(ClaimTypes.NameIdentifier, user.Id),
-                    new Claim(ClaimTypes.Email, user.Email ?? ""),
-                    new Claim(ClaimTypes.Name, user.Fullname ?? "")
+                    new Claim(ClaimTypes.Email, user.Email ?? "")
                 };
             foreach (var role in roles)
             {
                 claims.Add(new Claim(ClaimTypes.Role, role));
+            }
+            if (isRefreshToken)
+            {
+                claims.Add(new Claim(ClaimTypes.Version, "Refresh Token"));
             }
 
             var securityKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_configuration["JWT:SecretKey"] ?? ""));
@@ -57,29 +64,31 @@ namespace MyStore.Infrastructure.AuthenticationService
                     issuer: _configuration["JWT:Issuer"],
                     audience: _configuration["JWT:Audience"],
                     claims: claims,
-                    expires: DateTime.UtcNow.AddHours(12),
+                    expires: DateTime.Now.AddHours(12),
                     signingCredentials: new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256));
             return new JwtSecurityTokenHandler().WriteToken(jwtToken);
         }
 
-        public async Task<JwtResponse> Login(LoginRequest request)
+        public async Task<JwtResponse> Login(string username, string password)
         {
-            var result = await _signInManager.PasswordSignInAsync(request.Email, request.Password, false, false);
+            var result = await _signInManager.PasswordSignInAsync(username, password, false, false);
             if (result.Succeeded)
             {
-                var user = await _userManager.FindByEmailAsync(request.Email);
+                var user = await _userManager.FindByEmailAsync(username);
                 if (user != null)
                 {
                     var accessToken = await CreateJwtToken(user);
+                    var refreshToken = await CreateJwtToken(user, true);
 
                     return new JwtResponse
                     {
                         AccessToken = accessToken,
-                        Email = user.Email,
+                        RefreshToken = refreshToken,
                         FullName = user.Fullname,
+                        Session = user.ConcurrencyStamp ?? Guid.NewGuid().ToString(),
                     };
                 }
-                else throw new Exception(ErrorMessage.USER_NOT_FOUND);
+                throw new Exception(ErrorMessage.USER_NOT_FOUND);
             }
             throw new ArgumentException(ErrorMessage.INCORRECT_PASSWORD);
         }
@@ -105,10 +114,12 @@ namespace MyStore.Infrastructure.AuthenticationService
                     await _userManager.AddLoginAsync(user, userInfo);
                 }
                 var accessToken = await CreateJwtToken(user);
+                var refreshToken = await CreateJwtToken(user, true);
+
                 return new JwtResponse
                 {
                     AccessToken = accessToken,
-                    Email = user.Email,
+                    RefreshToken = refreshToken,
                     FullName = user.Fullname,
                 };
             }
@@ -121,7 +132,7 @@ namespace MyStore.Infrastructure.AuthenticationService
         public async Task<UserDTO> Register(RegisterRequest request)
         {
             var code = _cache.Get<string>("Register " + request.Email);
-            if (code != null && code.Equals(request.VerifyCode))
+            if (code != null && code.Equals(request.Token))
             {
                 var user = new User
                 {
@@ -140,12 +151,31 @@ namespace MyStore.Infrastructure.AuthenticationService
                 _cache.Remove("Register " + request.Email);
                 return _mapper.Map<UserDTO>(user);
             }
-            else throw new Exception(ErrorMessage.INVALID_TOKEN);
+            throw new Exception(ErrorMessage.INVALID_OTP);
         }
 
-        public async Task SendCode(string email)
+        private string ConvertToVietnamPhoneNumber(string phoneNumber)
         {
-            var user = await _userManager.FindByEmailAsync(email);
+            string cleaned = Regex.Replace(phoneNumber, @"\D", "");
+
+            if (cleaned.StartsWith("0"))
+            {
+                return "+84" + cleaned.Substring(1);
+            }
+            if (cleaned.StartsWith("84") && !cleaned.StartsWith("+84"))
+            {
+                return "+84" + cleaned.Substring(2);
+            }
+            if (cleaned.StartsWith("+84"))
+            {
+                return cleaned;
+            }
+            return phoneNumber;
+        }
+
+        public async Task SendCodeToEmail(string email)
+        {
+            var user = await _userManager.FindByNameAsync(email);
             if (user != null)
             {
                 throw new Exception(ErrorMessage.EXISTED_USER);
@@ -154,13 +184,51 @@ namespace MyStore.Infrastructure.AuthenticationService
             var code = new Random().Next(100000, 999999);
             _cache.Set("Register " + email, code.ToString());
 
-            var subject = code.ToString() + " is your verification code";
+            var subject = code + " is your verification code";
             var body = $"Hi!<br/><br/>" +
                 $"Your verification code is: {code}.<br/><br/>" +
                 "Please complete the account verification process in 30 minutes.<br/><br/>" +
                 "This is an automated email. Please do not reply to this email.";
 
             await _sendMailService.SendMailToOne(email, subject, body);
+        }
+
+        public void VerifyOTP(string email, string token)
+        {
+            var codeCache = _cache.Get<string>("Register " + email);
+            if(codeCache == null || !codeCache.Equals(token))
+            {
+                throw new ArgumentException(ErrorMessage.INVALID_OTP);
+            }
+        }
+
+        public async Task SendCodeToPhoneNumber(string phoneNumber)
+        {
+            try
+            {
+                var user = await _userManager.FindByNameAsync(phoneNumber);
+                if (user != null)
+                {
+                    throw new Exception(ErrorMessage.EXISTED_USER);
+                }
+
+                var code = new Random().Next(100000, 999999);
+                _cache.Set("Register " + phoneNumber, code.ToString());
+
+                string accountSid = _configuration["TWILIO:TWILIO_ACCOUNT_SID"] ?? "";
+                string authToken = _configuration["TWILIO:TWILIO_AUTH_TOKEN"] ?? "";
+                string myPhoneNumber = _configuration["TWILIO:TWILIO_PHONE_NUMBER"] ?? "";
+
+                TwilioClient.Init(accountSid, authToken);
+                var message = await MessageResource.CreateAsync(
+                    body: "Mã xác thực VOA Store của bạn là: " + code,
+                    from: new PhoneNumber(myPhoneNumber),
+                    to: new PhoneNumber(ConvertToVietnamPhoneNumber(phoneNumber)));
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
         }
     }
 }

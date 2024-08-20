@@ -17,7 +17,8 @@ namespace MyStore.Presentation.Controllers
         {
             try
             {
-                return Ok(await _productService.GetProductsAsync(request.Page, request.PageSize, request.Key));
+                var result = await _productService.GetProductsAsync(request.Page, request.PageSize, request.Key);
+                return Ok(result);
             }
             catch (Exception ex)
             {
@@ -25,7 +26,7 @@ namespace MyStore.Presentation.Controllers
             }
         }
 
-        [HttpGet("getProduct/{id}")]
+        [HttpGet("{id}")]
         public async Task<IActionResult> Get(int id)
         {
             try
@@ -42,6 +43,25 @@ namespace MyStore.Presentation.Controllers
                 return StatusCode(500, ex.Message);
             }
         }
+
+
+        //[HttpGet("filters")]
+        //public async Task<IActionResult> GetFilterProducts([FromQuery] Filters filters)
+        //{
+        //    try
+        //    {
+        //        var result = await _productService.GetFilterProductsAsync(filters);
+        //        return Ok(result);
+        //    }
+        //    catch (ArgumentException ex)
+        //    {
+        //        return NotFound(ex.Message);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return StatusCode(500, ex.Message);
+        //    }
+        //}
 
         [HttpPost("create")]
         [Authorize(Roles = "Admin")]

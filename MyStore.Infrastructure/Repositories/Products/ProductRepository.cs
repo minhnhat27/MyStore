@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using MyStore.Application.IRepository.Products;
 using MyStore.Domain.Entities;
 using MyStore.Infrastructure.DbContext;
@@ -46,6 +45,7 @@ namespace MyStore.Infrastructure.Repositories.Products
             return await _dbContext.Products
                     .Include(e => e.Category)
                     .Include(e => e.Brand)
+                    .OrderByDescending(e => e.CreatedAt)
                     .Paginate(page, pageSize)
                     .ToListAsync();
         }

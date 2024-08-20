@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MyStore.Infrastructure.Migrations
 {
     [DbContext(typeof(MyDbContext))]
-    [Migration("20240721174424_add_size_productDetail")]
-    partial class add_size_productDetail
+    [Migration("20240816124048_initial")]
+    partial class initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -322,11 +322,6 @@ namespace MyStore.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
 
-                    b.Property<string>("DeliveryAddress")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
                     b.Property<DateTime>("OrderDate")
                         .HasColumnType("timestamp without time zone");
 
@@ -342,6 +337,11 @@ namespace MyStore.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("ReceiverInfo")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("ShippingAddress")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
@@ -439,6 +439,9 @@ namespace MyStore.Infrastructure.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
+                    b.Property<float>("DiscountPercent")
+                        .HasColumnType("real");
+
                     b.Property<bool>("Enable")
                         .HasColumnType("boolean");
 
@@ -529,9 +532,6 @@ namespace MyStore.Infrastructure.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
-
-                    b.Property<double>("DiscountPercent")
-                        .HasColumnType("double precision");
 
                     b.Property<int>("InStock")
                         .HasColumnType("integer");

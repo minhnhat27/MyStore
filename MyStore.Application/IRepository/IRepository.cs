@@ -14,6 +14,9 @@ namespace MyStore.Application.IRepository
         Task DeleteAsync(T entity);
         Task DeleteRangeAsync(IEnumerable<T> entities);
         Task<IEnumerable<T>> GetPagedAsync(int page, int pageSize);
+        Task<IEnumerable<T>> GetPagedAsync(int page, int pageSize, 
+            Expression<Func<T, bool>> filters, Expression<Func<T, bool>> sorter);
         Task<int> CountAsync();
+        Task<int> CountAsync(Expression<Func<T, bool>> filters, Expression<Func<T, bool>> sorter);
     }
 }

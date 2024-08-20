@@ -9,6 +9,7 @@ using MyStore.Application.IRepository.Products;
 using MyStore.Application.ISendMail;
 using MyStore.Application.IStorage;
 using MyStore.Application.Services.Brands;
+using MyStore.Application.Services.Carts;
 using MyStore.Application.Services.Categories;
 using MyStore.Application.Services.Materials;
 using MyStore.Application.Services.Orders;
@@ -74,7 +75,8 @@ builder.Services.AddAuthentication(opt =>
         ValidateIssuerSigningKey = true,
         ValidIssuer = builder.Configuration["JWT:Issuer"],
         ValidAudience = builder.Configuration["JWT:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWT:SecretKey"] ?? ""))
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWT:SecretKey"] ?? "")),
+        ClockSkew = TimeSpan.Zero
     };
 });
 builder.Services.AddAutoMapper(typeof(Mapping));
@@ -111,6 +113,7 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IMaterialService, MaterialService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<ICartService, CartService>();
 
 var app = builder.Build();
 

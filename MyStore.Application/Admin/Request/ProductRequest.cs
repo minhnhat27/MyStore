@@ -11,6 +11,7 @@ namespace MyStore.Application.Admin.Request
         public int CategoryId { get; set; }
         public int BrandId { get; set; }
         public double Price { get; set; }
+        public double DiscountPercent { get; set; } = 0;
         public IEnumerable<int> MaterialIds { get; set; } = new List<int>();
         public IEnumerable<SizeAndQuantity> SizesAndQuantities { get; set; } = new List<SizeAndQuantity>();
         public IEnumerable<string> ImageUrls { get; set; } = new List<string>();

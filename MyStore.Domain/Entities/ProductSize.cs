@@ -12,8 +12,7 @@ namespace MyStore.Domain.Entities
         public Size Size { get; set; }
         [Range(0, int.MaxValue)]
         public int InStock { get; set; }
-        [Range(0, 100)]
-        public double DiscountPercent { get; set; }
+
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
     }

@@ -49,9 +49,15 @@ namespace MyStore.Infrastructure.Repositories
             _dbContext.Update(entity);
             await _dbContext.SaveChangesAsync();
         }
-        public virtual async Task<IEnumerable<T>> GetPagedAsync(int page, int pageSize) 
+
+        public virtual async Task<IEnumerable<T>> GetPagedAsync(int page, int pageSize)
             => await _dbContext.Set<T>().Paginate(page, pageSize).ToListAsync();
-        public async Task<int> CountAsync() 
-            => await _dbContext.Set<T>().CountAsync();
+        public virtual async Task<IEnumerable<T>> GetPagedAsync(int page, int pageSize, 
+            Expression<Func<T, bool>> filters, Expression<Func<T, bool>> sorter)
+            => await _dbContext.Set<T>().Where(filters).OrderBy(sorter).Paginate(page, pageSize).ToListAsync();
+        public async Task<int> CountAsync()
+           => await _dbContext.Set<T>().CountAsync();
+        public async Task<int> CountAsync(Expression<Func<T, bool>> filters, Expression<Func<T, bool>> sorter)
+            => await _dbContext.Set<T>().Where(filters).CountAsync();
     }
 }

@@ -436,6 +436,9 @@ namespace MyStore.Infrastructure.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
+                    b.Property<float>("DiscountPercent")
+                        .HasColumnType("real");
+
                     b.Property<bool>("Enable")
                         .HasColumnType("boolean");
 
@@ -526,9 +529,6 @@ namespace MyStore.Infrastructure.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
-
-                    b.Property<double>("DiscountPercent")
-                        .HasColumnType("double precision");
 
                     b.Property<int>("InStock")
                         .HasColumnType("integer");

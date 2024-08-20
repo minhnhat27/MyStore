@@ -1,15 +1,14 @@
-﻿using MyStore.Domain.Entities;
-
-namespace MyStore.Domain.Constants
+﻿namespace MyStore.Domain.Constants
 {
     public static class ErrorMessage
     {
-        public const string USER_NOT_FOUND = "User not found";
-        public const string NOT_FOUND = "Not found";
-        public const string UNAUTHORIZED = "Unauthorized";
-        public const string INCORRECT_PASSWORD = "User or password incorrect";
-        public const string INVALID_TOKEN = "Invalid token";
-        public const string EXISTED_USER = "User already exists";
-        public const string CANNOT_CANCEL = "Cannot be cancelled";
+        public const string USER_NOT_FOUND = "Không tìm thấy người dùng.";
+        public const string NOT_FOUND = "Không tìm thấy";
+        public const string UNAUTHORIZED = "Chưa xác thực";
+        public const string INCORRECT_PASSWORD = "Tên tài khoản hoặc mật khẩu không chính xác.";
+        public const string INVALID_TOKEN = "Token không hợp lệ";
+        public const string INVALID_OTP = "Mã xác nhận không chính xác";
+        public const string EXISTED_USER = "Tài khoản đã tồn tại.";
+        public const string CANNOT_CANCEL = "Không thể hủy";
     }
 }

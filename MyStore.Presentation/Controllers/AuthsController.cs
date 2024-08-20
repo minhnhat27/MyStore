@@ -8,17 +8,16 @@ namespace MyStore.Presentation.Controllers
     [Route("api/auth")]
     [ApiController]
     [AllowAnonymous]
-    public class AuthsController : ControllerBase
+    public class AuthsController(IAuthenticationService authService) : ControllerBase
     {
-        private readonly IAuthenticationService _authService;
-        public AuthsController(IAuthenticationService authService) => _authService = authService;
+        private readonly IAuthenticationService _authService = authService;
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
             try
             {
-                var result = await _authService.Login(request);
+                var result = await _authService.Login(request.Username, request.Password);
                 return Ok(result);
             }
             catch(ArgumentException ex)
@@ -45,13 +44,31 @@ namespace MyStore.Presentation.Controllers
             }
         }
 
-        [HttpPost("send-code")]
-        public async Task<IActionResult> SendCode([FromBody] EmailRequest request)
+        [HttpPost("send-otp")]
+        public async Task<IActionResult> SendOTP([FromBody] SendCodeRequest request)
         {
             try
             {
-                await _authService.SendCode(request.Email);
+                await _authService.SendCodeToEmail(request.Email);
                 return Ok();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+        [HttpPost("verify-otp")]
+        public IActionResult VerifyOTP([FromBody] VerifyOTPRequest request)
+        {
+            try
+            {
+                _authService.VerifyOTP(request.Email, request.Token);
+                return Ok();
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
             }
             catch (Exception ex)
             {

@@ -8,11 +8,11 @@ namespace MyStore.Infrastructure.Email
 {
     public class SenderSettings
     {
-        public required string Email { get; set; }
+        public string Mail { get; set; }
         public string? DisplayName { get; set; }
-        public required string Password { get; set; }
-        public required string Host { get; set; }
-        public required int Port { get; set; }
+        public string Password { get; set; }
+        public string Host { get; set; }
+        public int Port { get; set; }
     }
 
     public class SendMailService : ISendMailService
@@ -23,8 +23,8 @@ namespace MyStore.Infrastructure.Email
         public async Task SendMailToOne(string email, string subject, string htmlMessage)
         {
             var message = new MimeMessage();
-            message.Sender = new MailboxAddress(_sender.DisplayName, _sender.Email);
-            message.From.Add(new MailboxAddress(_sender.DisplayName, _sender.Email));
+            message.Sender = new MailboxAddress(_sender.DisplayName, _sender.Mail);
+            message.From.Add(new MailboxAddress(_sender.DisplayName, _sender.Mail));
             message.To.Add(MailboxAddress.Parse(email));
             message.Subject = subject;
 
@@ -38,7 +38,7 @@ namespace MyStore.Infrastructure.Email
                 try
                 {
                     await stmpClient.ConnectAsync(_sender.Host, _sender.Port, SecureSocketOptions.StartTls);
-                    await stmpClient.AuthenticateAsync(_sender.Email, _sender.Password);
+                    await stmpClient.AuthenticateAsync(_sender.Mail, _sender.Password);
                     await stmpClient.SendAsync(message);
                 }
                 catch (Exception ex)
@@ -57,8 +57,8 @@ namespace MyStore.Infrastructure.Email
         public async Task SendMailToMany(List<string> emails, string subject, string htmlMessage)
         {
             var message = new MimeMessage();
-            message.Sender = new MailboxAddress(_sender.DisplayName, _sender.Email);
-            message.From.Add(MailboxAddress.Parse(_sender.Email));
+            message.Sender = new MailboxAddress(_sender.DisplayName, _sender.Mail);
+            message.From.Add(MailboxAddress.Parse(_sender.Mail));
             List<MailboxAddress> addresses = new List<MailboxAddress>();
             foreach (var email in emails)
             {
@@ -77,7 +77,7 @@ namespace MyStore.Infrastructure.Email
                 try
                 {
                     await stmpClient.ConnectAsync(_sender.Host, _sender.Port, SecureSocketOptions.StartTls);
-                    await stmpClient.AuthenticateAsync(_sender.Email, _sender.Password);
+                    await stmpClient.AuthenticateAsync(_sender.Mail, _sender.Password);
                     await stmpClient.SendAsync(message);
                 }
                 catch (Exception ex)

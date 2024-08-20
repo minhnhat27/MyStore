@@ -2,6 +2,7 @@
 using MyStore.Application.IRepository;
 using MyStore.Domain.Entities;
 using MyStore.Infrastructure.DbContext;
+using System.Linq.Expressions;
 
 namespace MyStore.Infrastructure.Repositories
 {
@@ -20,6 +21,13 @@ namespace MyStore.Infrastructure.Repositories
 
             _dbContext.CartItems.RemoveRange(cartItemsToDelete);
             await _dbContext.SaveChangesAsync();
+        }
+        public override async Task<IEnumerable<CartItem>> GetAsync(Expression<Func<CartItem, bool>> expression)
+        {
+            return await _dbContext.CartItems
+                .Include(e => e.Product)
+                .ThenInclude(e => e.Images)
+                .Where(expression).ToListAsync();
         }
     }
 }

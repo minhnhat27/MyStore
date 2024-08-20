@@ -5,7 +5,7 @@ namespace MyStore.Domain.Entities
     public class Product : IBaseEntity
     {
         public int Id { get; set; }
-        [MaxLength(60)]
+        [MaxLength(150)]
         public string Name { get; set; }
         [MaxLength(500)]
         public string? Description { get; set; }
@@ -17,6 +17,9 @@ namespace MyStore.Domain.Entities
 
         [Range(1000, double.MaxValue)]
         public double Price { get; set; }
+
+        [Range(0, 100)]
+        public float DiscountPercent { get; set; }
 
         public int CategoryId { get; set; }
         public Category Category { get; set; }
