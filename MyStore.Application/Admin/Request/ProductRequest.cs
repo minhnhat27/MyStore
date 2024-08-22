@@ -14,6 +14,6 @@ namespace MyStore.Application.Admin.Request
         public double DiscountPercent { get; set; } = 0;
         public IEnumerable<int> MaterialIds { get; set; } = new List<int>();
         public IEnumerable<SizeAndQuantity> SizesAndQuantities { get; set; } = new List<SizeAndQuantity>();
-        public IEnumerable<string> ImageUrls { get; set; } = new List<string>();
+        public IEnumerable<string>? ImageUrls { get; set; } = new List<string>();
     }
 }

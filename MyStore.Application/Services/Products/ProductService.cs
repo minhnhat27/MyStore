@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 using MyStore.Application.Admin.Request;
 using MyStore.Application.Admin.Response;
 using MyStore.Application.DTO;
-using MyStore.Application.ICaching;
 using MyStore.Application.IRepository;
 using MyStore.Application.IRepository.Products;
 using MyStore.Application.IStorage;
@@ -13,6 +12,8 @@ using MyStore.Application.Request;
 using MyStore.Application.Response;
 using MyStore.Domain.Constants;
 using MyStore.Domain.Entities;
+using MyStore.Domain.Enumerations;
+using System.Linq.Expressions;
 
 namespace MyStore.Application.Services.Products
 {
@@ -22,15 +23,16 @@ namespace MyStore.Application.Services.Products
         private readonly IProductSizeRepository _productSizeRepository;
         private readonly IProductMaterialRepository _productMaterialRepository;
         private readonly IImageRepository _imageRepository;
-        private readonly IFileStorage _fileStorage;
         private readonly ITransactionRepository _transactionRepository;
+
+        private readonly IFileStorage _fileStorage;
         private readonly IMapper _mapper;
 
         private readonly string path = "assets/images/products";
 
         public ProductService(IProductRepository productRepository, IProductSizeRepository productSizeRepository,
             IProductMaterialRepository productMaterialRepository, IImageRepository imageRepository, IFileStorage fileStorage, 
-            ITransactionRepository transactionRepository, ICache productCache, IMapper mapper)
+            ITransactionRepository transactionRepository, IMapper mapper)
         {
             _productRepository = productRepository;
             _productSizeRepository = productSizeRepository;
@@ -107,12 +109,17 @@ namespace MyStore.Application.Services.Products
                 if (string.IsNullOrEmpty(keySearch))
                 {
                     totalProduct = await _productRepository.CountAsync();
-                    products = await _productRepository.GetPagedAsync(page, pageSize);
+                    products = await _productRepository.GetPagedOrderByDescendingAsync(page, pageSize, null, e => e.CreatedAt);
                 }
                 else
                 {
-                    totalProduct = await _productRepository.CountAsync(keySearch);
-                    products = await _productRepository.GetPagedAsync(page, pageSize, keySearch);
+                    Expression<Func<Product, bool>> expression = e =>
+                        e.Name.Contains(keySearch)
+                        || e.Sold.ToString().Equals(keySearch)
+                        || e.Price.ToString().Equals(keySearch);
+
+                    totalProduct = await _productRepository.CountAsync(expression);
+                    products = await _productRepository.GetPagedOrderByDescendingAsync(page, pageSize, expression, e => e.CreatedAt);
                 }
 
                 var res = _mapper.Map<IEnumerable<ProductDTO>>(products);
@@ -139,36 +146,110 @@ namespace MyStore.Application.Services.Products
             }
         }
 
-        //public async Task<PagedResponse<ProductDTO>> GetFilterProductsAsync(Filters filters)
-        //{
-        //    try
-        //    {
-        //        var totalProduct = await _productRepository.CountAsync(keySearch);
-        //        var products = await _productRepository.GetPagedAsync(page, pageSize, keySearch);
+        private Expression<Func<T, bool>> CombineExpressions<T>(Expression<Func<T, bool>> expr1, Expression<Func<T, bool>> expr2)
+        {
+            var parameter = expr1.Parameters[0];
+            var body = Expression.AndAlso(expr1.Body, Expression.Invoke(expr2, parameter));
+            return Expression.Lambda<Func<T, bool>>(body, parameter);
+        }
 
-        //        var res = _mapper.Map<IEnumerable<ProductDTO>>(products);
-        //        foreach (var product in res)
-        //        {
-        //            var image = await _imageRepository.GetFirstImageByProductIdAsync(product.Id);
-        //            if (image != null)
-        //            {
-        //                product.ImageUrl = image.ImageUrl;
-        //            }
-        //        }
+        public async Task<PagedResponse<ProductDTO>> GetFilterProductsAsync(Filters filters)
+        {
+            try
+            {
+                int totalProduct = 0;
+                IEnumerable<Product> products = [];
+                Expression<Func<Product, bool>> expression = e => e.Enable;
 
-        //        return new PagedResponse<ProductDTO>
-        //        {
-        //            Items = res,
-        //            Page = page,
-        //            PageSize = pageSize,
-        //            TotalItems = totalProduct
-        //        };
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        throw new Exception(ex.InnerException?.Message ?? ex.Message);
-        //    }
-        //}
+                Expression<Func<Product, double>> priceExp = e => e.Price - (e.Price * (e.DiscountPercent / 100.0));
+
+                if (filters.Sorter > Enum.GetNames(typeof(SortEnum)).Length - 1)
+                {
+                    throw new ArgumentException(ErrorMessage.INVALID);
+                }
+                if(filters.MinPrice != null)
+                {
+                    expression = CombineExpressions(expression, e => (e.Price - (e.Price * (e.DiscountPercent / 100.0))) >= filters.MinPrice);
+                }
+                if (filters.MaxPrice != null)
+                {
+                    expression = CombineExpressions(expression, e => (e.Price - (e.Price * (e.DiscountPercent / 100.0))) <= filters.MaxPrice);
+                }
+                if(filters.Discount != null && filters.Discount == true)
+                {
+                    expression = CombineExpressions(expression, e => e.DiscountPercent > 0);
+                }
+                if (filters.Rating != null)
+                {
+                    expression = CombineExpressions(expression, e => e.ProductReviews.Average(e => e.Star) >= filters.Rating);
+                }
+                if (filters.CategoryIds != null && filters.CategoryIds.Count() > 0)
+                {
+                    expression = CombineExpressions(expression, e => filters.CategoryIds.Contains(e.CategoryId));
+                }
+                if (filters.BrandIds != null && filters.BrandIds.Count() > 0)
+                {
+                    expression = CombineExpressions(expression, e => filters.BrandIds.Contains(e.BrandId));
+                }
+                if (filters.MaterialIds != null && filters.MaterialIds.Count() > 0)
+                {
+                    expression = CombineExpressions(expression,
+                        e => filters.MaterialIds.All(id => e.Materials.Any(m => m.MaterialId == id)));
+                }
+
+                totalProduct = await _productRepository.CountAsync(expression);
+
+                var sorter = (SortEnum) filters.Sorter;
+
+                switch (sorter)
+                {
+                    case SortEnum.SOLD:
+                        products = await _productRepository
+                           .GetPagedOrderByDescendingAsync(filters.Page, filters.PageSize, expression, e => e.Sold);
+                        break;
+                    case SortEnum.PRICE_ASC:
+                        products = await _productRepository
+                            .GetPagedAsync(filters.Page, filters.PageSize, expression, priceExp);
+                        break;
+                    case SortEnum.PRICE_DESC:
+                        products = await _productRepository
+                           .GetPagedOrderByDescendingAsync(filters.Page, filters.PageSize, expression, priceExp);
+                        break;
+                    case SortEnum.NEWEST:
+                        products = await _productRepository
+                           .GetPagedOrderByDescendingAsync(filters.Page, filters.PageSize, expression, e => e.CreatedAt);
+                        break;
+
+                    default:
+                        products = await _productRepository
+                           .GetPagedOrderByDescendingAsync(filters.Page, filters.PageSize, expression, e => e.CreatedAt);
+                        break;
+                }
+
+                var res = _mapper.Map<IEnumerable<ProductDTO>>(products).ToList();
+
+                foreach (var product in res)
+                {
+                    var image = await _imageRepository.GetFirstImageByProductIdAsync(product.Id);
+                    if (image != null)
+                    {
+                        product.ImageUrl = image.ImageUrl;
+                    }
+                }
+
+                return new PagedResponse<ProductDTO>
+                {
+                    Items = res,
+                    Page = filters.Page,
+                    PageSize = filters.PageSize,
+                    TotalItems = totalProduct
+                };
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.InnerException?.Message ?? ex.Message);
+            }
+        }
 
 
         public async Task<ProductDetailResponse> GetProductAsync(int id)

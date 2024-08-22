@@ -6,7 +6,7 @@ namespace MyStore.Domain.Entities
     {
         [Key]
         public string Id { get; set; } = Guid.NewGuid().ToString();
-        public required string Review { get; set; }
+        public string Review { get; set; }
         public int Star { get; set; } = 0;
 
         public int ProductId { get; set; }

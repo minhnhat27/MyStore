@@ -11,24 +11,5 @@ namespace MyStore.Infrastructure.Repositories
         private readonly MyDbContext _dbContext;
         public UserRepository(MyDbContext dbcontext) : base(dbcontext) => _dbContext = dbcontext;
 
-        public async Task<IEnumerable<User>> GetPagedAsync(int page, int pageSize, string key)
-        {
-            return await _dbContext.Users
-                .Where(e => e.Id.Contains(key)
-                    || (e.Fullname != null && e.Fullname.Contains(key))
-                    || (e.Email != null && e.Email.Contains(key))
-                    || (e.PhoneNumber != null && e.PhoneNumber.Contains(key)))
-                .Paginate(page, pageSize)
-                .ToListAsync();
-        }
-        public async Task<int> CountAsync(string key)
-        {
-            return await _dbContext.Users
-                .Where(e => e.Id.Contains(key)
-                    || (e.Fullname != null && e.Fullname.Contains(key))
-                    || (e.Email != null && e.Email.Contains(key))
-                    || (e.PhoneNumber != null && e.PhoneNumber.Contains(key)))
-                .CountAsync();
-        }
     }
 }

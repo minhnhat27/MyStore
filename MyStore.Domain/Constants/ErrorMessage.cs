@@ -10,5 +10,6 @@
         public const string INVALID_OTP = "Mã xác nhận không chính xác";
         public const string EXISTED_USER = "Tài khoản đã tồn tại.";
         public const string CANNOT_CANCEL = "Không thể hủy";
+        public const string INVALID = "Giá trị không hợp lệ";
     }
 }

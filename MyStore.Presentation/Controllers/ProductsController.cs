@@ -45,23 +45,23 @@ namespace MyStore.Presentation.Controllers
         }
 
 
-        //[HttpGet("filters")]
-        //public async Task<IActionResult> GetFilterProducts([FromQuery] Filters filters)
-        //{
-        //    try
-        //    {
-        //        var result = await _productService.GetFilterProductsAsync(filters);
-        //        return Ok(result);
-        //    }
-        //    catch (ArgumentException ex)
-        //    {
-        //        return NotFound(ex.Message);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return StatusCode(500, ex.Message);
-        //    }
-        //}
+        [HttpGet("filters")]
+        public async Task<IActionResult> GetFilterProducts([FromQuery] Filters filters)
+        {
+            try
+            {
+                var result = await _productService.GetFilterProductsAsync(filters);
+                return Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
 
         [HttpPost("create")]
         [Authorize(Roles = "Admin")]

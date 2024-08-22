@@ -10,6 +10,7 @@ using MyStore.Application.Response;
 using MyStore.Domain.Constants;
 using MyStore.Domain.Entities;
 using MyStore.Domain.Enumerations;
+using System.Linq.Expressions;
 
 namespace MyStore.Application.Services.Orders
 {
@@ -45,7 +46,7 @@ namespace MyStore.Application.Services.Orders
             var orders = await _orderRepository.GetAllAsync();
             return _mapper.Map<IEnumerable<OrderDTO>>(orders);
         }
-        
+
         public async Task<PagedResponse<OrderDTO>> GetOrders(int page, int pageSize, string? keySearch)
         {
             int totalOrder;
@@ -53,12 +54,17 @@ namespace MyStore.Application.Services.Orders
             if (string.IsNullOrEmpty(keySearch))
             {
                 totalOrder = await _orderRepository.CountAsync();
-                orders = await _orderRepository.GetPagedAsync(page, pageSize);
+                orders = await _orderRepository.GetPagedOrderByDescendingAsync(page, pageSize, null, e => e.CreatedAt);
             }
             else
             {
-                totalOrder = await _orderRepository.CountAsync(keySearch);
-                orders = await _orderRepository.GetPagedAsync(page, pageSize, keySearch);
+                Expression<Func<Order, bool>> expression =
+                    e => e.Id.ToString().Contains(keySearch)
+                        || e.OrderStatusName.Contains(keySearch)
+                        || e.PaymentMethodName.Contains(keySearch);
+
+                totalOrder = await _orderRepository.CountAsync(expression);
+                orders = await _orderRepository.GetPagedOrderByDescendingAsync(page, pageSize, expression, e => e.CreatedAt);
             }
             var items = _mapper.Map<IEnumerable<OrderDTO>>(orders);
 

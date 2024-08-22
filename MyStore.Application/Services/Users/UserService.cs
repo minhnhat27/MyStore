@@ -3,10 +3,10 @@ using Microsoft.AspNetCore.Identity;
 using MyStore.Application.Admin.Response;
 using MyStore.Application.DTO;
 using MyStore.Application.IRepository;
-using MyStore.Application.Request;
 using MyStore.Application.Response;
 using MyStore.Domain.Constants;
 using MyStore.Domain.Entities;
+using System.Linq.Expressions;
 
 namespace MyStore.Application.Services.Users
 {
@@ -30,12 +30,18 @@ namespace MyStore.Application.Services.Users
             if(string.IsNullOrEmpty(keySearch))
             {
                 totalUsers = await _userRepository.CountAsync();
-                users = await _userRepository.GetPagedAsync(page, pageSize);
+                users = await _userRepository.GetPagedOrderByDescendingAsync(page, pageSize, null, e => e.CreatedAt);
             }
             else
             {
-                totalUsers = await _userRepository.CountAsync(keySearch);
-                users = await _userRepository.GetPagedAsync(page, pageSize, keySearch);
+                Expression<Func<User, bool>> expression = e =>
+                    e.Id.Contains(keySearch)
+                    || (e.Fullname != null && e.Fullname.Contains(keySearch))
+                    || (e.Email != null && e.Email.Contains(keySearch))
+                    || (e.PhoneNumber != null && e.PhoneNumber.Contains(keySearch));
+
+                totalUsers = await _userRepository.CountAsync(expression);
+                users = await _userRepository.GetPagedOrderByDescendingAsync(page, pageSize, expression, e => e.CreatedAt);
             }
 
             var items = _mapper.Map<IEnumerable<UserResponse>>(users).Select(e =>

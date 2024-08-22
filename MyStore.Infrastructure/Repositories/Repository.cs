@@ -1,7 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using MailKit.Search;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using MyStore.Application.IRepository;
+using MyStore.Domain.Entities;
 using MyStore.Infrastructure.DbContext;
 using MyStore.Infrastructure.IQueryableExtensions;
+using System.Drawing.Printing;
 using System.Linq.Expressions;
 
 namespace MyStore.Infrastructure.Repositories
@@ -9,9 +13,9 @@ namespace MyStore.Infrastructure.Repositories
     public class Repository<T>(MyDbContext dbcontext) : IRepository<T> where T : class
     {
         private readonly MyDbContext _dbContext = dbcontext;
-        public virtual async Task<IEnumerable<T>> GetAllAsync() => await _dbContext.Set<T>().ToListAsync();
+        public virtual async Task<IEnumerable<T>> GetAllAsync() => await _dbContext.Set<T>().ToArrayAsync();
         public virtual async Task<IEnumerable<T>> GetAsync(Expression<Func<T, bool>> expression) 
-            => await _dbContext.Set<T>().Where(expression).ToListAsync();
+            => await _dbContext.Set<T>().Where(expression).ToArrayAsync();
         public virtual async Task<T?> FindAsync(params object?[]? keyValues) 
             => await _dbContext.FindAsync<T>(keyValues);
         public virtual async Task AddAsync(T entity)
@@ -49,15 +53,30 @@ namespace MyStore.Infrastructure.Repositories
             _dbContext.Update(entity);
             await _dbContext.SaveChangesAsync();
         }
+        //public virtual async Task<IEnumerable<T>> GetPagedAsync<TKey>(int page, int pageSize, Expression<Func<T, TKey>> orderBy)
+        //    =>  await _dbContext.Set<T>()
+        //        .OrderBy(orderBy)
+        //        .Paginate(page, pageSize)
+        //        .ToArrayAsync();
+        public virtual async Task<IEnumerable<T>> GetPagedAsync<TKey>(int page, int pageSize, Expression<Func<T, bool>>? expression, Expression<Func<T, TKey>> orderBy)
+            => expression == null 
+            ? await _dbContext.Set<T>().OrderBy(orderBy).Paginate(page, pageSize).ToArrayAsync()
+            : await _dbContext.Set<T>().Where(expression).OrderBy(orderBy).Paginate(page, pageSize).ToArrayAsync();
 
-        public virtual async Task<IEnumerable<T>> GetPagedAsync(int page, int pageSize)
-            => await _dbContext.Set<T>().Paginate(page, pageSize).ToListAsync();
-        public virtual async Task<IEnumerable<T>> GetPagedAsync(int page, int pageSize, 
-            Expression<Func<T, bool>> filters, Expression<Func<T, bool>> sorter)
-            => await _dbContext.Set<T>().Where(filters).OrderBy(sorter).Paginate(page, pageSize).ToListAsync();
+        //public virtual async Task<IEnumerable<T>> GetPagedOrderByDescendingAsync<TKey>(int page, int pageSize, Expression<Func<T, TKey>> orderByDesc) 
+        //    => await _dbContext.Set<T>()
+        //        .OrderBy(orderByDesc)
+        //        .Paginate(page, pageSize)
+        //        .ToArrayAsync();
+        public virtual async Task<IEnumerable<T>> GetPagedOrderByDescendingAsync<TKey>(int page, int pageSize, Expression<Func<T, bool>>? expression, Expression<Func<T, TKey>> orderByDesc) 
+            => expression == null 
+            ? await _dbContext.Set<T>().OrderByDescending(orderByDesc).Paginate(page, pageSize).ToArrayAsync() 
+            : await _dbContext.Set<T>().Where(expression).OrderByDescending(orderByDesc).Paginate(page, pageSize).ToArrayAsync();
         public async Task<int> CountAsync()
            => await _dbContext.Set<T>().CountAsync();
-        public async Task<int> CountAsync(Expression<Func<T, bool>> filters, Expression<Func<T, bool>> sorter)
-            => await _dbContext.Set<T>().Where(filters).CountAsync();
+        public async Task<int> CountAsync(Expression<Func<T, bool>> expression)
+           => await _dbContext.Set<T>()
+                .Where(expression)
+                .CountAsync();
     }
 }

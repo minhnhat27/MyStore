@@ -3,8 +3,8 @@
     public enum SortEnum
     {
         SOLD,
-        ASC,
-        DESC,
+        PRICE_ASC,
+        PRICE_DESC,
         NEWEST
     }
 }
