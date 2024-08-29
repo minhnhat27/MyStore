@@ -1,4 +1,4 @@
-﻿using MyStore.Application.IRepository.Orders;
+﻿using MyStore.Application.IRepositories.Orders;
 
 namespace MyStore.Application.Services.Payments
 {

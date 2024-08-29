@@ -64,7 +64,7 @@ namespace MyStore.Infrastructure.AuthenticationService
                     issuer: _configuration["JWT:Issuer"],
                     audience: _configuration["JWT:Audience"],
                     claims: claims,
-                    expires: DateTime.Now.AddHours(12),
+                    expires: DateTime.Now.AddHours(24),
                     signingCredentials: new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256));
             return new JwtSecurityTokenHandler().WriteToken(jwtToken);
         }

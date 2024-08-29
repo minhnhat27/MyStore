@@ -1,11 +1,7 @@
-﻿using MailKit.Search;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
-using MyStore.Application.IRepository;
-using MyStore.Domain.Entities;
+﻿using Microsoft.EntityFrameworkCore;
+using MyStore.Application.IRepositories;
 using MyStore.Infrastructure.DbContext;
 using MyStore.Infrastructure.IQueryableExtensions;
-using System.Drawing.Printing;
 using System.Linq.Expressions;
 
 namespace MyStore.Infrastructure.Repositories

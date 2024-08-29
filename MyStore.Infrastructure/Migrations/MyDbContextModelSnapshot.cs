@@ -17,7 +17,7 @@ namespace MyStore.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.7")
+                .HasAnnotation("ProductVersion", "8.0.8")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -442,15 +442,13 @@ namespace MyStore.Infrastructure.Migrations
                     b.Property<bool>("Enable")
                         .HasColumnType("boolean");
 
-                    b.Property<string>("Gender")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)");
+                    b.Property<int>("Gender")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(60)
-                        .HasColumnType("character varying(60)");
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
 
                     b.Property<double>("Price")
                         .HasColumnType("double precision");
@@ -468,6 +466,38 @@ namespace MyStore.Infrastructure.Migrations
                     b.HasIndex("CategoryId");
 
                     b.ToTable("Products");
+                });
+
+            modelBuilder.Entity("MyStore.Domain.Entities.ProductColor", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ColorName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("ProductColor");
                 });
 
             modelBuilder.Entity("MyStore.Domain.Entities.ProductMaterial", b =>
@@ -521,11 +551,11 @@ namespace MyStore.Infrastructure.Migrations
 
             modelBuilder.Entity("MyStore.Domain.Entities.ProductSize", b =>
                 {
-                    b.Property<int>("ProductId")
+                    b.Property<int>("ProductColorId")
                         .HasColumnType("integer");
 
-                    b.Property<string>("SizeId")
-                        .HasColumnType("text");
+                    b.Property<int>("SizeId")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
@@ -536,7 +566,7 @@ namespace MyStore.Infrastructure.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp without time zone");
 
-                    b.HasKey("ProductId", "SizeId");
+                    b.HasKey("ProductColorId", "SizeId");
 
                     b.HasIndex("SizeId");
 
@@ -545,12 +575,19 @@ namespace MyStore.Infrastructure.Migrations
 
             modelBuilder.Entity("MyStore.Domain.Entities.Size", b =>
                 {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasMaxLength(15)
                         .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp without time zone");
@@ -791,6 +828,17 @@ namespace MyStore.Infrastructure.Migrations
                     b.Navigation("Category");
                 });
 
+            modelBuilder.Entity("MyStore.Domain.Entities.ProductColor", b =>
+                {
+                    b.HasOne("MyStore.Domain.Entities.Product", "Product")
+                        .WithMany("ProductColors")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+                });
+
             modelBuilder.Entity("MyStore.Domain.Entities.ProductMaterial", b =>
                 {
                     b.HasOne("MyStore.Domain.Entities.Material", "Material")
@@ -823,19 +871,19 @@ namespace MyStore.Infrastructure.Migrations
 
             modelBuilder.Entity("MyStore.Domain.Entities.ProductSize", b =>
                 {
-                    b.HasOne("MyStore.Domain.Entities.Product", "Product")
-                        .WithMany("Sizes")
-                        .HasForeignKey("ProductId")
+                    b.HasOne("MyStore.Domain.Entities.ProductColor", "ProductColor")
+                        .WithMany("ProductSizes")
+                        .HasForeignKey("ProductColorId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("MyStore.Domain.Entities.Size", "Size")
-                        .WithMany()
+                        .WithMany("ProductSizes")
                         .HasForeignKey("SizeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Product");
+                    b.Navigation("ProductColor");
 
                     b.Navigation("Size");
                 });
@@ -878,9 +926,19 @@ namespace MyStore.Infrastructure.Migrations
 
                     b.Navigation("OrderDetails");
 
-                    b.Navigation("ProductReviews");
+                    b.Navigation("ProductColors");
 
-                    b.Navigation("Sizes");
+                    b.Navigation("ProductReviews");
+                });
+
+            modelBuilder.Entity("MyStore.Domain.Entities.ProductColor", b =>
+                {
+                    b.Navigation("ProductSizes");
+                });
+
+            modelBuilder.Entity("MyStore.Domain.Entities.Size", b =>
+                {
+                    b.Navigation("ProductSizes");
                 });
 
             modelBuilder.Entity("MyStore.Domain.Entities.User", b =>

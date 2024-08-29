@@ -20,7 +20,7 @@ namespace MyStore.Domain.Entities
         public string PaymentMethodName { get; set; }
         public PaymentMethod PaymentMethod { get; set; }
 
-        public string OrderStatusName { get; set; } = DeliveryStatus.Proccessing.ToString();
+        public string OrderStatusName { get; set; } = DeliveryStatusEnum.Proccessing.ToString();
         public OrderStatus OrderStatus { get; set; }
 
         public string UserId { get; set; }

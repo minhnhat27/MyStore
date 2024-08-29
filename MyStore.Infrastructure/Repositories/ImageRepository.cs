@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using MyStore.Application.IRepository;
+using MyStore.Application.IRepositories;
 using MyStore.Domain.Entities;
 using MyStore.Infrastructure.DbContext;
 

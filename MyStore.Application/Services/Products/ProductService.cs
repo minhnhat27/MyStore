@@ -1,19 +1,21 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using MyStore.Application.Admin.Request;
 using MyStore.Application.Admin.Response;
 using MyStore.Application.DTO;
-using MyStore.Application.IRepository;
-using MyStore.Application.IRepository.Products;
+using MyStore.Application.IRepositories;
+using MyStore.Application.IRepositories.Products;
 using MyStore.Application.IStorage;
-using MyStore.Application.ModelView;
 using MyStore.Application.Request;
 using MyStore.Application.Response;
 using MyStore.Domain.Constants;
 using MyStore.Domain.Entities;
 using MyStore.Domain.Enumerations;
+using System.Drawing;
 using System.Linq.Expressions;
+using System.Xml.Linq;
 
 namespace MyStore.Application.Services.Products
 {
@@ -21,6 +23,7 @@ namespace MyStore.Application.Services.Products
     {
         private readonly IProductRepository _productRepository;
         private readonly IProductSizeRepository _productSizeRepository;
+        private readonly IProductColorRepository _productColorRepository;
         private readonly IProductMaterialRepository _productMaterialRepository;
         private readonly IImageRepository _imageRepository;
         private readonly ITransactionRepository _transactionRepository;
@@ -30,12 +33,16 @@ namespace MyStore.Application.Services.Products
 
         private readonly string path = "assets/images/products";
 
-        public ProductService(IProductRepository productRepository, IProductSizeRepository productSizeRepository,
-            IProductMaterialRepository productMaterialRepository, IImageRepository imageRepository, IFileStorage fileStorage, 
+        public ProductService(IProductRepository productRepository,
+            IProductSizeRepository productSizeRepository,
+            IProductColorRepository productColorRepository,
+            IProductMaterialRepository productMaterialRepository, 
+            IImageRepository imageRepository, IFileStorage fileStorage, 
             ITransactionRepository transactionRepository, IMapper mapper)
         {
             _productRepository = productRepository;
             _productSizeRepository = productSizeRepository;
+            _productColorRepository = productColorRepository;
             _productMaterialRepository = productMaterialRepository;
             _imageRepository = imageRepository;
             _fileStorage = fileStorage;
@@ -51,14 +58,39 @@ namespace MyStore.Application.Services.Products
                 {
                     var product = _mapper.Map<Product>(request);
                     await _productRepository.AddAsync(product);
+                    var productPath = path + "/" + product.Id;
 
-                    var sizes = _mapper.Map<IEnumerable<ProductSize>>(request.SizesAndQuantities)
-                        .Select(size =>
+                    List<string> colorFileNames = new();
+                    List<IFormFile> colorImages = new();
+                    List<ProductSize> productSizes = new();
+
+                    foreach (var color in request.ColorSizes.ToHashSet())
+                    {
+                        var name = Guid.NewGuid().ToString() + Path.GetExtension(color.Image.FileName);
+                        colorFileNames.Add(name);
+                        colorImages.Add(color.Image);
+
+                        var productColor = new ProductColor
                         {
-                            size.ProductId = product.Id;
-                            return size;
+                            ColorName = color.Color,
+                            ProductId = product.Id,
+                            ImageUrl = Path.Combine(productPath, name)
+                        };
+
+                        await _productColorRepository.AddAsync(productColor);
+
+                        var sizes = color.SizeInStocks.Select(size =>
+                        {
+                            return new ProductSize
+                            {
+                                ProductColorId = productColor.Id,
+                                SizeId = size.SizeId,
+                                InStock = size.InStock,
+                            };
                         });
-                    await _productSizeRepository.AddAsync(sizes);
+                        productSizes.AddRange(sizes);
+                    }
+                    await _productSizeRepository.AddAsync(productSizes);
 
                     var materials = request.MaterialIds.Select(id => new ProductMaterial
                     {
@@ -67,20 +99,24 @@ namespace MyStore.Application.Services.Products
                     });
                     await _productMaterialRepository.AddAsync(materials);
 
-                    IList<string> fileNames = new List<string>();
+                    List<string> commonFileNames = new();
                     var imgs = images.Select(file =>
                     {
                         var name = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
-                        fileNames.Add(name);
+                        commonFileNames.Add(name);
                         var image = new Image()
                         {
                             ProductId = product.Id,
-                            ImageUrl = Path.Combine(path, name),
+                            ImageUrl = Path.Combine(productPath, name),
                         };
                         return image;
                     });
                     await _imageRepository.AddAsync(imgs);
-                    await _fileStorage.SaveAsync(path, images, fileNames);
+
+                    colorImages.AddRange(images);
+                    colorFileNames.AddRange(commonFileNames);
+
+                    await _fileStorage.SaveAsync(productPath, colorImages, colorFileNames);
 
                     await transaction.CommitAsync();
 
@@ -194,7 +230,7 @@ namespace MyStore.Application.Services.Products
                 if (filters.MaterialIds != null && filters.MaterialIds.Count() > 0)
                 {
                     expression = CombineExpressions(expression,
-                        e => filters.MaterialIds.All(id => e.Materials.Any(m => m.MaterialId == id)));
+                        e => filters.MaterialIds.Any(id => e.Materials.Any(m => m.MaterialId == id)));
                 }
 
                 totalProduct = await _productRepository.CountAsync(expression);
@@ -251,16 +287,15 @@ namespace MyStore.Application.Services.Products
             }
         }
 
-
-        public async Task<ProductDetailResponse> GetProductAsync(int id)
+        public async Task<ProductResponse> GetProductAsync(int id)
         {
             var product = await _productRepository.SingleOrDefaultAsync(id);
             if (product != null)
             {
-                var res = _mapper.Map<ProductDetailResponse>(product);
+                var res = _mapper.Map<ProductResponse>(product);
                 res.MaterialIds = product.Materials.Select(e => e.MaterialId);
-                res.SizesAndQuantities = _mapper.Map<IEnumerable<SizeAndQuantity>>(product.Sizes);
-                res.SizeIds = product.Sizes.Select(e => e.SizeId);
+                //res.SizesAndQuantities = _mapper.Map<IEnumerable<SizeAndQuantity>>(product.Sizes);
+                //res.SizeIds = product.Sizes.Select(e => e.SizeId);
                 res.ImageUrls = product.Images.Select(e => e.ImageUrl);
 
                 return res;
@@ -284,15 +319,16 @@ namespace MyStore.Application.Services.Products
                         product.CategoryId = request.CategoryId;
                         product.BrandId = request.BrandId;
                         product.Enable = request.Enable;
+                        product.DiscountPercent = request.DiscountPercent;
 
-                        var productSizes = _mapper.Map<IEnumerable<ProductSize>>(request.SizesAndQuantities)
-                            .Select(size =>
-                            {
-                                size.ProductId = id;
-                                return size;
-                            });
-                        await _productSizeRepository.DeleteAllByProductIdAsync(id);
-                        await _productSizeRepository.AddAsync(productSizes);
+                        //var productSizes = _mapper.Map<IEnumerable<ProductSize>>(request.SizesAndQuantities)
+                        //    .Select(size =>
+                        //    {
+                        //        size.ProductId = id;
+                        //        return size;
+                        //    });
+                        //await _productSizeRepository.DeleteAllByProductIdAsync(id);
+                        //await _productSizeRepository.AddAsync(productSizes);
 
                         var productMaterials = request.MaterialIds.Select(e => new ProductMaterial
                         {

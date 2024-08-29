@@ -9,7 +9,7 @@ namespace MyStore.Application.Services.Orders
         Task<IEnumerable<OrderDTO>> GetOrders();
         Task<PagedResponse<OrderDTO>> GetOrders(int page, int pageSize, string? keySearch);
         Task<OrderDTO> GetOrder(int id);
-        Task<OrderDetailResponse> GetOrderDetail(int id);
+        Task<OrderDetailsResponse> GetOrderDetail(int id);
         Task<IEnumerable<OrderDTO>> GetOrdersByUserId(string userId);
         Task<OrderDTO> CreateOrder(string userId, OrderRequest request);
         Task<OrderDTO> UpdateOrder(int id, string userId, UpdateOrderRequest request);

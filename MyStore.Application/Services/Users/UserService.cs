@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Identity;
 using MyStore.Application.Admin.Response;
 using MyStore.Application.DTO;
-using MyStore.Application.IRepository;
+using MyStore.Application.IRepositories;
 using MyStore.Application.Response;
 using MyStore.Domain.Constants;
 using MyStore.Domain.Entities;

@@ -3,13 +3,16 @@ using System.ComponentModel.DataAnnotations;
 
 namespace MyStore.Domain.Entities
 {
-    [PrimaryKey(nameof(ProductId), nameof(SizeId))]
+    [PrimaryKey(nameof(ProductColorId), nameof(SizeId))]
     public class ProductSize : IBaseEntity
     {
-        public int ProductId { get; set; }
-        public Product Product { get; set; }
-        public string SizeId { get; set; }
+        public int ProductColorId { get; set; }
+        public ProductColor ProductColor { get; set; }
+
+        public int SizeId { get; set; }
         public Size Size { get; set; }
+
+
         [Range(0, int.MaxValue)]
         public int InStock { get; set; }
 

@@ -1,19 +1,25 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using MyStore.Domain.Enumerations;
+using System.ComponentModel.DataAnnotations;
 
 namespace MyStore.Domain.Entities
 {
     public class Product : IBaseEntity
     {
         public int Id { get; set; }
+
         [MaxLength(150)]
         public string Name { get; set; }
+
         [MaxLength(500)]
         public string? Description { get; set; }
+
         public bool Enable { get; set; }
+
         [Range(0, int.MaxValue)]
         public int Sold { get; set; }
-        [MaxLength(10)]
-        public string Gender { get; set; }
+
+        public GenderEnum Gender { get; set; }
+
 
         [Range(1000, double.MaxValue)]
         public double Price { get; set; }
@@ -31,7 +37,8 @@ namespace MyStore.Domain.Entities
         public DateTime? UpdatedAt { get; set; }
 
         public ICollection<ProductMaterial> Materials { get; } = new HashSet<ProductMaterial>();
-        public ICollection<ProductSize> Sizes { get; } = new HashSet<ProductSize>();
+        public ICollection<ProductColor> ProductColors { get; } = new HashSet<ProductColor>();
+
         public ICollection<OrderDetail> OrderDetails { get; } = new HashSet<OrderDetail>();
         public ICollection<Image> Images { get; } = new HashSet<Image>();
         public ICollection<ProductReview> ProductReviews { get; } = new HashSet<ProductReview>();

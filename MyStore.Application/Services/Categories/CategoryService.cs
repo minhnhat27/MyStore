@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 using MyStore.Application.DTO;
-using MyStore.Application.IRepository;
+using MyStore.Application.IRepositories;
 using MyStore.Domain.Constants;
 using MyStore.Domain.Entities;
 

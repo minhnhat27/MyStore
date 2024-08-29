@@ -13,6 +13,7 @@ namespace MyStore.Presentation.Controllers
         private readonly IProductService _productService = productService;
 
         [HttpGet]
+        //[Authorize(Roles = "Admin")]
         public async Task<IActionResult> Get([FromQuery] PageRequest request)
         {
             try
@@ -26,7 +27,7 @@ namespace MyStore.Presentation.Controllers
             }
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("getProduct/{id}")]
         public async Task<IActionResult> Get(int id)
         {
             try
@@ -65,11 +66,10 @@ namespace MyStore.Presentation.Controllers
 
         [HttpPost("create")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Create([FromForm] ProductRequest request, [FromForm] IFormCollection form)
+        public async Task<IActionResult> Create([FromForm] ProductRequest request, [FromForm] IFormFileCollection images)
         {
             try
             {
-                var images = form.Files;
                 var product = await _productService.CreateProductAsync(request, images);
                 return Ok(product);
             }

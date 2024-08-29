@@ -68,7 +68,7 @@ namespace MyStore.Infrastructure.DataSeeding
 
             if (!context.Users.Any(u => u.UserName == user.UserName))
             {
-                var result = await userManager.CreateAsync(user, "Minhnhat2702@");
+                var result = await userManager.CreateAsync(user, "Minhnhat2702");
                 if (result.Succeeded)
                 {
                     await userManager.AddToRolesAsync(user, roles);
@@ -77,26 +77,17 @@ namespace MyStore.Infrastructure.DataSeeding
         }
         private static async Task InitializeProductAttributes(MyDbContext context)
         {
-            var lstOrderStatus = Enum.GetNames(typeof(DeliveryStatus))
-                .Select(e => new OrderStatus
-                {
-                    Name = e
-                });
-            await context.OrderStatus.AddRangeAsync(lstOrderStatus);
+            var lstOrderStatus = Enum.GetNames(typeof(DeliveryStatusEnum))
+                .Select(name => new OrderStatus { Name = name });
 
             var lstPaymentMethod = Enum.GetNames(typeof(PaymentMethodEnum))
-                .Select(e => new PaymentMethod
-                {
-                    Name = e,
-                    isActive = false,
-                });
-            await context.PaymentMethods.AddRangeAsync(lstPaymentMethod);
+                .Select(name => new PaymentMethod { Name = name, isActive = false });
 
             var lstSize = Enum.GetNames(typeof(SizeEnum))
-                .Select(e => new Size
-                {
-                    Id = e,
-                });
+                .Select(name => new Size { Name = name });
+
+            await context.OrderStatus.AddRangeAsync(lstOrderStatus);
+            await context.PaymentMethods.AddRangeAsync(lstPaymentMethod);
             await context.Sizes.AddRangeAsync(lstSize);
             await context.SaveChangesAsync();
         }

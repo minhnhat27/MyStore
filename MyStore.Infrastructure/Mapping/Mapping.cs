@@ -23,15 +23,16 @@ namespace MyStore.Infrastructure.Mapping
             CreateMap<Material, MaterialDTO>().ReverseMap();
             CreateMap<Brand, BrandDTO>().ReverseMap();
             CreateMap<Category, CategoryDTO>().ReverseMap();
+            CreateMap<Size, SizeDTO>().ReverseMap();
 
             CreateMap<OrderRequest, Order>();
             CreateMap<ProductRequest, Product>();
             CreateMap<SizeAndQuantity, ProductSize>().ReverseMap();
 
-            CreateMap<Product, ProductDetailResponse>();
+            CreateMap<Product, ProductResponse>();
             CreateMap<User, UserResponse>();
 
-            CreateMap<Order, OrderDetailResponse>();
+            CreateMap<Order, OrderDetailsResponse>();
             CreateMap<OrderDetail, ProductsOrderDetail>()
                 .ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.Product.Name));
         }

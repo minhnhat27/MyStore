@@ -1,9 +1,9 @@
 ﻿using AutoMapper;
 using MyStore.Application.DTO;
 using MyStore.Application.ICaching;
-using MyStore.Application.IRepository;
-using MyStore.Application.IRepository.Orders;
-using MyStore.Application.IRepository.Products;
+using MyStore.Application.IRepositories;
+using MyStore.Application.IRepositories.Orders;
+using MyStore.Application.IRepositories.Products;
 using MyStore.Application.ModelView;
 using MyStore.Application.Request;
 using MyStore.Application.Response;
@@ -98,35 +98,35 @@ namespace MyStore.Application.Services.Orders
                     order.UserId = userId;
                     double total = 0;   
 
-                    var orderDetailsTasks = request.ProductsAndQuantities.Select(async e =>
-                    {
-                        var product = await _productRepository.FindAsync(e.ProductId);
-                        if(product != null)
-                        {
-                            var productSize = product.Sizes.SingleOrDefault(s => s.SizeId == e.SizeId);
-                            double discountPercent = product.DiscountPercent;
-                            double discount = discountPercent / 100.0 * product.Price;
-                            var price = product.Price - discount;
-                            total += price;
+                    //var orderDetailsTasks = request.ProductsAndQuantities.Select(async e =>
+                    //{
+                    //    var product = await _productRepository.FindAsync(e.ProductId);
+                    //    if(product != null)
+                    //    {
+                    //        var productSize = product.Sizes.SingleOrDefault(s => s.SizeId == e.SizeId);
+                    //        double discountPercent = product.DiscountPercent;
+                    //        double discount = discountPercent / 100.0 * product.Price;
+                    //        var price = product.Price - discount;
+                    //        total += price;
 
-                            return new OrderDetail
-                            {
-                                OrderId = order.Id,
-                                ProductId = e.ProductId,
-                                Size = e.SizeId,
-                                Quantity = e.Quantity,
-                                UnitPrice = price,
-                            };
-                        }
-                        return null;
-                    });
-                    var orderDetails = (await Task.WhenAll(orderDetailsTasks)).Where(e => e != null);
-                    order.Total = total;
+                    //        return new OrderDetail
+                    //        {
+                    //            OrderId = order.Id,
+                    //            ProductId = e.ProductId,
+                    //            Size = e.SizeId,
+                    //            Quantity = e.Quantity,
+                    //            UnitPrice = price,
+                    //        };
+                    //    }
+                    //    return null;
+                    //});
+                    //var orderDetails = (await Task.WhenAll(orderDetailsTasks)).Where(e => e != null);
+                    //order.Total = total;
 
-                    await _orderRepository.AddAsync(order);
-                    await _orderDetailRepository.AddAsync(orderDetails);
+                    //await _orderRepository.AddAsync(order);
+                    //await _orderDetailRepository.AddAsync(orderDetails);
 
-                    await _cartItemRepository.DeleteRangeByUserId(userId, request.ProductsAndQuantities.Select(e => e.ProductId));
+                    //await _cartItemRepository.DeleteRangeByUserId(userId, request.ProductsAndQuantities.Select(e => e.ProductId));
 
                     await _transaction.CommitTransactionAsync();
                     
@@ -143,7 +143,7 @@ namespace MyStore.Application.Services.Orders
         public async Task<OrderDTO> UpdateOrder(int id, string userId, UpdateOrderRequest request)
         {
             var order = await _orderRepository.SingleOrDefaultAsync(e => e.Id == id && e.UserId == userId);
-            if(order != null && order.OrderStatusName.Equals(DeliveryStatus.Proccessing.ToString()))
+            if(order != null && order.OrderStatusName.Equals(DeliveryStatusEnum.Proccessing.ToString()))
             {
                 if(request.ShippingAddress != null)
                 {
@@ -180,10 +180,10 @@ namespace MyStore.Application.Services.Orders
             var order = await _orderRepository.FindAsync(id);
             if (order != null)
             {
-                if (order.OrderStatusName == DeliveryStatus.Proccessing.ToString()
-                    || order.OrderStatusName == DeliveryStatus.Confirmed.ToString())
+                if (order.OrderStatusName == DeliveryStatusEnum.Proccessing.ToString()
+                    || order.OrderStatusName == DeliveryStatusEnum.Confirmed.ToString())
                 {
-                    order.OrderStatusName = DeliveryStatus.Canceled.ToString();
+                    order.OrderStatusName = DeliveryStatusEnum.Canceled.ToString();
                     await _orderRepository.UpdateAsync(order);
                 }
                 else throw new Exception(ErrorMessage.CANNOT_CANCEL);
@@ -191,7 +191,7 @@ namespace MyStore.Application.Services.Orders
             else throw new ArgumentException($"Id {id} " + ErrorMessage.NOT_FOUND);
         }
 
-        public async Task<OrderDetailResponse> GetOrderDetail(int id)
+        public async Task<OrderDetailsResponse> GetOrderDetail(int id)
         {
             var order = await _orderRepository.SingleOrDefaultAsync(e => e.Id == id);
             if (order != null)
@@ -199,7 +199,7 @@ namespace MyStore.Application.Services.Orders
                 var orderDetail = await _orderDetailRepository.GetAsync(e => e.OrderId == id);
                 var products = _mapper.Map<IEnumerable<ProductsOrderDetail>>(orderDetail);
 
-                var res = _mapper.Map<OrderDetailResponse>(order);
+                var res = _mapper.Map<OrderDetailsResponse>(order);
                 res.Products = products;
 
                 return res;

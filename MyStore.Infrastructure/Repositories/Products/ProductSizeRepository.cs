@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using MyStore.Application.IRepository.Products;
+using MyStore.Application.IRepositories.Products;
 using MyStore.Domain.Entities;
 using MyStore.Infrastructure.DbContext;
 
@@ -15,9 +15,9 @@ namespace MyStore.Infrastructure.Repositories.Products
 
         public async Task DeleteAllByProductIdAsync(int productId)
         {
-            var products = await _dbContext.ProductSizes.Where(e => e.ProductId == productId).ToListAsync();
-            _dbContext.ProductSizes.RemoveRange(products);
-            await _dbContext.SaveChangesAsync();
+            //var products = await _dbContext.ProductSizes.Where(e => e.ProductId == productId).ToListAsync();
+            //_dbContext.ProductSizes.RemoveRange(products);
+            //await _dbContext.SaveChangesAsync();
         }
     }
 }

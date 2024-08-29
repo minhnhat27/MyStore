@@ -1,4 +1,4 @@
-﻿using MyStore.Application.IRepository;
+﻿using MyStore.Application.IRepositories;
 using MyStore.Application.Response;
 
 namespace MyStore.Application.Services.Carts

@@ -9,7 +9,8 @@ namespace MyStore.Application.IStorage
 
         Task SaveAsync(string path, IFormFile file, string fileName);
         Task SaveAsync(string path, IFormFileCollection files, IList<string> fileNames);
-        
+        Task SaveAsync(string path, IEnumerable<IFormFile> files, IList<string> fileNames);
+
         void Delete(string path);
         void Delete(IEnumerable<string> paths);
     }

@@ -1,4 +1,4 @@
-﻿using MyStore.Application.IRepository.Products;
+﻿using MyStore.Application.IRepositories.Products;
 using MyStore.Domain.Entities;
 using MyStore.Infrastructure.DbContext;
 

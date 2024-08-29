@@ -69,6 +69,27 @@ namespace MyStore.Infrastructure.Storage
 
             await Task.WhenAll(tasks);
         }
+
+        public async Task SaveAsync(string path, IEnumerable<IFormFile> files, IList<string> fileNames)
+        {
+            var p = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", path);
+            if (!Directory.Exists(p))
+            {
+                Directory.CreateDirectory(p);
+            }
+
+            var tasks = files.Select(async (file, index) =>
+            {
+                var filePath = Path.Combine(p, fileNames[index]);
+                using (var stream = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write))
+                {
+                    await file.CopyToAsync(stream);
+                }
+            });
+
+            await Task.WhenAll(tasks);
+        }
+
         public void Delete(string path)
         {
             var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", path);

@@ -1,11 +1,8 @@
-﻿using MailKit.Search;
-using Microsoft.EntityFrameworkCore;
-using MyStore.Application.IRepository.Products;
+﻿using Microsoft.EntityFrameworkCore;
+using MyStore.Application.IRepositories.Products;
 using MyStore.Domain.Entities;
-using MyStore.Domain.Enumerations;
 using MyStore.Infrastructure.DbContext;
 using MyStore.Infrastructure.IQueryableExtensions;
-using System.Linq;
 using System.Linq.Expressions;
 
 namespace MyStore.Infrastructure.Repositories.Products
@@ -20,7 +17,7 @@ namespace MyStore.Infrastructure.Repositories.Products
             return await _dbContext.Products
             .Include(e => e.Images)
             .Include(e => e.Materials)
-            .Include(e => e.Sizes)
+            //.Include(e => e.Sizes)
             .Include(e => e.Category)
             .Include(e => e.Brand)
             .SingleOrDefaultAsync(e => e.Id == id);
