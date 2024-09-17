@@ -27,7 +27,7 @@ namespace MyStore.Presentation.Controllers
             }
         }
 
-        [HttpGet("getProduct/{id}")]
+        [HttpGet("{id}")]
         public async Task<IActionResult> Get(int id)
         {
             try
@@ -81,11 +81,10 @@ namespace MyStore.Presentation.Controllers
 
         [HttpPut("update/{id}")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Update(int id, [FromForm] ProductRequest request, [FromForm] IFormCollection form)
+        public async Task<IActionResult> Update(int id, [FromForm] ProductRequest request, [FromForm] IFormFileCollection images)
         {
             try
             {
-                var images = form.Files;
                 var result = await _productService.UpdateProductAsync(id, request, images);
                 return Ok(result);
             }

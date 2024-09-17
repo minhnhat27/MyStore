@@ -1,6 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-
-namespace MyStore.Domain.Entities
+﻿namespace MyStore.Domain.Entities
 {
     public class ProductColor : IBaseEntity
     {
@@ -10,7 +8,6 @@ namespace MyStore.Domain.Entities
         public int ProductId { get; set; }
         public Product Product { get; set; }
 
-        //public string Name { get; set; }
         public string ImageUrl { get; set; }
 
         public ICollection<ProductSize> ProductSizes { get; } = new HashSet<ProductSize>();

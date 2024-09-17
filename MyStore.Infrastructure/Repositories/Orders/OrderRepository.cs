@@ -11,7 +11,5 @@ namespace MyStore.Infrastructure.Repositories.Orders
     {
         private readonly MyDbContext _dbContext;
         public OrderRepository(MyDbContext context) : base(context) => _dbContext = context;
-        public async Task<Order?> SingleOrDefaultAsync(Expression<Func<Order, bool>> expression)
-            => await _dbContext.Orders.SingleOrDefaultAsync(expression);
     }
 }

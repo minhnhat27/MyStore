@@ -84,7 +84,7 @@ namespace MyStore.Infrastructure.AuthenticationService
                     {
                         AccessToken = accessToken,
                         RefreshToken = refreshToken,
-                        FullName = user.Fullname,
+                        Fullname = user.Fullname,
                         Session = user.ConcurrencyStamp ?? Guid.NewGuid().ToString(),
                     };
                 }
@@ -120,7 +120,7 @@ namespace MyStore.Infrastructure.AuthenticationService
                 {
                     AccessToken = accessToken,
                     RefreshToken = refreshToken,
-                    FullName = user.Fullname,
+                    Fullname = user.Fullname,
                 };
             }
             catch (Exception ex)

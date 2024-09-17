@@ -1,7 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
 using MyStore.Application.IStorage;
-using MyStore.Domain.Constants;
-using System.IO;
 
 namespace MyStore.Infrastructure.Storage
 {
@@ -44,10 +42,8 @@ namespace MyStore.Infrastructure.Storage
             }
 
             var filePath = Path.Combine(p, fileName);
-            using (var stream = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write))
-            {
-                await file.CopyToAsync(stream);
-            }
+            using var stream = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write);
+            await file.CopyToAsync(stream);
         }
 
         public async Task SaveAsync(string path, IFormFileCollection files, IList<string> fileNames)
@@ -61,10 +57,8 @@ namespace MyStore.Infrastructure.Storage
             var tasks = files.Select(async (file, index) =>
             {
                 var filePath = Path.Combine(p, fileNames[index]);
-                using (var stream = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write))
-                {
-                    await file.CopyToAsync(stream);
-                }
+                using var stream = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write);
+                await file.CopyToAsync(stream);
             });
 
             await Task.WhenAll(tasks);
@@ -81,10 +75,8 @@ namespace MyStore.Infrastructure.Storage
             var tasks = files.Select(async (file, index) =>
             {
                 var filePath = Path.Combine(p, fileNames[index]);
-                using (var stream = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write))
-                {
-                    await file.CopyToAsync(stream);
-                }
+                using var stream = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write);
+                await file.CopyToAsync(stream);
             });
 
             await Task.WhenAll(tasks);

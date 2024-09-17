@@ -25,8 +25,13 @@ namespace MyStore.Infrastructure.DbContext
         public virtual DbSet<Product> Products { get; set; }
         public virtual DbSet<ProductReview> ProductReviews { get; set; }
         public virtual DbSet<Size> Sizes { get; set; }
+        public virtual DbSet<ProductColor> ProductColors { get; set; }
         public virtual DbSet<ProductSize> ProductSizes { get; set; }
         public virtual DbSet<ProductMaterial> ProductMaterials { get; set; }
+        public virtual DbSet<Voucher> Vouchers { get; set; }
+        public virtual DbSet<UserVoucher> UserVouchers { get; set; }
+        public virtual DbSet<CommonVoucher> CommonVouchers { get; set; }
+
 
         private void UpdateTimestamps()
         {

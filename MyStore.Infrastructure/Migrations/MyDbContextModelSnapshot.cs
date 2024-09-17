@@ -212,22 +212,34 @@ namespace MyStore.Infrastructure.Migrations
 
             modelBuilder.Entity("MyStore.Domain.Entities.CartItem", b =>
                 {
-                    b.Property<int>("ProductId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("UserId")
+                    b.Property<string>("Id")
                         .HasColumnType("text");
+
+                    b.Property<int>("ColorId")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
 
+                    b.Property<int>("ProductId")
+                        .HasColumnType("integer");
+
                     b.Property<int>("Quantity")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SizeId")
                         .HasColumnType("integer");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp without time zone");
 
-                    b.HasKey("ProductId", "UserId");
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
 
                     b.HasIndex("UserId");
 
@@ -255,6 +267,37 @@ namespace MyStore.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Categories");
+                });
+
+            modelBuilder.Entity("MyStore.Domain.Entities.CommonVoucher", b =>
+                {
+                    b.Property<string>("Code")
+                        .HasColumnType("text");
+
+                    b.Property<double?>("DiscountAmount")
+                        .HasColumnType("double precision");
+
+                    b.Property<int?>("DiscountPercent")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<double?>("MaxDiscount")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("MinOrder")
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.HasKey("Code");
+
+                    b.ToTable("CommonVouchers");
                 });
 
             modelBuilder.Entity("MyStore.Domain.Entities.Image", b =>
@@ -497,7 +540,7 @@ namespace MyStore.Infrastructure.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("ProductColor");
+                    b.ToTable("ProductColors");
                 });
 
             modelBuilder.Entity("MyStore.Domain.Entities.ProductMaterial", b =>
@@ -669,6 +712,52 @@ namespace MyStore.Infrastructure.Migrations
                         .HasDatabaseName("UserNameIndex");
 
                     b.ToTable("AspNetUsers", (string)null);
+                });
+
+            modelBuilder.Entity("MyStore.Domain.Entities.UserVoucher", b =>
+                {
+                    b.Property<string>("UserId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("VoucherCode")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Used")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("UserId", "VoucherCode");
+
+                    b.HasIndex("VoucherCode");
+
+                    b.ToTable("UserVouchers");
+                });
+
+            modelBuilder.Entity("MyStore.Domain.Entities.Voucher", b =>
+                {
+                    b.Property<string>("Code")
+                        .HasColumnType("text");
+
+                    b.Property<double?>("DiscountAmount")
+                        .HasColumnType("double precision");
+
+                    b.Property<int?>("DiscountPercent")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<double?>("MaxDiscount")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("MinOrder")
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.HasKey("Code");
+
+                    b.ToTable("Vouchers");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -888,6 +977,25 @@ namespace MyStore.Infrastructure.Migrations
                     b.Navigation("Size");
                 });
 
+            modelBuilder.Entity("MyStore.Domain.Entities.UserVoucher", b =>
+                {
+                    b.HasOne("MyStore.Domain.Entities.User", "User")
+                        .WithMany("UserVouchers")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MyStore.Domain.Entities.Voucher", "Voucher")
+                        .WithMany("UserVouchers")
+                        .HasForeignKey("VoucherCode")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+
+                    b.Navigation("Voucher");
+                });
+
             modelBuilder.Entity("MyStore.Domain.Entities.Brand", b =>
                 {
                     b.Navigation("Products");
@@ -946,6 +1054,13 @@ namespace MyStore.Infrastructure.Migrations
                     b.Navigation("Addresses");
 
                     b.Navigation("Orders");
+
+                    b.Navigation("UserVouchers");
+                });
+
+            modelBuilder.Entity("MyStore.Domain.Entities.Voucher", b =>
+                {
+                    b.Navigation("UserVouchers");
                 });
 #pragma warning restore 612, 618
         }

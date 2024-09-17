@@ -6,6 +6,7 @@ using MyStore.Application.ICaching;
 using MyStore.Application.IRepositories;
 using MyStore.Application.IRepositories.Orders;
 using MyStore.Application.IRepositories.Products;
+using MyStore.Application.IRepositories.Users;
 using MyStore.Application.ISendMail;
 using MyStore.Application.IStorage;
 using MyStore.Application.Services.Brands;
@@ -16,6 +17,7 @@ using MyStore.Application.Services.Orders;
 using MyStore.Application.Services.Products;
 using MyStore.Application.Services.Sizes;
 using MyStore.Application.Services.Users;
+using MyStore.Application.Services.Vouchers;
 using MyStore.Domain.Entities;
 using MyStore.Infrastructure.AuthenticationService;
 using MyStore.Infrastructure.Caching;
@@ -26,6 +28,7 @@ using MyStore.Infrastructure.Mapping;
 using MyStore.Infrastructure.Repositories;
 using MyStore.Infrastructure.Repositories.Orders;
 using MyStore.Infrastructure.Repositories.Products;
+using MyStore.Infrastructure.Repositories.Users;
 using MyStore.Infrastructure.Storage;
 using System.Text;
 
@@ -109,6 +112,7 @@ builder.Services.AddScoped<IProductPreviewRepository, ProductPreviewRepository>(
 builder.Services.AddScoped<IProductSizeRepository, ProductSizeRepository>();
 builder.Services.AddScoped<IProductColorRepository, ProductColorRepository>();
 builder.Services.AddScoped<IOrderDetailRepository, OrderDetailRepository>();
+builder.Services.AddScoped<IUserVoucherRepository, UserVoucherRepository>();
 
 builder.Services.AddScoped<IBrandService, BrandService>();
 builder.Services.AddScoped<ISizeService, SizeService>();
@@ -118,6 +122,7 @@ builder.Services.AddScoped<IMaterialService, MaterialService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ICartService, CartService>();
+builder.Services.AddScoped<IVoucherService, VoucherService>();
 
 var app = builder.Build();
 

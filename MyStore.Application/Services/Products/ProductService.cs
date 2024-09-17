@@ -1,7 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using MyStore.Application.Admin.Request;
 using MyStore.Application.Admin.Response;
 using MyStore.Application.DTO;
@@ -13,9 +12,7 @@ using MyStore.Application.Response;
 using MyStore.Domain.Constants;
 using MyStore.Domain.Entities;
 using MyStore.Domain.Enumerations;
-using System.Drawing;
 using System.Linq.Expressions;
-using System.Xml.Linq;
 
 namespace MyStore.Application.Services.Products
 {
@@ -66,13 +63,17 @@ namespace MyStore.Application.Services.Products
 
                     foreach (var color in request.ColorSizes.ToHashSet())
                     {
-                        var name = Guid.NewGuid().ToString() + Path.GetExtension(color.Image.FileName);
-                        colorFileNames.Add(name);
-                        colorImages.Add(color.Image);
+                        var name = "";
+                        if (color.Image != null)
+                        {
+                            name = Guid.NewGuid().ToString() + Path.GetExtension(color.Image.FileName);
+                            colorFileNames.Add(name);
+                            colorImages.Add(color.Image);
+                        }
 
                         var productColor = new ProductColor
                         {
-                            ColorName = color.Color,
+                            ColorName = color.ColorName,
                             ProductId = product.Id,
                             ImageUrl = Path.Combine(productPath, name)
                         };
@@ -197,20 +198,36 @@ namespace MyStore.Application.Services.Products
                 IEnumerable<Product> products = [];
                 Expression<Func<Product, bool>> expression = e => e.Enable;
 
-                Expression<Func<Product, double>> priceExp = e => e.Price - (e.Price * (e.DiscountPercent / 100.0));
+                //if (filters.Sorter > Enum.GetNames(typeof(SortEnum)).Length - 1)
+                //{
+                //    throw new ArgumentException(ErrorMessage.INVALID);
+                //}
 
-                if (filters.Sorter > Enum.GetNames(typeof(SortEnum)).Length - 1)
+                if(filters.Gender != null)
                 {
-                    throw new ArgumentException(ErrorMessage.INVALID);
+                    expression = CombineExpressions(expression, e => e.Gender == filters.Gender);
                 }
-                if(filters.MinPrice != null)
+                
+                if(filters.MinPrice != null && filters.MaxPrice != null)
                 {
-                    expression = CombineExpressions(expression, e => (e.Price - (e.Price * (e.DiscountPercent / 100.0))) >= filters.MinPrice);
+                    expression = CombineExpressions(expression, e =>
+                        (e.Price - (e.Price * (e.DiscountPercent / 100.0))) >= filters.MinPrice
+                        &&
+                        (e.Price - (e.Price * (e.DiscountPercent / 100.0))) <= filters.MaxPrice
+                    );
                 }
-                if (filters.MaxPrice != null)
+                else
                 {
-                    expression = CombineExpressions(expression, e => (e.Price - (e.Price * (e.DiscountPercent / 100.0))) <= filters.MaxPrice);
+                    if (filters.MinPrice != null)
+                    {
+                        expression = CombineExpressions(expression, e => (e.Price - (e.Price * (e.DiscountPercent / 100.0))) >= filters.MinPrice);
+                    }
+                    else if (filters.MaxPrice != null)
+                    {
+                        expression = CombineExpressions(expression, e => (e.Price - (e.Price * (e.DiscountPercent / 100.0))) <= filters.MaxPrice);
+                    }
                 }
+                
                 if(filters.Discount != null && filters.Discount == true)
                 {
                     expression = CombineExpressions(expression, e => e.DiscountPercent > 0);
@@ -234,10 +251,9 @@ namespace MyStore.Application.Services.Products
                 }
 
                 totalProduct = await _productRepository.CountAsync(expression);
+                Expression<Func<Product, double>> priceExp = e => e.Price - (e.Price * (e.DiscountPercent / 100.0));
 
-                var sorter = (SortEnum) filters.Sorter;
-
-                switch (sorter)
+                switch (filters.Sorter)
                 {
                     case SortEnum.SOLD:
                         products = await _productRepository
@@ -287,15 +303,16 @@ namespace MyStore.Application.Services.Products
             }
         }
 
-        public async Task<ProductResponse> GetProductAsync(int id)
+        public async Task<ProductDetailsResponse> GetProductAsync(int id)
         {
-            var product = await _productRepository.SingleOrDefaultAsync(id);
+            var product = await _productRepository.SingleOrDefaultAsync(e => e.Id == id); //no Find -> Include
             if (product != null)
             {
-                var res = _mapper.Map<ProductResponse>(product);
+                var res = _mapper.Map<ProductDetailsResponse>(product);
                 res.MaterialIds = product.Materials.Select(e => e.MaterialId);
-                //res.SizesAndQuantities = _mapper.Map<IEnumerable<SizeAndQuantity>>(product.Sizes);
-                //res.SizeIds = product.Sizes.Select(e => e.SizeId);
+
+                res.ColorSizes = _mapper.Map<IEnumerable<ColorSizeResponse>>(product.ProductColors);
+
                 res.ImageUrls = product.Images.Select(e => e.ImageUrl);
 
                 return res;
@@ -305,7 +322,7 @@ namespace MyStore.Application.Services.Products
 
         public async Task<ProductDTO> UpdateProductAsync(int id, ProductRequest request, IFormFileCollection images)
         {
-            var product = await _productRepository.FindAsync(id);
+            var product = await _productRepository.SingleOrDefaultAsync(e => e.Id == id);
             if (product != null)
             {
                 using (var transaction = await _transactionRepository.BeginTransactionAsync())
@@ -321,29 +338,95 @@ namespace MyStore.Application.Services.Products
                         product.Enable = request.Enable;
                         product.DiscountPercent = request.DiscountPercent;
 
-                        //var productSizes = _mapper.Map<IEnumerable<ProductSize>>(request.SizesAndQuantities)
-                        //    .Select(size =>
-                        //    {
-                        //        size.ProductId = id;
-                        //        return size;
-                        //    });
-                        //await _productSizeRepository.DeleteAllByProductIdAsync(id);
-                        //await _productSizeRepository.AddAsync(productSizes);
+                        var productPath = path + "/" + product.Id;
+
+                        List<string> colorFileNames = new();
+                        List<IFormFile> colorImages = new();
+                        List<ProductSize> productSizes = new();
+
+                        List<ProductColor> pColorDelete = new();
+                        var oldProductColors = await _productColorRepository.GetAsync(e => e.ProductId == product.Id);
+
+                        var oldColor = request.ColorSizes.Select(e => e.Id);
+                        if(oldColor == null || !oldColor.Any())
+                        {
+                            pColorDelete.AddRange(oldProductColors);
+                        }
+                        else
+                        {
+                            var colorDel = oldProductColors.Where(old => !request.ColorSizes.Select(e => e.Id).Contains(old.Id));
+                            pColorDelete.AddRange(colorDel);
+
+                            //cập nhật số lượng size cũ
+                            var oldIds = request.ColorSizes.Where(e => e.Id != null).Select(e => e.Id);
+                            var colorUpdate = oldProductColors.Where(old => oldIds.Contains(old.Id));
+
+                            foreach (var color in colorUpdate)
+                            {
+                                var matchingColor = request.ColorSizes.Single(e => e.Id == color.Id);
+                                foreach (var size in color.ProductSizes)
+                                {
+                                    var matchingSize = matchingColor.SizeInStocks.Single(s => s.SizeId == size.SizeId);
+                                    size.InStock = matchingSize.InStock;
+                                }
+                            }
+
+                        }
+                        //xóa màu
+                        _fileStorage.Delete(pColorDelete.Select(e => e.ImageUrl));
+                        await _productColorRepository.DeleteRangeAsync(pColorDelete);
+
+                        //thêm màu
+                        var newColorImage = request.ColorSizes.Where(e => e.Image != null && e.Id == null);
+                        if (newColorImage.Count() > 0)
+                        {
+                            foreach (var color in newColorImage)
+                            {
+                                var name = "";
+                                if (color.Image != null)
+                                {
+                                    name = Guid.NewGuid().ToString() + Path.GetExtension(color.Image.FileName);
+                                    colorFileNames.Add(name);
+                                    colorImages.Add(color.Image);
+                                }
+
+                                var productColor = new ProductColor
+                                {
+                                    ColorName = color.ColorName,
+                                    ProductId = product.Id,
+                                    ImageUrl = Path.Combine(productPath, name)
+                                };
+
+                                await _productColorRepository.AddAsync(productColor);
+
+                                var sizes = color.SizeInStocks.Select(size =>
+                                {
+                                    return new ProductSize
+                                    {
+                                        ProductColorId = productColor.Id,
+                                        SizeId = size.SizeId,
+                                        InStock = size.InStock,
+                                    };
+                                });
+                                productSizes.AddRange(sizes);
+                            }
+                            await _productSizeRepository.AddAsync(productSizes);
+                            await _fileStorage.SaveAsync(productPath, colorImages, colorFileNames);
+                        }
+
+                        var pMaterials = await _productMaterialRepository.GetAsync(e => e.ProductId == product.Id);
+                        await _productMaterialRepository.DeleteRangeAsync(pMaterials);
 
                         var productMaterials = request.MaterialIds.Select(e => new ProductMaterial
                         {
                             ProductId = id,
                             MaterialId = e
                         });
-
-                        await _productMaterialRepository.DeleteAllByProductIdAsync(id);
                         await _productMaterialRepository.AddAsync(productMaterials);
 
-
-                        var oldImgs = await _imageRepository.GetImageByProductIdAsync(id);
-                        
                         List<Image> imageDelete = new();
-                        if(request.ImageUrls == null || request.ImageUrls.Count() < 1)
+                        var oldImgs = await _imageRepository.GetImageByProductIdAsync(id);
+                        if (request.ImageUrls == null || !request.ImageUrls.Any())
                         {
                             imageDelete.AddRange(oldImgs);
                         }
@@ -355,7 +438,7 @@ namespace MyStore.Application.Services.Products
                         _fileStorage.Delete(imageDelete.Select(e => e.ImageUrl));
                         await _imageRepository.DeleteRangeAsync(imageDelete);
 
-                        if(images.Count > 0)
+                        if (images.Count > 0)
                         {
                             List<string> fileNames = new();
                             var imgs = images.Select(file =>
@@ -365,12 +448,12 @@ namespace MyStore.Application.Services.Products
                                 var image = new Image()
                                 {
                                     ProductId = id,
-                                    ImageUrl = Path.Combine(path, name),
+                                    ImageUrl = Path.Combine(productPath, name),
                                 };
                                 return image;
                             });
                             await _imageRepository.AddAsync(imgs);
-                            await _fileStorage.SaveAsync(path, images, fileNames);
+                            await _fileStorage.SaveAsync(productPath, images, fileNames);
                         }
 
                         await _productRepository.UpdateAsync(product);
@@ -405,7 +488,12 @@ namespace MyStore.Application.Services.Products
             if (product != null)
             {
                 var images = await _imageRepository.GetImageByProductIdAsync(id);
-                _fileStorage.Delete(images.Select(e => e.ImageUrl));
+                var colorImages = await _productColorRepository.GetAsync(e => e.ProductId == id);
+
+                var deleteList = colorImages.Select(e => e.ImageUrl).ToList();
+                deleteList.AddRange(images.Select(e => e.ImageUrl));
+
+                _fileStorage.Delete(deleteList);
                 await _productRepository.DeleteAsync(product);
             }
             else throw new ArgumentException($"Id {id} " + ErrorMessage.NOT_FOUND);

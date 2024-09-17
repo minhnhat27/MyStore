@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using MyStore.Application.Request;
 using MyStore.Application.Services.Carts;
 using System.Security.Claims;
 
@@ -25,6 +26,70 @@ namespace MyStore.Presentation.Controllers
                 }
                 var cartItems = await _cartService.GetAllByUserId(userId);
                 return Ok(cartItems);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+
+        }
+
+        [HttpPost("create")]
+        public async Task<IActionResult> Create([FromBody] CartRequest request)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (userId == null)
+                {
+                    return Unauthorized();
+                }
+                await _cartService.AddToCart(userId, request);
+                return Ok(request);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(string id, [FromBody] UpdateCartItemRequest request)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (userId == null)
+                {
+                    return Unauthorized();
+                }
+                await _cartService.UpdateCartItem(id, userId, request);
+                return Ok(request);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Detete(string id)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (userId == null)
+                {
+                    return Unauthorized();
+                }
+                await _cartService.DeleteCartItem(id, userId);
+                return Ok();
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(ex.Message);
             }
             catch (Exception ex)
             {

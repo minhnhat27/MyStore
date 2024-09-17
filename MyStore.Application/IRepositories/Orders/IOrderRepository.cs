@@ -5,6 +5,5 @@ namespace MyStore.Application.IRepositories.Orders
 {
     public interface IOrderRepository : IRepository<Order>
     {
-        Task<Order?> SingleOrDefaultAsync(Expression<Func<Order, bool>> expression);
     }
 }

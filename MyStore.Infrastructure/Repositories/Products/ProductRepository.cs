@@ -11,16 +11,18 @@ namespace MyStore.Infrastructure.Repositories.Products
     {
         private readonly MyDbContext _dbContext;
         public ProductRepository(MyDbContext dbcontext) : base(dbcontext) => _dbContext = dbcontext;
-
-        public async Task<Product?> SingleOrDefaultAsync(int id)
+        public override async Task<Product?> SingleOrDefaultAsync(Expression<Func<Product, bool>> expression)
         {
             return await _dbContext.Products
             .Include(e => e.Images)
             .Include(e => e.Materials)
-            //.Include(e => e.Sizes)
+            .Include(e => e.ProductColors)
+                .ThenInclude(e => e.ProductSizes)
+                    .ThenInclude(e => e.Size)
             .Include(e => e.Category)
             .Include(e => e.Brand)
-            .SingleOrDefaultAsync(e => e.Id == id);
+            .AsSplitQuery()
+            .SingleOrDefaultAsync(expression);
         }
 
         public override async Task<IEnumerable<Product>> GetPagedAsync<TKey>(int page, int pageSize, Expression<Func<Product, bool>>? expression, Expression<Func<Product, TKey>> orderBy)

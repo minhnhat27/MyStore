@@ -7,6 +7,8 @@ namespace MyStore.Application.IRepositories
         Task<IEnumerable<T>> GetAllAsync();
         Task<IEnumerable<T>> GetAsync(Expression<Func<T, bool>> expression);
         Task<T?> FindAsync(params object?[]? keyValues);
+        Task<T?> SingleOrDefaultAsync(Expression<Func<T, bool>> expression);
+        Task<T> SingleAsync(Expression<Func<T, bool>> expression);
         Task AddAsync(T entity);
         Task AddAsync(IEnumerable<T> entities);
         Task UpdateAsync(T entity);

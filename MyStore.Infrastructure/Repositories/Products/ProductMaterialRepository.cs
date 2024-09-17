@@ -12,11 +12,11 @@ namespace MyStore.Infrastructure.Repositories.Products
         {
             _dbContext = dbcontext;
         }
-        public async Task DeleteAllByProductIdAsync(int productId)
-        {
-            var materials = await _dbContext.ProductMaterials.Where(e => e.ProductId == productId).ToListAsync();
-            _dbContext.RemoveRange(materials);
-            await _dbContext.SaveChangesAsync();
-        }
+        //public async Task DeleteAllByProductIdAsync(int productId)
+        //{
+        //    var materials = await _dbContext.ProductMaterials.Where(e => e.ProductId == productId).ToListAsync();
+        //    _dbContext.RemoveRange(materials);
+        //    await _dbContext.SaveChangesAsync();
+        //}
     }
 }

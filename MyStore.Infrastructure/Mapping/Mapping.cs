@@ -27,14 +27,24 @@ namespace MyStore.Infrastructure.Mapping
 
             CreateMap<OrderRequest, Order>();
             CreateMap<ProductRequest, Product>();
-            CreateMap<SizeAndQuantity, ProductSize>().ReverseMap();
 
-            CreateMap<Product, ProductResponse>();
+            CreateMap<Product, ProductDetailsResponse>();
             CreateMap<User, UserResponse>();
 
             CreateMap<Order, OrderDetailsResponse>();
             CreateMap<OrderDetail, ProductsOrderDetail>()
                 .ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.Product.Name));
+
+            //product response
+            CreateMap<Product, ProductDetailsResponse>();
+            CreateMap<ProductColor, ColorSizeResponse>()
+                .ForMember(dest => dest.SizeInStocks, opt => opt.MapFrom(src => src.ProductSizes));
+
+            CreateMap<ProductSize, SizeInStock>()
+                .ForMember(dest => dest.SizeName, opt => opt.MapFrom(src => src.Size.Name));
+
+            //Voucher
+            CreateMap<Voucher, VoucherDTO>().ReverseMap();
         }
     }
 }

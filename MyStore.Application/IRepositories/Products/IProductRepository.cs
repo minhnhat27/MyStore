@@ -9,6 +9,5 @@ namespace MyStore.Application.IRepositories.Products
         //Task<IEnumerable<Product>> GetPagedAsync(int page, int pageSize,
         //    Expression<Func<Product, bool>> filters, SortEnum sorter);
         //Task<int> CountAsync(Expression<Func<Product, bool>> filters, Expression<Func<Product, bool>> sorter);
-        Task<Product?> SingleOrDefaultAsync(int id);
     }
 }

@@ -1,18 +1,18 @@
 ﻿using Microsoft.AspNetCore.Http;
+using MyStore.Application.ModelView;
 using MyStore.Domain.Enumerations;
 
 namespace MyStore.Application.Admin.Request
 {
-    public class SizeInStock
+    public class ColorSizeRequest
     {
-        public int SizeId { get; set; }
-        public int InStock { get; set; }
-    }
-    public class ColorSize
-    {
-        public string Color { get; set; }
-        public IFormFile Image { get; set; }
+        public string ColorName { get; set; }
+        public IFormFile? Image { get; set; }
         public IEnumerable<SizeInStock> SizeInStocks { get; set; }
+
+        //update
+        public int? Id { get; set; }
+        public string? ImageUrl { get; set; }
     }
     public class ProductRequest
     {
@@ -25,7 +25,9 @@ namespace MyStore.Application.Admin.Request
         public double Price { get; set; }
         public float DiscountPercent { get; set; } = 0;
         public IEnumerable<int> MaterialIds { get; set; }
-        public IEnumerable<ColorSize> ColorSizes { get; set; }
+        public IEnumerable<ColorSizeRequest> ColorSizes { get; set; }
+
+        //for update
         public IEnumerable<string>? ImageUrls { get; set; }
     }
 }

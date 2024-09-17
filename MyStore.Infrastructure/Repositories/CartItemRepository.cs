@@ -6,13 +6,10 @@ using System.Linq.Expressions;
 
 namespace MyStore.Infrastructure.Repositories
 {
-    public class CartItemRepository : Repository<CartItem>, ICartItemRepository
+    public class CartItemRepository(MyDbContext dbcontext) : Repository<CartItem>(dbcontext), ICartItemRepository
     {
-        private readonly MyDbContext _dbContext;
-        public CartItemRepository(MyDbContext dbcontext) : base(dbcontext)
-        {
-            _dbContext = dbcontext;
-        }
+        private readonly MyDbContext _dbContext = dbcontext;
+
         public async Task DeleteRangeByUserId(string userId, IEnumerable<int> productIds)
         {
             var cartItemsToDelete = await _dbContext.CartItems
@@ -26,8 +23,22 @@ namespace MyStore.Infrastructure.Repositories
         {
             return await _dbContext.CartItems
                 .Include(e => e.Product)
-                .ThenInclude(e => e.Images)
+                    .ThenInclude(e => e.ProductColors)
+                    .ThenInclude(e => e.ProductSizes)
+                    .ThenInclude(e => e.Size)
+                .AsSingleQuery()
                 .Where(expression).ToListAsync();
+        }
+
+        public async Task<CartItem?> SingleOrDefaultAsyncInclude(Expression<Func<CartItem, bool>> expression)
+        {
+            return await _dbContext.CartItems
+                .Include(e => e.Product)
+                    .ThenInclude(e => e.ProductColors)
+                    .ThenInclude(e => e.ProductSizes)
+                    .ThenInclude(e => e.Size)
+                .AsSingleQuery()
+                .SingleOrDefaultAsync(expression);
         }
     }
 }

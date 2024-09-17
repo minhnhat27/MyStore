@@ -68,11 +68,17 @@ namespace MyStore.Infrastructure.Repositories
             => expression == null 
             ? await _dbContext.Set<T>().OrderByDescending(orderByDesc).Paginate(page, pageSize).ToArrayAsync() 
             : await _dbContext.Set<T>().Where(expression).OrderByDescending(orderByDesc).Paginate(page, pageSize).ToArrayAsync();
-        public async Task<int> CountAsync()
+        public virtual async Task<int> CountAsync()
            => await _dbContext.Set<T>().CountAsync();
-        public async Task<int> CountAsync(Expression<Func<T, bool>> expression)
+        public virtual async Task<int> CountAsync(Expression<Func<T, bool>> expression)
            => await _dbContext.Set<T>()
                 .Where(expression)
                 .CountAsync();
+
+        public virtual async Task<T?> SingleOrDefaultAsync(Expression<Func<T, bool>> expression)
+            => await _dbContext.Set<T>().SingleOrDefaultAsync(expression);
+
+        public virtual async Task<T> SingleAsync(Expression<Func<T, bool>> expression)
+            => await _dbContext.Set<T>().SingleAsync(expression);
     }
 }

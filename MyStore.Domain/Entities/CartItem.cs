@@ -1,10 +1,13 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace MyStore.Domain.Entities
 {
-    [PrimaryKey(nameof(ProductId), nameof(UserId))]
+    //[PrimaryKey(nameof(ProductId), nameof(UserId), nameof(SizeId), nameof(ColorId))]
     public class CartItem : IBaseEntity
     {
+        [Key]
+        public string Id { get; set; } = Guid.NewGuid().ToString();
+
         public int ProductId { get; set; }
         public Product Product { get; set; }
 
@@ -12,6 +15,9 @@ namespace MyStore.Domain.Entities
         public User User { get; set; }
 
         public int Quantity { get; set; }
+
+        public int SizeId { get; set; }
+        public int ColorId { get; set; }
 
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }

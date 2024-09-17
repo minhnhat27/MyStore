@@ -5,14 +5,16 @@ namespace MyStore.Domain.Entities
     public class Voucher
     {
         [Key]
-        public Guid Id { get; set; } = Guid.NewGuid();
-        public string UserId { get; set; }
         public string Code { get; set; }
-        public bool IsActive { get; set; }
-        public string DiscountPercent { get; set; }
-        public string MinOrder { get; set; }
-        public string MaxDiscount { get; set; }
+
+        public int? DiscountPercent { get; set; }
+        public double? DiscountAmount { get; set; }
+
+        public double MinOrder { get; set; }
+        public double? MaxDiscount { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
+
+        public ICollection<UserVoucher> UserVouchers { get; set; } = new HashSet<UserVoucher>();
     }
 }

@@ -13,7 +13,7 @@ namespace MyStore.Application.Services.Products
         Task<PagedResponse<ProductDTO>> GetProductsAsync(int page, int pageSize, string? keySearch);
         Task<PagedResponse<ProductDTO>> GetFilterProductsAsync(Filters filters);
 
-        Task<ProductResponse> GetProductAsync(int id);
+        Task<Admin.Response.ProductDetailsResponse> GetProductAsync(int id);
         Task<ProductDTO> UpdateProductAsync(int id, ProductRequest request, IFormFileCollection images);
         Task<bool> UpdateProductEnableAsync(int id, UpdateEnableRequest request);
         Task DeleteProductAsync(int id);
