@@ -2,22 +2,19 @@
 using MyStore.Application.IRepositories.Products;
 using MyStore.Domain.Entities;
 using MyStore.Infrastructure.DbContext;
+using System.Linq.Expressions;
 
 namespace MyStore.Infrastructure.Repositories.Products
 {
-    public class ProductSizeRepository : Repository<ProductSize>, IProductSizeRepository
+    public class ProductSizeRepository(MyDbContext dbcontext) : Repository<ProductSize>(dbcontext), IProductSizeRepository
     {
-        private readonly MyDbContext _dbContext;
-        public ProductSizeRepository(MyDbContext dbcontext) : base(dbcontext)
-        {
-            _dbContext = dbcontext;
-        }
+        private readonly MyDbContext _dbContext = dbcontext;
 
-        public async Task DeleteAllByProductIdAsync(int productId)
+        public async Task<ProductSize> SingleAsyncInclude(Expression<Func<ProductSize, bool>> expression)
         {
-            //var products = await _dbContext.ProductSizes.Where(e => e.ProductId == productId).ToListAsync();
-            //_dbContext.ProductSizes.RemoveRange(products);
-            //await _dbContext.SaveChangesAsync();
+            return await _dbContext.ProductSizes
+                .Include(e => e.ProductColor)
+                .SingleAsync(expression);
         }
     }
 }

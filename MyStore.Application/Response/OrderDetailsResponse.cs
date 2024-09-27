@@ -4,7 +4,7 @@ namespace MyStore.Application.Response
 {
     public class OrderDetailsResponse
     {
-        public int Id { get; set; }
+        public long Id { get; set; }
         public IEnumerable<ProductsOrderDetail> Products { get; set; }
         public double SubTotal { get; set; }
         public double ShippingCost { get; set; }

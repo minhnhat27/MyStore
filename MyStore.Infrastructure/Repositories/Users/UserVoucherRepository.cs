@@ -15,5 +15,12 @@ namespace MyStore.Infrastructure.Repositories.Users
                 .Include(e => e.Voucher)
                 .Where(expression).ToListAsync();
         }
+
+        public async Task<UserVoucher?> SingleOrDefaultAsyncInclude(Expression<Func<UserVoucher, bool>> expression)
+        {
+            return await _dbcontext.UserVouchers
+                .Include(e => e.Voucher)
+                .SingleOrDefaultAsync(expression);
+        }
     }
 }

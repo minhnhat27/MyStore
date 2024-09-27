@@ -2,9 +2,11 @@
 {
     public enum DeliveryStatusEnum
     {
-        Proccessing,
+        Processing,
         Confirmed,
+        AwaitingPickup,
         Shipping,
+        BeingDelivered,
         Received,
         Canceled,
     }

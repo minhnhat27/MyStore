@@ -6,7 +6,7 @@ namespace MyStore.Application.Response
     {
         public string Id { get; set; }
 
-        public int ProductId { get; set; }
+        public long ProductId { get; set; }
         public string ProductName { get; set; }
 
         public int Quantity { get; set; }
@@ -15,12 +15,12 @@ namespace MyStore.Application.Response
         public float DiscountPercent { get; set; }
         public double Price => OriginPrice - OriginPrice * (DiscountPercent / 100.0);
 
-        public int SizeId { get; set; }
+        public long SizeId { get; set; }
         public string? SizeName { get; set; }
 
         public IEnumerable<SizeInStock> SizeInStocks { get; set; }
 
-        public int ColorId { get; set; }
+        public long ColorId { get; set; }
         public string? ColorName { get; set; }
 
         public int InStock { get; set; }

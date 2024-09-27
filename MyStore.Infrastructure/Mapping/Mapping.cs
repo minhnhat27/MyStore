@@ -13,29 +13,33 @@ namespace MyStore.Infrastructure.Mapping
     {
         public Mapping()
         {
-            CreateMap<User, UserDTO>().ReverseMap();
-            CreateMap<Order, OrderDTO>().ReverseMap();
-            CreateMap<Product, ProductDTO>().ReverseMap();
-            CreateMap<Product, ProductDTO>()
-                .ForMember(dest => dest.BrandName, opt => opt.MapFrom(src => src.Brand.Name))
-                .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.Name));
-
             CreateMap<Material, MaterialDTO>().ReverseMap();
             CreateMap<Brand, BrandDTO>().ReverseMap();
             CreateMap<Category, CategoryDTO>().ReverseMap();
             CreateMap<Size, SizeDTO>().ReverseMap();
 
-            CreateMap<OrderRequest, Order>();
-            CreateMap<ProductRequest, Product>();
-
-            CreateMap<Product, ProductDetailsResponse>();
+            //user
             CreateMap<User, UserResponse>();
+            CreateMap<User, UserDTO>().ReverseMap();
+            CreateMap<DeliveryAddress, AddressDTO>().ReverseMap();
 
+            //order
+            CreateMap<OrderDTO, Order>().ReverseMap();
+                //.ForMember(d => d.PaymentMethod, opt => opt.MapFrom(src => src.PaymentMethodId));
+                //.ForMember(d => d.OrderStatus, opt => opt.MapFrom(src => src.OrderStatus));
+
+            CreateMap<OrderRequest, Order>().ReverseMap();
             CreateMap<Order, OrderDetailsResponse>();
-            CreateMap<OrderDetail, ProductsOrderDetail>()
-                .ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.Product.Name));
+            //CreateMap<OrderDetail, ProductsOrderDetail>()
+            //    .ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.Product.Name));
 
-            //product response
+            //product
+            CreateMap<Product, ProductDTO>().ReverseMap();
+            CreateMap<Product, ProductDTO>()
+                .ForMember(dest => dest.BrandName, opt => opt.MapFrom(src => src.Brand.Name))
+                .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.Name));
+
+            CreateMap<ProductRequest, Product>();
             CreateMap<Product, ProductDetailsResponse>();
             CreateMap<ProductColor, ColorSizeResponse>()
                 .ForMember(dest => dest.SizeInStocks, opt => opt.MapFrom(src => src.ProductSizes));
@@ -45,6 +49,9 @@ namespace MyStore.Infrastructure.Mapping
 
             //Voucher
             CreateMap<Voucher, VoucherDTO>().ReverseMap();
+
+            //Payment Method
+            CreateMap<PaymentMethod, PaymentMethodDTO>().ReverseMap();
         }
     }
 }

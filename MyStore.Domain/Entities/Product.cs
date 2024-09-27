@@ -5,7 +5,7 @@ namespace MyStore.Domain.Entities
 {
     public class Product : IBaseEntity
     {
-        public int Id { get; set; }
+        public long Id { get; set; }
 
         [MaxLength(150)]
         public string Name { get; set; }

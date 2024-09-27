@@ -6,10 +6,14 @@ namespace MyStore.Domain.Entities
     {
         [Key]
         public string Id { get; set; } = Guid.NewGuid().ToString();
-        public string Review { get; set; }
-        public int Star { get; set; } = 0;
 
-        public int ProductId { get; set; }
+        [MaxLength(100)]
+        public string Review { get; set; }
+
+        [Range(1, 5)]
+        public int Star { get; set; }
+
+        public long ProductId { get; set; }
         public Product Product { get; set; }
 
         public DateTime CreatedAt { get; set; }

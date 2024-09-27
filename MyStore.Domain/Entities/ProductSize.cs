@@ -6,10 +6,10 @@ namespace MyStore.Domain.Entities
     [PrimaryKey(nameof(ProductColorId), nameof(SizeId))]
     public class ProductSize : IBaseEntity
     {
-        public int ProductColorId { get; set; }
+        public long ProductColorId { get; set; }
         public ProductColor ProductColor { get; set; }
 
-        public int SizeId { get; set; }
+        public long SizeId { get; set; }
         public Size Size { get; set; }
 
 

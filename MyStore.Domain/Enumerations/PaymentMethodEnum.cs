@@ -3,8 +3,8 @@
     public enum PaymentMethodEnum
     {
         COD,
-        VnPay,
+        VNPay,
+        PayOS,
         MoMo,
-        ZaloPay
     }
 }

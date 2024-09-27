@@ -122,10 +122,11 @@ namespace MyStore.Application.Services.Products
                     await transaction.CommitAsync();
 
                     var res = _mapper.Map<ProductDTO>(product);
-                    var image = await _imageRepository.GetFirstImageByProductIdAsync(product.Id);
+
+                    var image = imgs.FirstOrDefault();
                     if (image != null)
                     {
-                        res.ImageUrl = image.ImageUrl;
+                        res.ImageUrl = image.ImageUrl; ;
                     }
                     return res;
                 }

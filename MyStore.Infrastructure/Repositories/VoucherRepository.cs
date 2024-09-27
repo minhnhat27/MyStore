@@ -4,10 +4,8 @@ using MyStore.Infrastructure.DbContext;
 
 namespace MyStore.Infrastructure.Repositories
 {
-    public class AddressRepository : Repository<Address>, IAddressRepository
+    public class VoucherRepository(MyDbContext dbcontext) : Repository<Voucher>(dbcontext), IVoucherRepository
     {
-        public AddressRepository(MyDbContext dbcontext) : base(dbcontext)
-        {
-        }
+
     }
 }

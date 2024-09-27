@@ -1,12 +1,10 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace MyStore.Domain.Entities
+﻿namespace MyStore.Domain.Entities
 {
     public class PaymentMethod
     {
-        [Key]
+        public int Id { get; set; }
         public string Name { get; set; }
-        public bool isActive { get; set; } = false;
+        public bool IsActive { get; set; }
         public ICollection<Order> Orders { get; } = new HashSet<Order>();
     }
 }

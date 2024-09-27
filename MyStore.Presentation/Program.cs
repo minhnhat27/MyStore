@@ -3,17 +3,20 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using MyStore.Application.ICaching;
+using MyStore.Application.ILibrary;
 using MyStore.Application.IRepositories;
 using MyStore.Application.IRepositories.Orders;
 using MyStore.Application.IRepositories.Products;
 using MyStore.Application.IRepositories.Users;
 using MyStore.Application.ISendMail;
 using MyStore.Application.IStorage;
+using MyStore.Application.ModelView;
 using MyStore.Application.Services.Brands;
 using MyStore.Application.Services.Carts;
 using MyStore.Application.Services.Categories;
 using MyStore.Application.Services.Materials;
 using MyStore.Application.Services.Orders;
+using MyStore.Application.Services.Payments;
 using MyStore.Application.Services.Products;
 using MyStore.Application.Services.Sizes;
 using MyStore.Application.Services.Users;
@@ -24,6 +27,7 @@ using MyStore.Infrastructure.Caching;
 using MyStore.Infrastructure.DataSeeding;
 using MyStore.Infrastructure.DbContext;
 using MyStore.Infrastructure.Email;
+using MyStore.Infrastructure.Library;
 using MyStore.Infrastructure.Mapping;
 using MyStore.Infrastructure.Repositories;
 using MyStore.Infrastructure.Repositories.Orders;
@@ -50,8 +54,6 @@ builder.Services.AddCors(opt => opt.AddPolicy("MyCors", opt =>
 }));
 builder.Services.AddDbContext<MyDbContext>(opt =>
 {
-    //opt.UseSqlServer(builder.Configuration.GetConnectionString("SqlServerConnection"),
-    //    m => m.MigrationsAssembly("MyStore.Infrastructure"));
     opt.UseNpgsql(builder.Configuration.GetConnectionString("PostgreSqlConnection"),
         m => m.MigrationsAssembly("MyStore.Infrastructure"));
 });
@@ -86,6 +88,7 @@ builder.Services.AddAuthentication(opt =>
 builder.Services.AddAutoMapper(typeof(Mapping));
 
 builder.Services.Configure<SenderSettings>(builder.Configuration.GetSection("SenderSettings"));
+//builder.Services.Configure<VNPay>(builder.Configuration.GetSection("VNPay"));
 
 builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<ISendMailService, SendMailService>();
@@ -101,7 +104,6 @@ builder.Services.AddScoped<IMaterialRepository, MaterialRepository>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<IBrandRepository, BrandRepository>();
 builder.Services.AddScoped<ISizeRepository, SizeRepository>();
-builder.Services.AddScoped<IAddressRepository, AddressRepository>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ICartItemRepository, CartItemRepository>();
@@ -112,7 +114,9 @@ builder.Services.AddScoped<IProductPreviewRepository, ProductPreviewRepository>(
 builder.Services.AddScoped<IProductSizeRepository, ProductSizeRepository>();
 builder.Services.AddScoped<IProductColorRepository, ProductColorRepository>();
 builder.Services.AddScoped<IOrderDetailRepository, OrderDetailRepository>();
+builder.Services.AddScoped<IVoucherRepository, VoucherRepository>();
 builder.Services.AddScoped<IUserVoucherRepository, UserVoucherRepository>();
+builder.Services.AddScoped<IDeliveryAddressRepository, DeliveryAddressRepository>();
 
 builder.Services.AddScoped<IBrandService, BrandService>();
 builder.Services.AddScoped<ISizeService, SizeService>();
@@ -121,8 +125,10 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IMaterialService, MaterialService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IVoucherService, VoucherService>();
+builder.Services.AddScoped<IVNPayLibrary, VNPayLibrary>();
 
 var app = builder.Build();
 

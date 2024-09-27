@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MyStore.Infrastructure.Migrations
 {
     [DbContext(typeof(MyDbContext))]
-    [Migration("20240829135308_init")]
+    [Migration("20240927124548_init")]
     partial class init
     {
         /// <inheritdoc />
@@ -157,35 +157,6 @@ namespace MyStore.Infrastructure.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("MyStore.Domain.Entities.Address", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("Addresses");
-                });
-
             modelBuilder.Entity("MyStore.Domain.Entities.Brand", b =>
                 {
                     b.Property<int>("Id")
@@ -215,22 +186,34 @@ namespace MyStore.Infrastructure.Migrations
 
             modelBuilder.Entity("MyStore.Domain.Entities.CartItem", b =>
                 {
-                    b.Property<int>("ProductId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("UserId")
+                    b.Property<string>("Id")
                         .HasColumnType("text");
+
+                    b.Property<long>("ColorId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
 
+                    b.Property<long>("ProductId")
+                        .HasColumnType("bigint");
+
                     b.Property<int>("Quantity")
                         .HasColumnType("integer");
+
+                    b.Property<long>("SizeId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp without time zone");
 
-                    b.HasKey("ProductId", "UserId");
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
 
                     b.HasIndex("UserId");
 
@@ -260,13 +243,89 @@ namespace MyStore.Infrastructure.Migrations
                     b.ToTable("Categories");
                 });
 
-            modelBuilder.Entity("MyStore.Domain.Entities.Image", b =>
+            modelBuilder.Entity("MyStore.Domain.Entities.CommonVoucher", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
+                    b.Property<string>("Code")
+                        .HasColumnType("text");
+
+                    b.Property<double?>("DiscountAmount")
+                        .HasColumnType("double precision");
+
+                    b.Property<int?>("DiscountPercent")
                         .HasColumnType("integer");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<double?>("MaxDiscount")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("MinOrder")
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.HasKey("Code");
+
+                    b.ToTable("CommonVouchers");
+                });
+
+            modelBuilder.Entity("MyStore.Domain.Entities.DeliveryAddress", b =>
+                {
+                    b.Property<string>("UserId")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("Detail")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int?>("District_id")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("District_name")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("Province_id")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Province_name")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("Ward_id")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Ward_name")
+                        .HasColumnType("text");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("DeliveryAddresses");
+                });
+
+            modelBuilder.Entity("MyStore.Domain.Entities.Image", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
@@ -275,8 +334,8 @@ namespace MyStore.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("ProductId")
-                        .HasColumnType("integer");
+                    b.Property<long>("ProductId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp without time zone");
@@ -313,35 +372,36 @@ namespace MyStore.Infrastructure.Migrations
 
             modelBuilder.Entity("MyStore.Domain.Entities.Order", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+                        .HasColumnType("bigint");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<double>("AmountPaid")
+                        .HasColumnType("double precision");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
 
+                    b.Property<string>("DeliveryAddress")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("character varying(160)");
+
                     b.Property<DateTime>("OrderDate")
                         .HasColumnType("timestamp without time zone");
 
-                    b.Property<string>("OrderStatusName")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<bool>("Paid")
-                        .HasColumnType("boolean");
+                    b.Property<int?>("OrderStatus")
+                        .HasColumnType("integer");
 
                     b.Property<string>("PaymentMethodName")
-                        .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("ReceiverInfo")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                    b.Property<string>("PaymentTranId")
+                        .HasColumnType("text");
 
-                    b.Property<string>("ShippingAddress")
+                    b.Property<string>("Receiver")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
@@ -361,8 +421,6 @@ namespace MyStore.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("OrderStatusName");
-
                     b.HasIndex("PaymentMethodName");
 
                     b.HasIndex("UserId");
@@ -372,37 +430,52 @@ namespace MyStore.Infrastructure.Migrations
 
             modelBuilder.Entity("MyStore.Domain.Entities.OrderDetail", b =>
                 {
-                    b.Property<int>("OrderId")
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("ColorId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("ProductId")
-                        .HasColumnType("integer");
+                    b.Property<string>("ColorName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<long>("OrderId")
+                        .HasColumnType("bigint");
+
+                    b.Property<double>("OriginPrice")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("Price")
+                        .HasColumnType("double precision");
+
+                    b.Property<long?>("ProductId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("ProductName")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<int>("Quantity")
                         .HasColumnType("integer");
 
-                    b.Property<string>("Size")
+                    b.Property<int>("SizeId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SizeName")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<double>("UnitPrice")
-                        .HasColumnType("double precision");
+                    b.HasKey("Id");
 
-                    b.HasKey("OrderId", "ProductId");
+                    b.HasIndex("OrderId");
 
                     b.HasIndex("ProductId");
 
                     b.ToTable("OrderDetails");
-                });
-
-            modelBuilder.Entity("MyStore.Domain.Entities.OrderStatus", b =>
-                {
-                    b.Property<string>("Name")
-                        .HasColumnType("text");
-
-                    b.HasKey("Name");
-
-                    b.ToTable("OrderStatus");
                 });
 
             modelBuilder.Entity("MyStore.Domain.Entities.PaymentMethod", b =>
@@ -410,7 +483,7 @@ namespace MyStore.Infrastructure.Migrations
                     b.Property<string>("Name")
                         .HasColumnType("text");
 
-                    b.Property<bool>("isActive")
+                    b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
                     b.HasKey("Name");
@@ -420,11 +493,11 @@ namespace MyStore.Infrastructure.Migrations
 
             modelBuilder.Entity("MyStore.Domain.Entities.Product", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+                        .HasColumnType("bigint");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<int>("BrandId")
                         .HasColumnType("integer");
@@ -473,11 +546,11 @@ namespace MyStore.Infrastructure.Migrations
 
             modelBuilder.Entity("MyStore.Domain.Entities.ProductColor", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+                        .HasColumnType("bigint");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<string>("ColorName")
                         .IsRequired()
@@ -490,8 +563,8 @@ namespace MyStore.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("ProductId")
-                        .HasColumnType("integer");
+                    b.Property<long>("ProductId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp without time zone");
@@ -500,13 +573,13 @@ namespace MyStore.Infrastructure.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("ProductColor");
+                    b.ToTable("ProductColors");
                 });
 
             modelBuilder.Entity("MyStore.Domain.Entities.ProductMaterial", b =>
                 {
-                    b.Property<int>("ProductId")
-                        .HasColumnType("integer");
+                    b.Property<long>("ProductId")
+                        .HasColumnType("bigint");
 
                     b.Property<int>("MaterialId")
                         .HasColumnType("integer");
@@ -532,12 +605,13 @@ namespace MyStore.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
 
-                    b.Property<int>("ProductId")
-                        .HasColumnType("integer");
+                    b.Property<long>("ProductId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("Review")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<int>("Star")
                         .HasColumnType("integer");
@@ -554,11 +628,11 @@ namespace MyStore.Infrastructure.Migrations
 
             modelBuilder.Entity("MyStore.Domain.Entities.ProductSize", b =>
                 {
-                    b.Property<int>("ProductColorId")
-                        .HasColumnType("integer");
+                    b.Property<long>("ProductColorId")
+                        .HasColumnType("bigint");
 
-                    b.Property<int>("SizeId")
-                        .HasColumnType("integer");
+                    b.Property<long>("SizeId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
@@ -578,11 +652,11 @@ namespace MyStore.Infrastructure.Migrations
 
             modelBuilder.Entity("MyStore.Domain.Entities.Size", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+                        .HasColumnType("bigint");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
@@ -674,6 +748,52 @@ namespace MyStore.Infrastructure.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("MyStore.Domain.Entities.UserVoucher", b =>
+                {
+                    b.Property<string>("UserId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("VoucherCode")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Used")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("UserId", "VoucherCode");
+
+                    b.HasIndex("VoucherCode");
+
+                    b.ToTable("UserVouchers");
+                });
+
+            modelBuilder.Entity("MyStore.Domain.Entities.Voucher", b =>
+                {
+                    b.Property<string>("Code")
+                        .HasColumnType("text");
+
+                    b.Property<double?>("DiscountAmount")
+                        .HasColumnType("double precision");
+
+                    b.Property<int?>("DiscountPercent")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<double?>("MaxDiscount")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("MinOrder")
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.HasKey("Code");
+
+                    b.ToTable("Vouchers");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -725,17 +845,6 @@ namespace MyStore.Infrastructure.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("MyStore.Domain.Entities.Address", b =>
-                {
-                    b.HasOne("MyStore.Domain.Entities.User", "User")
-                        .WithMany("Addresses")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("MyStore.Domain.Entities.CartItem", b =>
                 {
                     b.HasOne("MyStore.Domain.Entities.Product", "Product")
@@ -755,6 +864,17 @@ namespace MyStore.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("MyStore.Domain.Entities.DeliveryAddress", b =>
+                {
+                    b.HasOne("MyStore.Domain.Entities.User", "User")
+                        .WithOne("DeliveryAddress")
+                        .HasForeignKey("MyStore.Domain.Entities.DeliveryAddress", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("MyStore.Domain.Entities.Image", b =>
                 {
                     b.HasOne("MyStore.Domain.Entities.Product", "Product")
@@ -768,25 +888,15 @@ namespace MyStore.Infrastructure.Migrations
 
             modelBuilder.Entity("MyStore.Domain.Entities.Order", b =>
                 {
-                    b.HasOne("MyStore.Domain.Entities.OrderStatus", "OrderStatus")
-                        .WithMany("Orders")
-                        .HasForeignKey("OrderStatusName")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("MyStore.Domain.Entities.PaymentMethod", "PaymentMethod")
                         .WithMany("Orders")
-                        .HasForeignKey("PaymentMethodName")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("PaymentMethodName");
 
                     b.HasOne("MyStore.Domain.Entities.User", "User")
                         .WithMany("Orders")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("OrderStatus");
 
                     b.Navigation("PaymentMethod");
 
@@ -803,9 +913,7 @@ namespace MyStore.Infrastructure.Migrations
 
                     b.HasOne("MyStore.Domain.Entities.Product", "Product")
                         .WithMany("OrderDetails")
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("ProductId");
 
                     b.Navigation("Order");
 
@@ -891,6 +999,25 @@ namespace MyStore.Infrastructure.Migrations
                     b.Navigation("Size");
                 });
 
+            modelBuilder.Entity("MyStore.Domain.Entities.UserVoucher", b =>
+                {
+                    b.HasOne("MyStore.Domain.Entities.User", "User")
+                        .WithMany("UserVouchers")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MyStore.Domain.Entities.Voucher", "Voucher")
+                        .WithMany("UserVouchers")
+                        .HasForeignKey("VoucherCode")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+
+                    b.Navigation("Voucher");
+                });
+
             modelBuilder.Entity("MyStore.Domain.Entities.Brand", b =>
                 {
                     b.Navigation("Products");
@@ -909,11 +1036,6 @@ namespace MyStore.Infrastructure.Migrations
             modelBuilder.Entity("MyStore.Domain.Entities.Order", b =>
                 {
                     b.Navigation("OrderDetails");
-                });
-
-            modelBuilder.Entity("MyStore.Domain.Entities.OrderStatus", b =>
-                {
-                    b.Navigation("Orders");
                 });
 
             modelBuilder.Entity("MyStore.Domain.Entities.PaymentMethod", b =>
@@ -946,9 +1068,16 @@ namespace MyStore.Infrastructure.Migrations
 
             modelBuilder.Entity("MyStore.Domain.Entities.User", b =>
                 {
-                    b.Navigation("Addresses");
+                    b.Navigation("DeliveryAddress");
 
                     b.Navigation("Orders");
+
+                    b.Navigation("UserVouchers");
+                });
+
+            modelBuilder.Entity("MyStore.Domain.Entities.Voucher", b =>
+                {
+                    b.Navigation("UserVouchers");
                 });
 #pragma warning restore 612, 618
         }

@@ -86,6 +86,24 @@ namespace MyStore.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "CommonVouchers",
+                columns: table => new
+                {
+                    Code = table.Column<string>(type: "text", nullable: false),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: false),
+                    DiscountPercent = table.Column<int>(type: "integer", nullable: true),
+                    DiscountAmount = table.Column<double>(type: "double precision", nullable: true),
+                    MinOrder = table.Column<double>(type: "double precision", nullable: false),
+                    MaxDiscount = table.Column<double>(type: "double precision", nullable: true),
+                    StartDate = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
+                    EndDate = table.Column<DateTime>(type: "timestamp without time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CommonVouchers", x => x.Code);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Materials",
                 columns: table => new
                 {
@@ -101,22 +119,11 @@ namespace MyStore.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "OrderStatus",
-                columns: table => new
-                {
-                    Name = table.Column<string>(type: "text", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_OrderStatus", x => x.Name);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "PaymentMethods",
                 columns: table => new
                 {
                     Name = table.Column<string>(type: "text", nullable: false),
-                    isActive = table.Column<bool>(type: "boolean", nullable: false)
+                    IsActive = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -127,7 +134,7 @@ namespace MyStore.Infrastructure.Migrations
                 name: "Sizes",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
+                    Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Name = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
@@ -136,6 +143,23 @@ namespace MyStore.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Sizes", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Vouchers",
+                columns: table => new
+                {
+                    Code = table.Column<string>(type: "text", nullable: false),
+                    DiscountPercent = table.Column<int>(type: "integer", nullable: true),
+                    DiscountAmount = table.Column<double>(type: "double precision", nullable: true),
+                    MinOrder = table.Column<double>(type: "double precision", nullable: false),
+                    MaxDiscount = table.Column<double>(type: "double precision", nullable: true),
+                    StartDate = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
+                    EndDate = table.Column<DateTime>(type: "timestamp without time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Vouchers", x => x.Code);
                 });
 
             migrationBuilder.CreateTable(
@@ -155,28 +179,6 @@ namespace MyStore.Infrastructure.Migrations
                         name: "FK_AspNetRoleClaims_AspNetRoles_RoleId",
                         column: x => x.RoleId,
                         principalTable: "AspNetRoles",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Addresses",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Name = table.Column<string>(type: "text", nullable: false),
-                    UserId = table.Column<string>(type: "text", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Addresses", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Addresses_AspNetUsers_UserId",
-                        column: x => x.UserId,
-                        principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -267,10 +269,38 @@ namespace MyStore.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "DeliveryAddresses",
+                columns: table => new
+                {
+                    UserId = table.Column<string>(type: "text", nullable: false),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    PhoneNumber = table.Column<string>(type: "text", nullable: true),
+                    Province_id = table.Column<int>(type: "integer", nullable: true),
+                    Province_name = table.Column<string>(type: "text", nullable: true),
+                    District_id = table.Column<int>(type: "integer", nullable: true),
+                    District_name = table.Column<string>(type: "text", nullable: true),
+                    Ward_id = table.Column<int>(type: "integer", nullable: true),
+                    Ward_name = table.Column<string>(type: "text", nullable: true),
+                    Detail = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_DeliveryAddresses", x => x.UserId);
+                    table.ForeignKey(
+                        name: "FK_DeliveryAddresses_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Products",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
+                    Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Name = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
                     Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
@@ -305,16 +335,17 @@ namespace MyStore.Infrastructure.Migrations
                 name: "Orders",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
+                    Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Total = table.Column<double>(type: "double precision", nullable: false),
                     ShippingCost = table.Column<double>(type: "double precision", nullable: false),
                     OrderDate = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
-                    ShippingAddress = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    ReceiverInfo = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    Paid = table.Column<bool>(type: "boolean", nullable: false),
-                    PaymentMethodName = table.Column<string>(type: "text", nullable: false),
-                    OrderStatusName = table.Column<string>(type: "text", nullable: false),
+                    DeliveryAddress = table.Column<string>(type: "character varying(160)", maxLength: 160, nullable: false),
+                    Receiver = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    AmountPaid = table.Column<double>(type: "double precision", nullable: false),
+                    PaymentTranId = table.Column<string>(type: "text", nullable: true),
+                    PaymentMethodName = table.Column<string>(type: "text", nullable: true),
+                    OrderStatus = table.Column<int>(type: "integer", nullable: true),
                     UserId = table.Column<string>(type: "text", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: true)
@@ -329,16 +360,34 @@ namespace MyStore.Infrastructure.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Orders_OrderStatus_OrderStatusName",
-                        column: x => x.OrderStatusName,
-                        principalTable: "OrderStatus",
-                        principalColumn: "Name",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
                         name: "FK_Orders_PaymentMethods_PaymentMethodName",
                         column: x => x.PaymentMethodName,
                         principalTable: "PaymentMethods",
-                        principalColumn: "Name",
+                        principalColumn: "Name");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "UserVouchers",
+                columns: table => new
+                {
+                    UserId = table.Column<string>(type: "text", nullable: false),
+                    VoucherCode = table.Column<string>(type: "text", nullable: false),
+                    Used = table.Column<bool>(type: "boolean", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UserVouchers", x => new { x.UserId, x.VoucherCode });
+                    table.ForeignKey(
+                        name: "FK_UserVouchers_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_UserVouchers_Vouchers_VoucherCode",
+                        column: x => x.VoucherCode,
+                        principalTable: "Vouchers",
+                        principalColumn: "Code",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -346,15 +395,18 @@ namespace MyStore.Infrastructure.Migrations
                 name: "CartItems",
                 columns: table => new
                 {
-                    ProductId = table.Column<int>(type: "integer", nullable: false),
+                    Id = table.Column<string>(type: "text", nullable: false),
+                    ProductId = table.Column<long>(type: "bigint", nullable: false),
                     UserId = table.Column<string>(type: "text", nullable: false),
                     Quantity = table.Column<int>(type: "integer", nullable: false),
+                    SizeId = table.Column<long>(type: "bigint", nullable: false),
+                    ColorId = table.Column<long>(type: "bigint", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_CartItems", x => new { x.ProductId, x.UserId });
+                    table.PrimaryKey("PK_CartItems", x => x.Id);
                     table.ForeignKey(
                         name: "FK_CartItems_AspNetUsers_UserId",
                         column: x => x.UserId,
@@ -373,9 +425,9 @@ namespace MyStore.Infrastructure.Migrations
                 name: "Images",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
+                    Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    ProductId = table.Column<int>(type: "integer", nullable: false),
+                    ProductId = table.Column<long>(type: "bigint", nullable: false),
                     ImageUrl = table.Column<string>(type: "text", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: true)
@@ -392,22 +444,22 @@ namespace MyStore.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "ProductColor",
+                name: "ProductColors",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
+                    Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     ColorName = table.Column<string>(type: "text", nullable: false),
-                    ProductId = table.Column<int>(type: "integer", nullable: false),
+                    ProductId = table.Column<long>(type: "bigint", nullable: false),
                     ImageUrl = table.Column<string>(type: "text", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_ProductColor", x => x.Id);
+                    table.PrimaryKey("PK_ProductColors", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_ProductColor_Products_ProductId",
+                        name: "FK_ProductColors_Products_ProductId",
                         column: x => x.ProductId,
                         principalTable: "Products",
                         principalColumn: "Id",
@@ -418,7 +470,7 @@ namespace MyStore.Infrastructure.Migrations
                 name: "ProductMaterials",
                 columns: table => new
                 {
-                    ProductId = table.Column<int>(type: "integer", nullable: false),
+                    ProductId = table.Column<long>(type: "bigint", nullable: false),
                     MaterialId = table.Column<int>(type: "integer", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: true)
@@ -445,9 +497,9 @@ namespace MyStore.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "text", nullable: false),
-                    Review = table.Column<string>(type: "text", nullable: false),
+                    Review = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     Star = table.Column<int>(type: "integer", nullable: false),
-                    ProductId = table.Column<int>(type: "integer", nullable: false),
+                    ProductId = table.Column<long>(type: "bigint", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: true)
                 },
@@ -466,15 +518,22 @@ namespace MyStore.Infrastructure.Migrations
                 name: "OrderDetails",
                 columns: table => new
                 {
-                    OrderId = table.Column<int>(type: "integer", nullable: false),
-                    ProductId = table.Column<int>(type: "integer", nullable: false),
-                    Size = table.Column<string>(type: "text", nullable: false),
-                    Quantity = table.Column<int>(type: "integer", nullable: false),
-                    UnitPrice = table.Column<double>(type: "double precision", nullable: false)
+                    Id = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    OrderId = table.Column<long>(type: "bigint", nullable: false),
+                    ProductId = table.Column<long>(type: "bigint", nullable: true),
+                    ProductName = table.Column<string>(type: "text", nullable: false),
+                    SizeName = table.Column<string>(type: "text", nullable: false),
+                    ColorName = table.Column<string>(type: "text", nullable: false),
+                    SizeId = table.Column<int>(type: "integer", nullable: false),
+                    ColorId = table.Column<int>(type: "integer", nullable: false),
+                    OriginPrice = table.Column<double>(type: "double precision", nullable: false),
+                    Price = table.Column<double>(type: "double precision", nullable: false),
+                    Quantity = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_OrderDetails", x => new { x.OrderId, x.ProductId });
+                    table.PrimaryKey("PK_OrderDetails", x => x.Id);
                     table.ForeignKey(
                         name: "FK_OrderDetails_Orders_OrderId",
                         column: x => x.OrderId,
@@ -485,16 +544,15 @@ namespace MyStore.Infrastructure.Migrations
                         name: "FK_OrderDetails_Products_ProductId",
                         column: x => x.ProductId,
                         principalTable: "Products",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
                 name: "ProductSizes",
                 columns: table => new
                 {
-                    ProductColorId = table.Column<int>(type: "integer", nullable: false),
-                    SizeId = table.Column<int>(type: "integer", nullable: false),
+                    ProductColorId = table.Column<long>(type: "bigint", nullable: false),
+                    SizeId = table.Column<long>(type: "bigint", nullable: false),
                     InStock = table.Column<int>(type: "integer", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: true)
@@ -503,9 +561,9 @@ namespace MyStore.Infrastructure.Migrations
                 {
                     table.PrimaryKey("PK_ProductSizes", x => new { x.ProductColorId, x.SizeId });
                     table.ForeignKey(
-                        name: "FK_ProductSizes_ProductColor_ProductColorId",
+                        name: "FK_ProductSizes_ProductColors_ProductColorId",
                         column: x => x.ProductColorId,
-                        principalTable: "ProductColor",
+                        principalTable: "ProductColors",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
@@ -515,11 +573,6 @@ namespace MyStore.Infrastructure.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Addresses_UserId",
-                table: "Addresses",
-                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",
@@ -559,6 +612,11 @@ namespace MyStore.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_CartItems_ProductId",
+                table: "CartItems",
+                column: "ProductId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_CartItems_UserId",
                 table: "CartItems",
                 column: "UserId");
@@ -569,14 +627,14 @@ namespace MyStore.Infrastructure.Migrations
                 column: "ProductId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_OrderDetails_OrderId",
+                table: "OrderDetails",
+                column: "OrderId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_OrderDetails_ProductId",
                 table: "OrderDetails",
                 column: "ProductId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Orders_OrderStatusName",
-                table: "Orders",
-                column: "OrderStatusName");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Orders_PaymentMethodName",
@@ -589,8 +647,8 @@ namespace MyStore.Infrastructure.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ProductColor_ProductId",
-                table: "ProductColor",
+                name: "IX_ProductColors_ProductId",
+                table: "ProductColors",
                 column: "ProductId");
 
             migrationBuilder.CreateIndex(
@@ -617,14 +675,16 @@ namespace MyStore.Infrastructure.Migrations
                 name: "IX_ProductSizes_SizeId",
                 table: "ProductSizes",
                 column: "SizeId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserVouchers_VoucherCode",
+                table: "UserVouchers",
+                column: "VoucherCode");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "Addresses");
-
             migrationBuilder.DropTable(
                 name: "AspNetRoleClaims");
 
@@ -644,6 +704,12 @@ namespace MyStore.Infrastructure.Migrations
                 name: "CartItems");
 
             migrationBuilder.DropTable(
+                name: "CommonVouchers");
+
+            migrationBuilder.DropTable(
+                name: "DeliveryAddresses");
+
+            migrationBuilder.DropTable(
                 name: "Images");
 
             migrationBuilder.DropTable(
@@ -659,6 +725,9 @@ namespace MyStore.Infrastructure.Migrations
                 name: "ProductSizes");
 
             migrationBuilder.DropTable(
+                name: "UserVouchers");
+
+            migrationBuilder.DropTable(
                 name: "AspNetRoles");
 
             migrationBuilder.DropTable(
@@ -668,16 +737,16 @@ namespace MyStore.Infrastructure.Migrations
                 name: "Materials");
 
             migrationBuilder.DropTable(
-                name: "ProductColor");
+                name: "ProductColors");
 
             migrationBuilder.DropTable(
                 name: "Sizes");
 
             migrationBuilder.DropTable(
-                name: "AspNetUsers");
+                name: "Vouchers");
 
             migrationBuilder.DropTable(
-                name: "OrderStatus");
+                name: "AspNetUsers");
 
             migrationBuilder.DropTable(
                 name: "PaymentMethods");

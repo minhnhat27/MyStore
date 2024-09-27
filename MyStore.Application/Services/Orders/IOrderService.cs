@@ -10,10 +10,10 @@ namespace MyStore.Application.Services.Orders
         Task<PagedResponse<OrderDTO>> GetOrders(int page, int pageSize, string? keySearch);
         Task<OrderDTO> GetOrder(int id);
         Task<OrderDetailsResponse> GetOrderDetail(int id);
-        Task<IEnumerable<OrderDTO>> GetOrdersByUserId(string userId);
-        Task<OrderDTO> CreateOrder(string userId, OrderRequest request);
+        Task<PagedResponse<OrderDTO>> GetOrdersByUserId(string userId, PageRequest request);
+        Task<string?> CreateOrder(string userId, OrderRequest request);
         Task<OrderDTO> UpdateOrder(int id, string userId, UpdateOrderRequest request);
         Task DeleteOrder(int id, string userId);
-        Task CancelOrder(int id);
+        Task CancelOrder(int orderId, string userId);
     }
 }

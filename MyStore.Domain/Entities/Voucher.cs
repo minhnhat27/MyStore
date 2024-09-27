@@ -15,6 +15,6 @@ namespace MyStore.Domain.Entities
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
 
-        public ICollection<UserVoucher> UserVouchers { get; set; } = new HashSet<UserVoucher>();
+        public ICollection<UserVoucher> UserVouchers { get; } = new HashSet<UserVoucher>();
     }
 }

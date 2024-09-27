@@ -4,13 +4,10 @@ using MyStore.Infrastructure.DbContext;
 
 namespace MyStore.Infrastructure.Repositories
 {
-    public class TransactionRepository : ITransactionRepository
+    public class TransactionRepository(MyDbContext dbcontext) : ITransactionRepository
     {
-        private readonly MyDbContext _dbContext;
-        public TransactionRepository(MyDbContext dbcontext)
-        {
-            _dbContext = dbcontext;
-        }
+        private readonly MyDbContext _dbContext = dbcontext;
+
         public async Task<IDbContextTransaction> BeginTransactionAsync()
         {
             return await _dbContext.Database.BeginTransactionAsync();

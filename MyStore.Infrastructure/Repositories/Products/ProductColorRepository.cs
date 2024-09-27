@@ -2,6 +2,7 @@
 using MyStore.Application.IRepositories.Products;
 using MyStore.Domain.Entities;
 using MyStore.Infrastructure.DbContext;
+using System.Linq.Expressions;
 
 namespace MyStore.Infrastructure.Repositories.Products
 {
@@ -11,13 +12,6 @@ namespace MyStore.Infrastructure.Repositories.Products
         public ProductColorRepository(MyDbContext dbcontext) : base(dbcontext)
         {
             _dbContext = dbcontext;
-        }
-
-        public async Task<ProductColor> SingleAsync(int id)
-        {
-            return await _dbContext.ProductColors
-                .Include(e => e.ProductSizes)
-                .SingleAsync(e => e.Id == id);
         }
     }
 }

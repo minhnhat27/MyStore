@@ -11,7 +11,7 @@ namespace MyStore.Application.Admin.Request
         public IEnumerable<SizeInStock> SizeInStocks { get; set; }
 
         //update
-        public int? Id { get; set; }
+        public long? Id { get; set; }
         public string? ImageUrl { get; set; }
     }
     public class ProductRequest

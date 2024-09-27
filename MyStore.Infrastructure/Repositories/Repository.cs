@@ -44,9 +44,15 @@ namespace MyStore.Infrastructure.Repositories
             _dbContext.RemoveRange(entities);
             await _dbContext.SaveChangesAsync();
         }
+
         public virtual async Task UpdateAsync(T entity)
         {
             _dbContext.Update(entity);
+            await _dbContext.SaveChangesAsync();
+        }
+        public virtual async Task UpdateAsync(IEnumerable<T> entities)
+        {
+            _dbContext.UpdateRange(entities);
             await _dbContext.SaveChangesAsync();
         }
         //public virtual async Task<IEnumerable<T>> GetPagedAsync<TKey>(int page, int pageSize, Expression<Func<T, TKey>> orderBy)

@@ -5,14 +5,14 @@ namespace MyStore.Application.Admin.Response
 {
     public class ColorSizeResponse
     {
-        public int Id { get; set; }
+        public long Id { get; set; }
         public string ColorName { get; set; }
         public string ImageUrl { get; set; }
         public IEnumerable<SizeInStock> SizeInStocks { get; set; }
     }
     public class ProductDetailsResponse
     {
-        public int Id { get; set; }
+        public long Id { get; set; }
         public string Name { get; set; }
         public string? Description { get; set; }
         public int Sold { get; set; }

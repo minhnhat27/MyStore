@@ -12,9 +12,11 @@ namespace MyStore.Application.IRepositories
         Task AddAsync(T entity);
         Task AddAsync(IEnumerable<T> entities);
         Task UpdateAsync(T entity);
+        Task UpdateAsync(IEnumerable<T> entities);
         Task DeleteAsync(params object?[]? keyValues);
         Task DeleteAsync(T entity);
         Task DeleteRangeAsync(IEnumerable<T> entities);
+
         //Task<IEnumerable<T>> GetPagedAsync<TKey>(int page, int pageSize, Expression<Func<T, TKey>> orderBy);
         Task<IEnumerable<T>> GetPagedAsync<TKey>(int page, int pageSize, Expression<Func<T, bool>>? expression, Expression<Func<T, TKey>> orderBy);
         //Task<IEnumerable<T>> GetPagedOrderByDescendingAsync<TKey>(int page, int pageSize, Expression<Func<T, TKey>> orderByDesc);

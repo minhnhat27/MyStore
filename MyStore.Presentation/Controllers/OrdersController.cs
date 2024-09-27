@@ -8,21 +8,20 @@ namespace MyStore.Presentation.Controllers
 {
     [Route("api/orders")]
     [ApiController]
-    public class OrdersController : ControllerBase
+    [Authorize]
+    public class OrdersController(IOrderService orderService) : ControllerBase
     {
-        private readonly IOrderService _orderService;
-        public OrdersController(IOrderService orderService) => _orderService = orderService;
+        private readonly IOrderService _orderService = orderService;
 
-        [HttpGet]
+        [HttpGet("get-all")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Get([FromQuery] PageRequest request)
+        public async Task<IActionResult> GetAll([FromQuery] PageRequest request)
         {
             return Ok(await _orderService.GetOrders(request.Page, request.PageSize, request.Key));
         }
 
-        [HttpGet("my-orders")]
-        [Authorize]
-        public async Task<IActionResult> MyOrders()
+        [HttpGet]
+        public async Task<IActionResult> Orders([FromQuery] PageRequest request)
         {
             try
             {
@@ -31,7 +30,7 @@ namespace MyStore.Presentation.Controllers
                 {
                     return Unauthorized();
                 }
-                var orders = await _orderService.GetOrdersByUserId(userId);
+                var orders = await _orderService.GetOrdersByUserId(userId, request);
                 return Ok(orders);
             }
             catch(ArgumentException ex)
@@ -44,9 +43,8 @@ namespace MyStore.Presentation.Controllers
             }
         }
 
-        [HttpPost("create")]
-        [Authorize]
-        public async Task<IActionResult> MyOrders([FromBody] OrderRequest request)
+        [HttpPost]
+        public async Task<IActionResult> CreateOrder([FromBody] OrderRequest request)
         {
             try
             {
@@ -68,8 +66,7 @@ namespace MyStore.Presentation.Controllers
             }
         }
 
-        [HttpPut("update/{id}")]
-        [Authorize]
+        [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, [FromBody] UpdateOrderRequest request)
         {
             try
@@ -92,7 +89,30 @@ namespace MyStore.Presentation.Controllers
             }
         }
 
-        [HttpGet("order-detail/{id}")]
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Cancel(int id)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (userId == null)
+                {
+                    return Unauthorized();
+                }
+                await _orderService.CancelOrder(id, userId);
+                return Ok();
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+        [HttpGet("detail/{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> OrderDetail(int id)
         {

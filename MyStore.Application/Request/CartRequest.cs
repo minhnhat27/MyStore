@@ -2,9 +2,9 @@
 {
     public class CartRequest
     {
-        public int ProductId { get; set; }
-        public int SizeId { get; set; }
-        public int ColorId { get; set; }
+        public long ProductId { get; set; }
+        public long SizeId { get; set; }
+        public long ColorId { get; set; }
         public int Quantity { get; set; }
     }
 }

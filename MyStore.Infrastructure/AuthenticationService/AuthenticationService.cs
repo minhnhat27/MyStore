@@ -131,27 +131,41 @@ namespace MyStore.Infrastructure.AuthenticationService
 
         public async Task<UserDTO> Register(RegisterRequest request)
         {
-            var code = _cache.Get<string>("Register " + request.Email);
-            if (code != null && code.Equals(request.Token))
+            try
             {
-                var user = new User
+                var code = _cache.Get<string>("Register " + request.Email);
+                if (code != null && code.Equals(request.Token))
                 {
-                    Email = request.Email,
-                    Fullname = request.Name,
-                    UserName = request.Email,
-                    NormalizedUserName = request.Email,
-                    EmailConfirmed = true,
-                    SecurityStamp = Guid.NewGuid().ToString(),
-                };
-                var result = await _userManager.CreateAsync(user, request.Password);
-                if (!result.Succeeded)
-                {
-                    throw new Exception(string.Join(";", result.Errors.Select(e => e.Description)));
+                    var user = new User
+                    {
+                        Email = request.Email,
+                        Fullname = request.Name,
+                        UserName = request.Email,
+                        NormalizedUserName = request.Email,
+                        EmailConfirmed = true,
+                        SecurityStamp = Guid.NewGuid().ToString(),
+                    };
+                    user.DeliveryAddress = new DeliveryAddress
+                    {
+                        UserId = user.Id,
+                        Name = user.Fullname,
+                    };
+
+                    var result = await _userManager.CreateAsync(user, request.Password);
+                    if (!result.Succeeded)
+                    {
+                        throw new Exception(string.Join(";", result.Errors.Select(e => e.Description)));
+                    }
+
+                    _cache.Remove("Register " + request.Email);
+                    return _mapper.Map<UserDTO>(user);
                 }
-                _cache.Remove("Register " + request.Email);
-                return _mapper.Map<UserDTO>(user);
+                throw new Exception(ErrorMessage.INVALID_OTP);
             }
-            throw new Exception(ErrorMessage.INVALID_OTP);
+            catch(Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
         }
 
         private string ConvertToVietnamPhoneNumber(string phoneNumber)
@@ -182,7 +196,7 @@ namespace MyStore.Infrastructure.AuthenticationService
             }
 
             var code = new Random().Next(100000, 999999);
-            _cache.Set("Register " + email, code.ToString());
+            _cache.Set("Register " + email, code.ToString(), TimeSpan.FromMinutes(30));
 
             var subject = code + " is your verification code";
             var body = $"Hi!<br/><br/>" +
@@ -213,7 +227,7 @@ namespace MyStore.Infrastructure.AuthenticationService
                 }
 
                 var code = new Random().Next(100000, 999999);
-                _cache.Set("Register " + phoneNumber, code.ToString());
+                _cache.Set("Register " + phoneNumber, code.ToString(), TimeSpan.FromMinutes(30));
 
                 string accountSid = _configuration["TWILIO:TWILIO_ACCOUNT_SID"] ?? "";
                 string authToken = _configuration["TWILIO:TWILIO_AUTH_TOKEN"] ?? "";

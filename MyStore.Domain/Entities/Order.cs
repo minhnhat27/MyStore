@@ -5,23 +5,32 @@ namespace MyStore.Domain.Entities
 {
     public class Order : IBaseEntity
     {
-        public int Id { get; set; }
+        public long Id { get; set; }
+
         [Range(0, double.MaxValue)]
         public double Total { get; set; }
+
         [Range(0, double.MaxValue)]
-        public double ShippingCost { get; set; } 
+        public double ShippingCost { get; set; }
+
         public DateTime OrderDate { get; set; }
-        [MaxLength(100)]
-        public string ShippingAddress { get; set; }
-        [MaxLength(100)]
-        public string ReceiverInfo { get; set; }
-        public bool Paid { get; set; } = false;
 
-        public string PaymentMethodName { get; set; }
-        public PaymentMethod PaymentMethod { get; set; }
+        [MaxLength(160)]
+        public string DeliveryAddress { get; set; }
 
-        public string OrderStatusName { get; set; } = DeliveryStatusEnum.Proccessing.ToString();
-        public OrderStatus OrderStatus { get; set; }
+        [MaxLength(100)]
+        public string Receiver { get; set; }
+
+        public double AmountPaid { get; set; }
+
+        public string? PaymentTranId { get; set; }
+
+        public int? PaymentMethodId { get; set; }
+        public PaymentMethod? PaymentMethod { get; set; }
+
+
+        //public string? OrderStatusName { get; set; } = DeliveryStatusEnum.Proccessing.ToString();
+        public DeliveryStatusEnum? OrderStatus { get; set; } = DeliveryStatusEnum.Processing;
 
         public string UserId { get; set; }
         public User User { get; set; }

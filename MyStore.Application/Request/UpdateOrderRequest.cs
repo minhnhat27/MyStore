@@ -2,7 +2,7 @@
 {
     public class UpdateOrderRequest
     {
-        public string? ShippingAddress { get; set; }
+        public string? DeliveryAddress { get; set; }
         public string? ReceiverInfo { get; set; }
     }
 }

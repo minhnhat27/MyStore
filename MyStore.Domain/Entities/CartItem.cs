@@ -8,7 +8,7 @@ namespace MyStore.Domain.Entities
         [Key]
         public string Id { get; set; } = Guid.NewGuid().ToString();
 
-        public int ProductId { get; set; }
+        public long ProductId { get; set; }
         public Product Product { get; set; }
 
         public string UserId { get; set; }
@@ -16,8 +16,8 @@ namespace MyStore.Domain.Entities
 
         public int Quantity { get; set; }
 
-        public int SizeId { get; set; }
-        public int ColorId { get; set; }
+        public long SizeId { get; set; }
+        public long ColorId { get; set; }
 
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }

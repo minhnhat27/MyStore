@@ -15,17 +15,19 @@ namespace MyStore.Application.Services.Carts
         private readonly IImageRepository _imageRepository;
         private readonly ITransactionRepository _transactionRepository;
         private readonly IProductColorRepository _productColorRepository;
+        private readonly IProductSizeRepository _productSizeRepository;
 
         private readonly ISizeRepository _sizeRepository;
         private readonly IMapper _mapper;
         public CartService(ICartItemRepository cartItemsRepository, IProductColorRepository productColorRepository,
-            ISizeRepository sizeRepository, IMapper mapper,
+            ISizeRepository sizeRepository, IMapper mapper, IProductSizeRepository productSizeRepository,
             IImageRepository imageRepository, ITransactionRepository transactionRepository)
         {
             _cartItemsRepository = cartItemsRepository;
             _imageRepository = imageRepository;
             _transactionRepository = transactionRepository;
             _productColorRepository = productColorRepository;
+            _productSizeRepository = productSizeRepository;
             _sizeRepository = sizeRepository;
             _mapper = mapper;
         }
@@ -60,29 +62,26 @@ namespace MyStore.Application.Services.Carts
 
         public async Task AddToCart(string userId, CartRequest request)
         {
-            using var transaction = await _transactionRepository.BeginTransactionAsync();
             try
             {
-                var exist = await _cartItemsRepository.SingleOrDefaultAsync(
-                    e => e.ProductId == request.ProductId &&
-                         e.UserId == userId &&
-                         e.SizeId == request.SizeId &&
-                         e.ColorId == request.ColorId);
-
-                var color = await _productColorRepository.SingleAsync(request.ColorId);
-                var size = color.ProductSizes.Single(e => e.SizeId == request.SizeId);
+                //var color = await _productColorRepository.SingleAsync(request.ColorId);
+                //var size = color.ProductSizes.Single(e => e.SizeId == request.SizeId);
+                var size = await _productSizeRepository
+                    .SingleAsync(e => e.ProductColorId == request.ColorId && e.SizeId == request.SizeId);
 
                 if (size.InStock <= 0)
                 {
                     throw new Exception(ErrorMessage.SOLDOUT);
                 }
 
+                var exist = await _cartItemsRepository.SingleOrDefaultAsync(
+                    e => e.ProductId == request.ProductId &&
+                         e.UserId == userId &&
+                         e.SizeId == request.SizeId &&
+                         e.ColorId == request.ColorId);
+
                 if (exist != null)
                 {
-                    if(size.InStock <= 0)
-                    {
-                        throw new Exception(ErrorMessage.SOLDOUT);
-                    }
                     if ((request.Quantity + exist.Quantity) > size.InStock)
                     {
                         throw new Exception(ErrorMessage.CART_MAXIMUM);
@@ -104,12 +103,9 @@ namespace MyStore.Application.Services.Carts
 
                     await _cartItemsRepository.AddAsync(item);
                 }
-
-                await _transactionRepository.CommitTransactionAsync();
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync();
                 throw new Exception(ex.Message);
             }
         }

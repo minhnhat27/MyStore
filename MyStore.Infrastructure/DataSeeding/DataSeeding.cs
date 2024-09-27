@@ -77,16 +77,12 @@ namespace MyStore.Infrastructure.DataSeeding
         }
         private static async Task InitializeProductAttributes(MyDbContext context)
         {
-            var lstOrderStatus = Enum.GetNames(typeof(DeliveryStatusEnum))
-                .Select(name => new OrderStatus { Name = name });
-
             var lstPaymentMethod = Enum.GetNames(typeof(PaymentMethodEnum))
-                .Select(name => new PaymentMethod { Name = name, isActive = false });
+                .Select(name => new PaymentMethod { Name = name, IsActive = false });
 
             var lstSize = Enum.GetNames(typeof(SizeEnum))
                 .Select(name => new Size { Name = name });
 
-            await context.OrderStatus.AddRangeAsync(lstOrderStatus);
             await context.PaymentMethods.AddRangeAsync(lstPaymentMethod);
             await context.Sizes.AddRangeAsync(lstSize);
             await context.SaveChangesAsync();

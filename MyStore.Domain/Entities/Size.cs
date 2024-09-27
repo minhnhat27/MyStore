@@ -4,7 +4,7 @@ namespace MyStore.Domain.Entities
 {
     public class Size : IBaseEntity
     {
-        public int Id { get; set; }
+        public long Id { get; set; }
 
         [MaxLength(30)]
         public string Name { get; set; }

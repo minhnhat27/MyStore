@@ -1,9 +1,10 @@
 ﻿using MyStore.Domain.Entities;
+using System.Linq.Expressions;
 
 namespace MyStore.Application.IRepositories.Products
 {
     public interface IProductSizeRepository : IRepository<ProductSize>
     {
-        Task DeleteAllByProductIdAsync(int productId);
+        Task<ProductSize> SingleAsyncInclude(Expression<Func<ProductSize, bool>> expression);
     }
 }

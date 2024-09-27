@@ -2,7 +2,7 @@
 
 namespace MyStore.Application.IRepositories
 {
-    public interface IAddressRepository : IRepository<Address>
+    public interface IVoucherRepository : IRepository<Voucher>
     {
     }
 }
