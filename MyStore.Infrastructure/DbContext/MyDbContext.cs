@@ -24,6 +24,7 @@ namespace MyStore.Infrastructure.DbContext
         public virtual DbSet<PaymentMethod> PaymentMethods { get; set; }
         public virtual DbSet<Product> Products { get; set; }
         public virtual DbSet<ProductReview> ProductReviews { get; set; }
+        public virtual DbSet<ProductFavorite> ProductFavorites { get; set; }
         public virtual DbSet<Size> Sizes { get; set; }
         public virtual DbSet<ProductColor> ProductColors { get; set; }
         public virtual DbSet<ProductSize> ProductSizes { get; set; }

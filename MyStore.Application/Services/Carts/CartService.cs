@@ -60,6 +60,9 @@ namespace MyStore.Application.Services.Carts
             return res;
         }
 
+        public async Task<int> CountCart(string userId)
+         => await _cartItemsRepository.CountAsync(e => e.UserId == userId);
+
         public async Task AddToCart(string userId, CartRequest request)
         {
             try

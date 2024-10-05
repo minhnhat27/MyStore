@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using MyStore.Application.Admin.Request;
+using MyStore.Application.DTOs;
 using MyStore.Application.Request;
 using MyStore.Application.Services.Products;
 
@@ -47,7 +47,7 @@ namespace MyStore.Presentation.Controllers
 
 
         [HttpGet("filters")]
-        public async Task<IActionResult> GetFilterProducts([FromQuery] Filters filters)
+        public async Task<IActionResult> GetFilterProducts([FromQuery] ProductFiltersRequest filters)
         {
             try
             {

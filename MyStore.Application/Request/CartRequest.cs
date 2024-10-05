@@ -7,4 +7,9 @@
         public long ColorId { get; set; }
         public int Quantity { get; set; }
     }
+    public class UpdateCartItemRequest
+    {
+        public long? SizeId { get; set; }
+        public int? Quantity { get; set; }
+    }
 }

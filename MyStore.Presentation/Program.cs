@@ -21,6 +21,7 @@ using MyStore.Application.Services.Products;
 using MyStore.Application.Services.Sizes;
 using MyStore.Application.Services.Users;
 using MyStore.Application.Services.Vouchers;
+using MyStore.Domain.Constants;
 using MyStore.Domain.Entities;
 using MyStore.Infrastructure.AuthenticationService;
 using MyStore.Infrastructure.Caching;
@@ -34,6 +35,7 @@ using MyStore.Infrastructure.Repositories.Orders;
 using MyStore.Infrastructure.Repositories.Products;
 using MyStore.Infrastructure.Repositories.Users;
 using MyStore.Infrastructure.Storage;
+using Net.payOS;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -88,11 +90,15 @@ builder.Services.AddAuthentication(opt =>
 builder.Services.AddAutoMapper(typeof(Mapping));
 
 builder.Services.Configure<SenderSettings>(builder.Configuration.GetSection("SenderSettings"));
-//builder.Services.Configure<VNPay>(builder.Configuration.GetSection("VNPay"));
 
 builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<ISendMailService, SendMailService>();
 builder.Services.AddSingleton<ICache, Cache>();
+
+PayOS payOS = new(builder.Configuration["PayOS:clientId"] ?? throw new Exception(ErrorMessage.ARGUMENT_NULL),
+                        builder.Configuration["PayOS:apiKey"] ?? throw new Exception(ErrorMessage.ARGUMENT_NULL),
+                        builder.Configuration["PayOS:checksumKey"] ?? throw new Exception(ErrorMessage.ARGUMENT_NULL));
+builder.Services.AddSingleton(payOS);
 
 builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
@@ -113,6 +119,7 @@ builder.Services.AddScoped<IProductMaterialRepository, ProductMaterialRepository
 builder.Services.AddScoped<IProductPreviewRepository, ProductPreviewRepository>();
 builder.Services.AddScoped<IProductSizeRepository, ProductSizeRepository>();
 builder.Services.AddScoped<IProductColorRepository, ProductColorRepository>();
+builder.Services.AddScoped<IProductFavoriteRepository, ProductFavoriteRepository>();
 builder.Services.AddScoped<IOrderDetailRepository, OrderDetailRepository>();
 builder.Services.AddScoped<IVoucherRepository, VoucherRepository>();
 builder.Services.AddScoped<IUserVoucherRepository, UserVoucherRepository>();

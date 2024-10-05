@@ -3,7 +3,6 @@ using Google.Apis.Auth;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
-using MyStore.Application.DTO;
 using MyStore.Application.ICaching;
 using MyStore.Application.ISendMail;
 using MyStore.Application.Request;
@@ -17,6 +16,7 @@ using Twilio;
 using Twilio.Rest.Api.V2010.Account;
 using Twilio.Types;
 using System.Text.RegularExpressions;
+using MyStore.Application.DTOs;
 
 namespace MyStore.Infrastructure.AuthenticationService
 {
@@ -242,6 +242,28 @@ namespace MyStore.Infrastructure.AuthenticationService
             catch (Exception ex)
             {
                 throw new Exception(ex.Message);
+            }
+        }
+
+        public async Task ChangePassword(string userId, string currentPassword, string newPassword)
+        {
+            var user = await _userManager.FindByIdAsync(userId) ?? throw new InvalidOperationException(ErrorMessage.USER_NOT_FOUND);
+            
+            if(currentPassword.Equals(newPassword))
+            {
+                throw new InvalidOperationException(ErrorMessage.DUPLICATE_CURRENT_PASSWORD);
+            }
+
+            var result = await _signInManager.CheckPasswordSignInAsync(user, currentPassword, false);
+            if (!result.Succeeded)
+            {
+                throw new InvalidDataException(ErrorMessage.INVALID_PASSWORD);
+            }
+
+            var changePasswordResult = await _userManager.ChangePasswordAsync(user, currentPassword, newPassword);
+            if (!changePasswordResult.Succeeded)
+            {
+                throw new InvalidOperationException(ErrorMessage.ERROR);
             }
         }
     }

@@ -1,7 +1,11 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
-using MyStore.Application.DTO;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using MyStore.Application.DTOs;
 using MyStore.Application.ICaching;
+using MyStore.Application.ILibrary;
 using MyStore.Application.IRepositories;
 using MyStore.Application.IRepositories.Orders;
 using MyStore.Application.IRepositories.Products;
@@ -13,7 +17,12 @@ using MyStore.Application.Services.Payments;
 using MyStore.Domain.Constants;
 using MyStore.Domain.Entities;
 using MyStore.Domain.Enumerations;
+using Net.payOS;
+using Newtonsoft.Json;
+using System.Collections;
+using System.Collections.Concurrent;
 using System.Linq.Expressions;
+using System.Net.Http.Json;
 
 namespace MyStore.Application.Services.Orders
 {
@@ -27,10 +36,16 @@ namespace MyStore.Application.Services.Orders
 
         private readonly IUserVoucherRepository _userVoucherRepository;
         private readonly IPaymentService _paymentService;
+        private readonly IPaymentMethodRepository _paymentMethodRepository;
+        private readonly IConfiguration _configuration;
 
         private readonly IMapper _mapper;
         private readonly ICache _cache;
         private readonly ITransactionRepository _transaction;
+        private readonly IVNPayLibrary _vnPayLibrary;
+        private readonly IServiceScopeFactory _serviceScopeFactory;
+        private readonly PayOS _payOS;
+
         public OrderService(IOrderRepository orderRepository,
             ICartItemRepository cartItemRepository,
             IOrderDetailRepository orderDetailRepository,
@@ -39,8 +54,10 @@ namespace MyStore.Application.Services.Orders
             IPaymentMethodRepository paymentMethodRepository,
             ITransactionRepository transaction,
             IPaymentService paymentService,
-            ICache cache,
-            IUserVoucherRepository userVoucherRepository, IMapper mapper)
+            IPaymentMethodRepository methodRepository,
+            ICache cache, IVNPayLibrary vnPayLibrary,
+            IConfiguration configuration, IServiceScopeFactory serviceScopeFactory,
+            PayOS payOS, IUserVoucherRepository userVoucherRepository, IMapper mapper)
         {
             _orderRepository = orderRepository;
             _cartItemRepository = cartItemRepository;
@@ -49,6 +66,12 @@ namespace MyStore.Application.Services.Orders
             _productSizeRepository = productSizeRepository;
             _userVoucherRepository = userVoucherRepository;
             _paymentService = paymentService;
+            _paymentMethodRepository = paymentMethodRepository;
+            _vnPayLibrary = vnPayLibrary;
+            _payOS = payOS;
+
+            _configuration = configuration;
+            _serviceScopeFactory = serviceScopeFactory;
 
             _mapper = mapper;
             _cache = cache;
@@ -57,16 +80,13 @@ namespace MyStore.Application.Services.Orders
         struct OrderCache
         {
             public string Url { get; set; }
-            public string OrderId { get; set; }
+            public long OrderId { get; set; }
+            public string? vnp_IpAddr { get; set; }
+            public string? vnp_CreateDate { get; set; }
+            public string? vnp_OrderInfo { get; set; }
         }
 
-        public async Task<IEnumerable<OrderDTO>> GetOrders()
-        {
-            var orders = await _orderRepository.GetAllAsync();
-            return _mapper.Map<IEnumerable<OrderDTO>>(orders);
-        }
-
-        public async Task<PagedResponse<OrderDTO>> GetOrders(int page, int pageSize, string? keySearch)
+        public async Task<PagedResponse<OrderDTO>> GetAll(int page, int pageSize, string? keySearch)
         {
             int totalOrder;
             IEnumerable<Order> orders;
@@ -85,11 +105,7 @@ namespace MyStore.Application.Services.Orders
                 totalOrder = await _orderRepository.CountAsync(expression);
                 orders = await _orderRepository.GetPagedOrderByDescendingAsync(page, pageSize, expression, e => e.CreatedAt);
             }
-            var items = _mapper.Map<IEnumerable<OrderDTO>>(orders).Select(x =>
-            {
-                x.PayBackUrl = _cache.Get<OrderCache?>("Order " + x.Id)?.Url;
-                return x;
-            });
+            var items = _mapper.Map<IEnumerable<OrderDTO>>(orders);
 
             return new PagedResponse<OrderDTO>
             {
@@ -127,10 +143,12 @@ namespace MyStore.Application.Services.Orders
                     Total = request.Total,
                 };
 
-                var method = await _paymentService.IsActivePaymentMethod(request.PaymentMethodId) 
-                    ?? throw new ArgumentException(ErrorMessage.NOT_FOUND);
+                var method = await _paymentMethodRepository
+                    .SingleOrDefaultAsync(x => x.Id == request.PaymentMethodId && x.IsActive) 
+                    ?? throw new ArgumentException(ErrorMessage.NOT_FOUND + " phương thức thanh toán");
 
                 order.PaymentMethodId = request.PaymentMethodId;
+                order.PaymentMethodName = method.Name;
                 await _orderRepository.AddAsync(order);
 
                 double total = 0;
@@ -138,8 +156,8 @@ namespace MyStore.Application.Services.Orders
 
                 var cartItems = await _cartItemRepository.GetAsync(e => e.UserId == userId && request.CartIds.Contains(e.Id));
 
-                var lstpSizeUpdate = new List<ProductSize>();
-                var lstProductUpdate = new List<Product>();
+                var lstpSizeUpdate = new ConcurrentBag<ProductSize>();
+                var lstProductUpdate = new ConcurrentBag<Product>(); //truy cap dong thoi (da luong)
                 var details = await Task.WhenAll(cartItems.Select(async cartItem =>
                 {
                     var size = await _productSizeRepository
@@ -165,10 +183,10 @@ namespace MyStore.Application.Services.Orders
                         OrderId = order.Id,
                         ProductId = cartItem.ProductId,
                         SizeName = size.Size.Name,
-                        //SizeId = size.SizeId,
+                        SizeId = size.SizeId,
                         Quantity = cartItem.Quantity,
                         ColorName = size.ProductColor.ColorName,
-                        //ColorId = size.ProductColorId,
+                        ColorId = size.ProductColorId,
                         ProductName = cartItem.Product.Name,
                         OriginPrice = cartItem.Product.Price,
                         Price = price,
@@ -227,35 +245,186 @@ namespace MyStore.Application.Services.Orders
 
                 await transaction.CommitAsync();
 
-                if (method != PaymentMethodEnum.COD.ToString())
+                if (method.Name == PaymentMethodEnum.VNPay.ToString())
                 {
-                    var orderInfo = new OrderInfo
+                    var orderInfo = new VNPayOrderInfo
                     {
                         OrderId = order.Id,
                         Amount = total,
                         CreatedDate = order.OrderDate,
                         Status = order.OrderStatus?.ToString() ?? "0",
-                        OrderDesc = string.Join("\n ", cartItems.Select(e => $"{e.Quantity} x {e.Product.Name}"))
+                        OrderDesc = "Thanh toan don hang: " + order.Id,
                     };
 
-                    var paymentUrl = _paymentService.GetVNPayURL(orderInfo, request.UserIP ?? "127.0.0.1");
+                    var userIP = "127.0.0.1";
+                    var paymentUrl = _paymentService.GetVNPayURL(orderInfo, userIP);
 
                     var orderCache = new OrderCache()
                     {
-                        OrderId = order.Id.ToString(),
+                        OrderId = order.Id,
                         Url = paymentUrl,
+                        vnp_CreateDate = order.OrderDate.ToString("yyyyMMddHHmmss"),
+                        vnp_IpAddr = userIP,
+                        vnp_OrderInfo = orderInfo.OrderDesc,
                     };
-                    _cache.Set("Order " + order.Id.ToString(), orderCache, TimeSpan.FromMinutes(15));
+
+                    var cacheOptions = new MemoryCacheEntryOptions
+                    {
+                        AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(15)
+                    };
+                    cacheOptions.RegisterPostEvictionCallback(OnVNPayDeadline, this);
+                    _cache.Set("Order " + order.Id, orderCache, cacheOptions);
 
                     return paymentUrl;
                 }
-                return null;
-                //return _mapper.Map<OrderDTO>(order);
+                else if(method.Name == PaymentMethodEnum.PayOS.ToString())
+                {
+                    var orders = new PayOSOrderInfo
+                    {
+                        OrderId = order.Id,
+                        Amount = total,
+                        Products = details.Select(e => new ProductInfo
+                        {
+                            Name = e.ProductName,
+                            Price = e.Price,
+                            Quantity = e.Quantity
+                        })
+                    };
+
+                    var paymentUrl = await _paymentService.GetPayOSURL(orders);
+
+                    var orderCache = new OrderCache()
+                    {
+                        OrderId = order.Id,
+                        Url = paymentUrl,
+                    };
+
+                    var cacheOptions = new MemoryCacheEntryOptions
+                    {
+                        AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(15)
+                    };
+                    cacheOptions.RegisterPostEvictionCallback(OnPayOSDeadline, this);
+                    _cache.Set("Order " + order.Id, orderCache, cacheOptions);
+
+                    return paymentUrl;
+                }
+                else return null;
             }
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
                 throw new Exception(ex.Message);
+            }
+        }
+
+        private async void OnVNPayDeadline(object key, object? value, EvictionReason reason, object? state)
+        {
+            if(value != null)
+            {
+                using var _scope = _serviceScopeFactory.CreateScope();
+                var orderRepository = _scope.ServiceProvider.GetRequiredService<IOrderRepository>();
+                var vnPayLibrary = _scope.ServiceProvider.GetRequiredService<IVNPayLibrary>();
+                var configuration = _scope.ServiceProvider.GetRequiredService<IConfiguration>();
+
+
+                var data = (OrderCache) value;
+                var vnp_QueryDrUrl = configuration["VNPay:vnp_QueryDrUrl"] ?? throw new Exception(ErrorMessage.ERROR);
+                var vnp_HashSecret = configuration["VNPay:vnp_HashSecret"] ?? throw new Exception(ErrorMessage.ERROR); 
+                var vnp_TmnCode = configuration["VNPay:vnp_TmnCode"] ?? throw new Exception(ErrorMessage.ERROR);
+
+                var queryDr = new VNPayQueryDr
+                {
+                    vnp_Command = "querydr",
+                    vnp_RequestId = data.OrderId.ToString(),
+                    vnp_Version = _vnPayLibrary.VERSION,
+                    vnp_CreateDate = DateTime.Now.ToString("yyyyMMddHHmmss"),
+                    vnp_TransactionDate = data.vnp_CreateDate,
+                    vnp_IpAddr = data.vnp_IpAddr,
+                    vnp_OrderInfo = data.vnp_OrderInfo,
+                    vnp_TmnCode = vnp_TmnCode,
+                    vnp_TxnRef = data.OrderId.ToString()
+                };
+                var checksum = vnPayLibrary.CreateSecureHashQueryDr(queryDr, vnp_HashSecret);
+
+                var queryDrWithHash = new
+                {
+                    queryDr.vnp_Command,
+                    queryDr.vnp_RequestId,
+                    queryDr.vnp_Version,
+                    queryDr.vnp_CreateDate,
+                    queryDr.vnp_TransactionDate,
+                    queryDr.vnp_IpAddr,
+                    queryDr.vnp_OrderInfo,
+                    queryDr.vnp_TmnCode,
+                    queryDr.vnp_TxnRef,
+                    vnp_SecureHash = checksum
+                };
+
+                using var httpClient = new HttpClient();
+
+                var res = await httpClient.PostAsJsonAsync(vnp_QueryDrUrl, queryDrWithHash);
+                VNPayQueryDrResponse? queryDrResponse = await res.Content.ReadFromJsonAsync<VNPayQueryDrResponse?>();
+
+                if (queryDrResponse != null)
+                {
+                    bool checkSignature = vnPayLibrary
+                        .ValidateQueryDrSignature(queryDrResponse, queryDrResponse.vnp_SecureHash, vnp_HashSecret);
+                    if(checkSignature && queryDrResponse.vnp_ResponseCode == "00")
+                    {
+                        var order = await orderRepository.FindAsync(data.OrderId);
+                        if (order != null)
+                        {
+                            long vnp_Amount = Convert.ToInt64(queryDrResponse.vnp_Amount) / 100;
+
+                            if (queryDrResponse.vnp_TransactionStatus == "00" && vnp_Amount == order.Total)
+                            {
+                                order.PaymentTranId = queryDrResponse.vnp_TransactionNo;
+                                order.AmountPaid = vnp_Amount;
+                                order.OrderStatus = DeliveryStatusEnum.Confirmed;
+                            }
+                            else
+                            {
+                                order.OrderStatus = DeliveryStatusEnum.Canceled;
+                            }
+                            await orderRepository.UpdateAsync(order);
+                        }
+                    }
+                }
+            }
+        }
+        private async void OnPayOSDeadline(object key, object? value, EvictionReason reason, object? state)
+        {
+            if (value != null)
+            {
+                using var _scope = _serviceScopeFactory.CreateScope();
+                var orderRepository = _scope.ServiceProvider.GetRequiredService<IOrderRepository>();
+                var payOS = _scope.ServiceProvider.GetRequiredService<PayOS>();
+
+                var data = (OrderCache) value;
+
+                var paymentInfo = await payOS.getPaymentLinkInformation(data.OrderId);
+                if(paymentInfo.status == "PAID")
+                {
+                    var order = await orderRepository.FindAsync(data.OrderId);
+                    if(order != null)
+                    {
+                        if (paymentInfo.amount == order.Total)
+                        {
+                            order.PaymentTranId = paymentInfo.id;
+                            order.AmountPaid = paymentInfo.amountPaid;
+                            order.OrderStatus = DeliveryStatusEnum.Confirmed;
+                        }
+                        else
+                        {
+                            order.OrderStatus = DeliveryStatusEnum.Canceled;
+                        }
+                        await orderRepository.UpdateAsync(order);
+                    }
+                }
+                else if(paymentInfo.status != "CANCELLED")
+                {
+                    await payOS.cancelPaymentLink(data.OrderId);
+                }
             }
         }
 
@@ -292,8 +461,12 @@ namespace MyStore.Application.Services.Orders
         {
             var orders = await _orderRepository.GetPagedOrderByDescendingAsync(page.Page, page.PageSize, e => e.UserId == userId, x => x.CreatedAt);
             var total = await _orderRepository.CountAsync(e => e.UserId == userId);
-            
-            var items = _mapper.Map<IEnumerable<OrderDTO>>(orders);
+
+            var items = _mapper.Map<IEnumerable<OrderDTO>>(orders).Select(x =>
+            {
+                x.PayBackUrl = _cache.Get<OrderCache?>("Order " + x.Id)?.Url;
+                return x;
+            });
 
             return new PagedResponse<OrderDTO>
             {
@@ -322,6 +495,7 @@ namespace MyStore.Application.Services.Orders
                     //    return dt.Product;
                     //});
 
+                    _cache.Remove("Order " + orderId);
                     await _orderRepository.UpdateAsync(order);
                 }
                 else throw new Exception(ErrorMessage.CANNOT_CANCEL);

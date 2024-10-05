@@ -13,12 +13,12 @@ namespace MyStore.Infrastructure.Repositories
         public override async Task<IEnumerable<CartItem>> GetAsync(Expression<Func<CartItem, bool>> expression)
         {
             return await _dbContext.CartItems
+                .Where(expression)
                 .Include(e => e.Product)
                     .ThenInclude(e => e.ProductColors)
                     .ThenInclude(e => e.ProductSizes)
                     .ThenInclude(e => e.Size)
-                .AsSingleQuery()
-                .Where(expression).ToListAsync();
+                .AsSingleQuery().ToListAsync();
         }
 
         public async Task<CartItem?> SingleOrDefaultAsyncInclude(Expression<Func<CartItem, bool>> expression)

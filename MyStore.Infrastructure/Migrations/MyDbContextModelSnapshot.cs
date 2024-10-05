@@ -395,6 +395,10 @@ namespace MyStore.Infrastructure.Migrations
                     b.Property<int?>("PaymentMethodId")
                         .HasColumnType("integer");
 
+                    b.Property<string>("PaymentMethodName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("PaymentTranId")
                         .HasColumnType("text");
 
@@ -413,7 +417,6 @@ namespace MyStore.Infrastructure.Migrations
                         .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("UserId")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");
@@ -433,8 +436,8 @@ namespace MyStore.Infrastructure.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
-                    b.Property<int>("ColorId")
-                        .HasColumnType("integer");
+                    b.Property<long>("ColorId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("ColorName")
                         .IsRequired()
@@ -459,8 +462,8 @@ namespace MyStore.Infrastructure.Migrations
                     b.Property<int>("Quantity")
                         .HasColumnType("integer");
 
-                    b.Property<int>("SizeId")
-                        .HasColumnType("integer");
+                    b.Property<long>("SizeId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("SizeName")
                         .IsRequired()
@@ -578,6 +581,27 @@ namespace MyStore.Infrastructure.Migrations
                     b.HasIndex("ProductId");
 
                     b.ToTable("ProductColors");
+                });
+
+            modelBuilder.Entity("MyStore.Domain.Entities.ProductFavorite", b =>
+                {
+                    b.Property<string>("UserId")
+                        .HasColumnType("text");
+
+                    b.Property<long>("ProductId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.HasKey("UserId", "ProductId");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("ProductFavorites");
                 });
 
             modelBuilder.Entity("MyStore.Domain.Entities.ProductMaterial", b =>
@@ -898,9 +922,7 @@ namespace MyStore.Infrastructure.Migrations
 
                     b.HasOne("MyStore.Domain.Entities.User", "User")
                         .WithMany("Orders")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("UserId");
 
                     b.Navigation("PaymentMethod");
 
@@ -952,6 +974,25 @@ namespace MyStore.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("MyStore.Domain.Entities.ProductFavorite", b =>
+                {
+                    b.HasOne("MyStore.Domain.Entities.Product", "Product")
+                        .WithMany("ProductFavorites")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MyStore.Domain.Entities.User", "User")
+                        .WithMany("ProductFavorites")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("MyStore.Domain.Entities.ProductMaterial", b =>
@@ -1057,6 +1098,8 @@ namespace MyStore.Infrastructure.Migrations
 
                     b.Navigation("ProductColors");
 
+                    b.Navigation("ProductFavorites");
+
                     b.Navigation("ProductReviews");
                 });
 
@@ -1075,6 +1118,8 @@ namespace MyStore.Infrastructure.Migrations
                     b.Navigation("DeliveryAddress");
 
                     b.Navigation("Orders");
+
+                    b.Navigation("ProductFavorites");
 
                     b.Navigation("UserVouchers");
                 });

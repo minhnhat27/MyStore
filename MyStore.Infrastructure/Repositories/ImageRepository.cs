@@ -5,13 +5,9 @@ using MyStore.Infrastructure.DbContext;
 
 namespace MyStore.Infrastructure.Repositories
 {
-    public class ImageRepository : Repository<Image>, IImageRepository
+    public class ImageRepository(MyDbContext dbcontext) : Repository<Image>(dbcontext), IImageRepository
     {
-        private readonly MyDbContext _dbContext;
-        public ImageRepository(MyDbContext dbcontext) : base(dbcontext)
-        {
-            _dbContext = dbcontext;
-        }
+        private readonly MyDbContext _dbContext = dbcontext;
 
         public async Task<Image?> GetFirstImageByProductIdAsync(int id)
         {

@@ -1,15 +1,12 @@
-﻿using Microsoft.AspNetCore.Components.Forms;
-using MyStore.Application.ILibrary;
+﻿using MyStore.Application.ILibrary;
 using MyStore.Application.ModelView;
 using MyStore.Application.Request;
+using MyStore.Application.Response;
 using MyStore.Domain.Constants;
 using Newtonsoft.Json;
-using System.Collections.Generic;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
-using System.Web;
-using Twilio.TwiML.Voice;
 
 namespace MyStore.Infrastructure.Library
 {
@@ -60,8 +57,6 @@ namespace MyStore.Infrastructure.Library
             var dictionary = JsonConvert.DeserializeObject<IDictionary<string, string>>(json);
             if (dictionary != null)
             {
-                request.vnp_SecureHashType = null;
-
                 var data = dictionary.Where(e => !string.IsNullOrEmpty(e.Value) && e.Key != "vnp_SecureHash")
                                      .OrderBy(e => e.Key)
                                      .Select(x => $"{WebUtility.UrlEncode(x.Key)}={WebUtility.UrlEncode(x.Value)}");
@@ -70,6 +65,41 @@ namespace MyStore.Infrastructure.Library
 
                 var hash = HmacSHA512(vnp_HashSecret, requestString);
                 return hash.Equals(vnp_SecureHash, StringComparison.InvariantCultureIgnoreCase);
+            }
+            throw new Exception(ErrorMessage.INVALID);
+        }
+
+        public bool ValidateQueryDrSignature(VNPayQueryDrResponse response, string vnp_SecureHash, string vnp_HashSecret)
+        {
+            var json = JsonConvert.SerializeObject(response);
+            var dictionary = JsonConvert.DeserializeObject<IDictionary<string, string>>(json);
+            if (dictionary != null)
+            {
+                var data = dictionary.Where(e => e.Key != "vnp_SecureHash")
+                                     .Select(x => x.Value);
+
+                var requestString = string.Join("|", data);
+
+                var hash = HmacSHA512(vnp_HashSecret, requestString);
+                return hash.Equals(vnp_SecureHash, StringComparison.InvariantCultureIgnoreCase);
+            }
+            throw new Exception(ErrorMessage.INVALID);
+        }
+
+        public string CreateSecureHashQueryDr(VNPayQueryDr queryDr, string vnp_HashSecret)
+        {
+            var json = JsonConvert.SerializeObject(queryDr);
+            var dictionary = JsonConvert.DeserializeObject<IDictionary<string, string>>(json);
+            if (dictionary != null)
+            {
+                var data = dictionary.Where(e => !string.IsNullOrEmpty(e.Value))
+                                     //.OrderBy(e => e.Key)
+                                     .Select(x => x.Value);
+
+                var dataString = string.Join("|", data);
+
+                var vnp_SecureHash = HmacSHA512(vnp_HashSecret, dataString);
+                return vnp_SecureHash;
             }
             throw new Exception(ErrorMessage.INVALID);
         }

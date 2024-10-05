@@ -15,5 +15,6 @@ namespace MyStore.Domain.Entities
 
         public ICollection<Order> Orders { get; } = new HashSet<Order>();
         public ICollection<UserVoucher> UserVouchers { get; } = new HashSet<UserVoucher>();
+        public ICollection<ProductFavorite> ProductFavorites { get; } = new HashSet<ProductFavorite>();
     }
 }

@@ -5,18 +5,8 @@ using MyStore.Infrastructure.DbContext;
 
 namespace MyStore.Infrastructure.Repositories.Products
 {
-    public class ProductMaterialRepository : Repository<ProductMaterial>, IProductMaterialRepository
+    public class ProductMaterialRepository(MyDbContext dbcontext) : Repository<ProductMaterial>(dbcontext), IProductMaterialRepository
     {
-        private readonly MyDbContext _dbContext;
-        public ProductMaterialRepository(MyDbContext dbcontext) : base(dbcontext)
-        {
-            _dbContext = dbcontext;
-        }
-        //public async Task DeleteAllByProductIdAsync(int productId)
-        //{
-        //    var materials = await _dbContext.ProductMaterials.Where(e => e.ProductId == productId).ToListAsync();
-        //    _dbContext.RemoveRange(materials);
-        //    await _dbContext.SaveChangesAsync();
-        //}
+        private readonly MyDbContext _dbContext = dbcontext;
     }
 }

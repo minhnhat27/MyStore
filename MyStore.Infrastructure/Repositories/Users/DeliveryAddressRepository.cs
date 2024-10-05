@@ -7,5 +7,6 @@ namespace MyStore.Infrastructure.Repositories.Users
     public class DeliveryAddressRepository(MyDbContext dbcontext) 
         : Repository<DeliveryAddress>(dbcontext), IDeliveryAddressRepository
     {
+
     }
 }

@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http;
-using MyStore.Application.DTO;
+using MyStore.Application.DTOs;
 using MyStore.Application.IRepositories;
 using MyStore.Application.IStorage;
 using MyStore.Domain.Constants;

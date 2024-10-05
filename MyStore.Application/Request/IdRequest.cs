@@ -1,7 +1,11 @@
 ﻿namespace MyStore.Application.Request
 {
-    public class IdRequest
+    public class IdRequest<TKey>
     {
-        public int Id { get; set; }
+        public TKey Id { get; set; }
+    }
+    public class NameRequest
+    {
+        public string Name { get; set; }
     }
 }

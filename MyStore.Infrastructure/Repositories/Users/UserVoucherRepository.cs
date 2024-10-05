@@ -12,8 +12,8 @@ namespace MyStore.Infrastructure.Repositories.Users
         public override async Task<IEnumerable<UserVoucher>> GetAsync(Expression<Func<UserVoucher, bool>> expression)
         {
             return await _dbcontext.UserVouchers
-                .Include(e => e.Voucher)
-                .Where(expression).ToListAsync();
+                .Where(expression)
+                .Include(e => e.Voucher).ToListAsync();
         }
 
         public async Task<UserVoucher?> SingleOrDefaultAsyncInclude(Expression<Func<UserVoucher, bool>> expression)

@@ -1,4 +1,4 @@
-﻿using MyStore.Application.DTO;
+﻿using MyStore.Application.DTOs;
 using MyStore.Application.Request;
 using MyStore.Application.Response;
 
@@ -6,8 +6,7 @@ namespace MyStore.Application.Services.Orders
 {
     public interface IOrderService
     {
-        Task<IEnumerable<OrderDTO>> GetOrders();
-        Task<PagedResponse<OrderDTO>> GetOrders(int page, int pageSize, string? keySearch);
+        Task<PagedResponse<OrderDTO>> GetAll(int page, int pageSize, string? keySearch);
         Task<OrderDTO> GetOrder(int id);
         Task<OrderDetailsResponse> GetOrderDetail(int id);
         Task<PagedResponse<OrderDTO>> GetOrdersByUserId(string userId, PageRequest request);

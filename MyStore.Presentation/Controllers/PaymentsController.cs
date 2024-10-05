@@ -1,8 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using MyStore.Application.Admin.Request;
-using MyStore.Application.DTO;
+using MyStore.Application.DTOs;
+using MyStore.Application.ModelView;
 using MyStore.Application.Request;
 using MyStore.Application.Services.Payments;
 
@@ -93,6 +92,20 @@ namespace MyStore.Presentation.Controllers
             try
             {
                 await _paymentService.VNPayCallback(request);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpGet("payos-callback")]
+        public async Task<IActionResult> PayOSCallback([FromQuery] PayOSRequest request)
+        {
+            try
+            {
+                await _paymentService.PayOSCallback(request);
                 return NoContent();
             }
             catch (Exception ex)

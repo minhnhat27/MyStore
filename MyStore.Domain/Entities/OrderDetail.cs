@@ -14,8 +14,8 @@
 
         public string SizeName { get; set; }
         public string ColorName { get; set; }
-        public int SizeId { get; set; }
-        public int ColorId { get; set; }
+        public long SizeId { get; set; }
+        public long ColorId { get; set; }
 
         public double OriginPrice { get; set; }
         public double Price { get; set; }

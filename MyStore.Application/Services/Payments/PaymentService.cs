@@ -1,15 +1,16 @@
 ﻿using AutoMapper;
 using Microsoft.Extensions.Configuration;
-using MyStore.Application.Admin.Request;
-using MyStore.Application.DTO;
+using MyStore.Application.DTOs;
+using MyStore.Application.ICaching;
 using MyStore.Application.ILibrary;
-using MyStore.Application.IRepositories;
 using MyStore.Application.IRepositories.Orders;
 using MyStore.Application.ModelView;
-using MyStore.Application.Request;
 using MyStore.Domain.Constants;
 using MyStore.Domain.Entities;
 using MyStore.Domain.Enumerations;
+using Net.payOS;
+using Net.payOS.Types;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace MyStore.Application.Services.Payments
 {
@@ -20,12 +21,13 @@ namespace MyStore.Application.Services.Payments
         private readonly IConfiguration _configuration;
         private readonly IVNPayLibrary _vnPayLibrary;
         private readonly IOrderRepository _orderRepository;
-
-        //private readonly ICache _cache;
+        private readonly ICache _cache;
+        private readonly PayOS _payOS;
 
         public PaymentService(IConfiguration configuration, IVNPayLibrary vnPayLibrary,
-                              IOrderRepository orderRepository,
+                              IOrderRepository orderRepository, ICache cache,
                               IPaymentMethodRepository paymentMethodRepository,
+                              PayOS payOS,
                               IMapper mapper)
         {
             _paymentMethodRepository = paymentMethodRepository;
@@ -33,6 +35,8 @@ namespace MyStore.Application.Services.Payments
             _configuration = configuration;
             _vnPayLibrary = vnPayLibrary;
             _orderRepository = orderRepository;
+            _cache = cache;
+            _payOS = payOS;
         }
 
         public async Task<IEnumerable<PaymentMethodDTO>> GetPaymentMethods()
@@ -87,7 +91,7 @@ namespace MyStore.Application.Services.Payments
                 }
                 throw new ArgumentException(ErrorMessage.NOT_FOUND);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 throw new Exception(ex.Message);
             }
@@ -95,10 +99,10 @@ namespace MyStore.Application.Services.Payments
 
         public async Task DeletePaymentMethod(int id) => await _paymentMethodRepository.DeleteAsync(id);
 
-        public string GetVNPayURL(OrderInfo order, string ipAddress, string? locale)
+        public string GetVNPayURL(VNPayOrderInfo order, string ipAddress, string? locale)
         {
             string? vnp_ReturnUrl = _configuration["VNPay:vnp_ReturnUrl"];
-            string? vnp_Url = _configuration["VNPay:vnp_Url"]; 
+            string? vnp_Url = _configuration["VNPay:vnp_Url"];
             string? vnp_TmnCode = _configuration["VNPay:vnp_TmnCode"];
             string? vnp_HashSecret = _configuration["VNPay:vnp_HashSecret"];
 
@@ -119,7 +123,7 @@ namespace MyStore.Application.Services.Payments
                 vnp_CreateDate = order.CreatedDate.ToString("yyyyMMddHHmmss"),
                 vnp_CurrCode = "VND",
                 vnp_IpAddr = ipAddress,
-                vnp_OrderInfo =  "Thanh toan don hang: #" + order.OrderId, //order.OrderDesc    
+                vnp_OrderInfo = order.OrderDesc,
                 vnp_OrderType = "200000",
                 vnp_TxnRef = order.OrderId.ToString(),
                 vnp_ExpireDate = order.CreatedDate.AddMinutes(15).ToString("yyyyMMddHHmmss"),
@@ -139,7 +143,7 @@ namespace MyStore.Application.Services.Payments
         {
             string vnp_HashSecret = _configuration["VNPay:vnp_HashSecret"] ?? "";
 
-            int orderId = Convert.ToInt32(request.vnp_TxnRef);
+            long orderId = Convert.ToInt32(request.vnp_TxnRef);
             long vnp_Amount = Convert.ToInt64(request.vnp_Amount) / 100;
 
             string vnp_ResponseCode = request.vnp_ResponseCode;
@@ -150,9 +154,9 @@ namespace MyStore.Application.Services.Payments
             bool checkSignature = _vnPayLibrary.ValidateSignature(request, vnp_SecureHash, vnp_HashSecret);
             if (checkSignature)
             {
-                var order = await _orderRepository.FindAsync(orderId) 
+                var order = await _orderRepository.FindAsync(orderId)
                     ?? throw new ArgumentException($"Order {orderId}" + ErrorMessage.NOT_FOUND);
-                
+
                 if (order.Total == vnp_Amount)
                 {
                     if (vnp_ResponseCode == "00" && vnp_TransactionStatus == "00")
@@ -161,7 +165,9 @@ namespace MyStore.Application.Services.Payments
 
                         order.AmountPaid = vnp_Amount;
                         order.OrderStatus = DeliveryStatusEnum.Confirmed;
+
                         await _orderRepository.UpdateAsync(order);
+                        _cache.Remove("Order " + orderId);
                     }
                     else throw new Exception(ErrorMessage.PAYMENT_FAILED);
                 }
@@ -169,14 +175,64 @@ namespace MyStore.Application.Services.Payments
             }
         }
 
-        public string Payback(string orderId)
+        public async Task<string> GetPayOSURL(PayOSOrderInfo orderInfo)
         {
-            //var url = _cache.Get<string>("Order " + orderId);
-            //if(url != null)
-            //{
-            //    return url;
-            //}
-            throw new Exception(ErrorMessage.PAYMENT_DUE);
+            var cancelUrl = _configuration["PayOS:cancelUrl"];
+            var returnUrl = _configuration["PayOS:returnUrl"];
+
+            if (cancelUrl == null || returnUrl == null)
+            {
+                throw new ArgumentNullException(ErrorMessage.ARGUMENT_NULL);
+            }
+
+            List<ItemData> items = orderInfo.Products
+                .Select(e => new ItemData(e.Name, e.Quantity, (int)Math.Floor(e.Price))).ToList();
+
+            PaymentData paymentData = new(orderInfo.OrderId, (int)Math.Floor(orderInfo.Amount),
+                "Thanh toan don hang: " + orderInfo.OrderId, items, cancelUrl, returnUrl);
+
+            CreatePaymentResult createPayment = await _payOS.createPaymentLink(paymentData);
+
+            return createPayment.checkoutUrl;
+        }
+
+        public async Task PayOSCallback(PayOSRequest request)
+        {
+            if (request.Code == "00")
+            {
+                var order = await _orderRepository.FindAsync(request.OrderCode);
+                if (order != null)
+                {
+                    var paymentInfo = await _payOS.getPaymentLinkInformation(request.OrderCode);
+                    if (request.Cancel || request.Status == "CANCELLED")
+                    {
+                        _cache.Remove("Order " + request.OrderCode);
+                        order.OrderStatus = DeliveryStatusEnum.Canceled;
+                        await _orderRepository.UpdateAsync(order);
+                        throw new InvalidDataException(ErrorMessage.PAYMENT_FAILED);
+                    }
+                    else
+                    {
+                        if (paymentInfo.amount == order.Total)
+                        {
+                            if (paymentInfo.status == "PAID")
+                            {
+                                order.PaymentTranId = request.Id;
+                                order.AmountPaid = paymentInfo.amountPaid;
+                                order.OrderStatus = DeliveryStatusEnum.Confirmed;
+                            }
+                            await _orderRepository.UpdateAsync(order);
+                        }
+                        else throw new ArgumentException("Số tiền " + ErrorMessage.INVALID);
+                    }
+                }
+                else throw new InvalidOperationException(ErrorMessage.NOT_FOUND + " đơn hàng");
+            }
+            else
+            {
+                _cache.Remove("Order " + request.OrderCode);
+                throw new Exception(ErrorMessage.ERROR);
+            }
         }
     }
 }

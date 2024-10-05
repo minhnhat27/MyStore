@@ -1,9 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using MyStore.Application.Admin.Request;
-using MyStore.Application.Admin.Response;
-using MyStore.Application.DTO;
+using MyStore.Application.DTOs;
 using MyStore.Application.IRepositories;
 using MyStore.Application.IRepositories.Products;
 using MyStore.Application.IStorage;
@@ -33,7 +31,7 @@ namespace MyStore.Application.Services.Products
         public ProductService(IProductRepository productRepository,
             IProductSizeRepository productSizeRepository,
             IProductColorRepository productColorRepository,
-            IProductMaterialRepository productMaterialRepository, 
+            IProductMaterialRepository productMaterialRepository,
             IImageRepository imageRepository, IFileStorage fileStorage, 
             ITransactionRepository transactionRepository, IMapper mapper)
         {
@@ -49,92 +47,90 @@ namespace MyStore.Application.Services.Products
 
         public async Task<ProductDTO> CreateProductAsync(ProductRequest request, IFormFileCollection images)
         {
-            using (var transaction = await _transactionRepository.BeginTransactionAsync())
+            using var transaction = await _transactionRepository.BeginTransactionAsync();
+            try
             {
-                try
+                var product = _mapper.Map<Product>(request);
+                await _productRepository.AddAsync(product);
+                var productPath = path + "/" + product.Id;
+
+                List<string> colorFileNames = new();
+                List<IFormFile> colorImages = new();
+                List<ProductSize> productSizes = new();
+
+                foreach (var color in request.ColorSizes.ToHashSet())
                 {
-                    var product = _mapper.Map<Product>(request);
-                    await _productRepository.AddAsync(product);
-                    var productPath = path + "/" + product.Id;
-
-                    List<string> colorFileNames = new();
-                    List<IFormFile> colorImages = new();
-                    List<ProductSize> productSizes = new();
-
-                    foreach (var color in request.ColorSizes.ToHashSet())
+                    var name = "";
+                    if (color.Image != null)
                     {
-                        var name = "";
-                        if (color.Image != null)
-                        {
-                            name = Guid.NewGuid().ToString() + Path.GetExtension(color.Image.FileName);
-                            colorFileNames.Add(name);
-                            colorImages.Add(color.Image);
-                        }
-
-                        var productColor = new ProductColor
-                        {
-                            ColorName = color.ColorName,
-                            ProductId = product.Id,
-                            ImageUrl = Path.Combine(productPath, name)
-                        };
-
-                        await _productColorRepository.AddAsync(productColor);
-
-                        var sizes = color.SizeInStocks.Select(size =>
-                        {
-                            return new ProductSize
-                            {
-                                ProductColorId = productColor.Id,
-                                SizeId = size.SizeId,
-                                InStock = size.InStock,
-                            };
-                        });
-                        productSizes.AddRange(sizes);
+                        name = Guid.NewGuid().ToString() + Path.GetExtension(color.Image.FileName);
+                        colorFileNames.Add(name);
+                        colorImages.Add(color.Image);
                     }
-                    await _productSizeRepository.AddAsync(productSizes);
 
-                    var materials = request.MaterialIds.Select(id => new ProductMaterial
+                    var productColor = new ProductColor
                     {
-                        MaterialId = id,
+                        ColorName = color.ColorName,
                         ProductId = product.Id,
-                    });
-                    await _productMaterialRepository.AddAsync(materials);
+                        ImageUrl = Path.Combine(productPath, name)
+                    };
 
-                    List<string> commonFileNames = new();
-                    var imgs = images.Select(file =>
+                    await _productColorRepository.AddAsync(productColor);
+
+                    var sizes = color.SizeInStocks.Select(size =>
                     {
-                        var name = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
-                        commonFileNames.Add(name);
-                        var image = new Image()
+                        return new ProductSize
                         {
-                            ProductId = product.Id,
-                            ImageUrl = Path.Combine(productPath, name),
+                            ProductColorId = productColor.Id,
+                            SizeId = size.SizeId,
+                            InStock = size.InStock,
                         };
-                        return image;
                     });
-                    await _imageRepository.AddAsync(imgs);
-
-                    colorImages.AddRange(images);
-                    colorFileNames.AddRange(commonFileNames);
-
-                    await _fileStorage.SaveAsync(productPath, colorImages, colorFileNames);
-
-                    await transaction.CommitAsync();
-
-                    var res = _mapper.Map<ProductDTO>(product);
-
-                    var image = imgs.FirstOrDefault();
-                    if (image != null)
-                    {
-                        res.ImageUrl = image.ImageUrl; ;
-                    }
-                    return res;
+                    productSizes.AddRange(sizes);
                 }
-                catch(Exception ex)
+                await _productSizeRepository.AddAsync(productSizes);
+
+                var materials = request.MaterialIds.Select(id => new ProductMaterial
                 {
-                    await transaction.RollbackAsync();
-                    throw new Exception(ex.InnerException?.Message ?? ex.Message);
+                    MaterialId = id,
+                    ProductId = product.Id,
+                });
+                await _productMaterialRepository.AddAsync(materials);
+
+                List<string> commonFileNames = new();
+                var imgs = images.Select(file =>
+                {
+                    var name = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
+                    commonFileNames.Add(name);
+                    var image = new Image()
+                    {
+                        ProductId = product.Id,
+                        ImageUrl = Path.Combine(productPath, name),
+                    };
+                    return image;
+                });
+                await _imageRepository.AddAsync(imgs);
+
+                colorImages.AddRange(images);
+                colorFileNames.AddRange(commonFileNames);
+
+                await _fileStorage.SaveAsync(productPath, colorImages, colorFileNames);
+
+                await transaction.CommitAsync();
+
+                var res = _mapper.Map<ProductDTO>(product);
+
+                var image = imgs.FirstOrDefault();
+                if (image != null)
+                {
+                    res.ImageUrl = image.ImageUrl; ;
                 }
+                return res;
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                throw new Exception(ex.InnerException?.Message ?? ex.Message);
             }
         }
         
@@ -160,15 +156,15 @@ namespace MyStore.Application.Services.Products
                     products = await _productRepository.GetPagedOrderByDescendingAsync(page, pageSize, expression, e => e.CreatedAt);
                 }
 
-                var res = _mapper.Map<IEnumerable<ProductDTO>>(products);
-                foreach (var product in res)
+                var res = _mapper.Map<IEnumerable<ProductDTO>>(products).Select(x =>
                 {
-                    var image = await _imageRepository.GetFirstImageByProductIdAsync(product.Id);
+                    var image = products.Single(e => e.Id == x.Id).Images.FirstOrDefault();
                     if (image != null)
                     {
-                        product.ImageUrl = image.ImageUrl;
+                        x.ImageUrl = image.ImageUrl;
                     }
-                }
+                    return x;
+                });
 
                 return new PagedResponse<ProductDTO>
                 {
@@ -191,23 +187,13 @@ namespace MyStore.Application.Services.Products
             return Expression.Lambda<Func<T, bool>>(body, parameter);
         }
 
-        public async Task<PagedResponse<ProductDTO>> GetFilterProductsAsync(Filters filters)
+        public async Task<PagedResponse<ProductDTO>> GetFilterProductsAsync(ProductFiltersRequest filters)
         {
             try
             {
                 int totalProduct = 0;
                 IEnumerable<Product> products = [];
                 Expression<Func<Product, bool>> expression = e => e.Enable;
-
-                //if (filters.Sorter > Enum.GetNames(typeof(SortEnum)).Length - 1)
-                //{
-                //    throw new ArgumentException(ErrorMessage.INVALID);
-                //}
-
-                if(filters.Gender != null)
-                {
-                    expression = CombineExpressions(expression, e => e.Gender == filters.Gender);
-                }
                 
                 if(filters.MinPrice != null && filters.MaxPrice != null)
                 {
@@ -237,58 +223,49 @@ namespace MyStore.Application.Services.Products
                 {
                     expression = CombineExpressions(expression, e => e.ProductReviews.Average(e => e.Star) >= filters.Rating);
                 }
-                if (filters.CategoryIds != null && filters.CategoryIds.Count() > 0)
+                if (filters.CategoryIds != null && filters.CategoryIds.Any())
                 {
                     expression = CombineExpressions(expression, e => filters.CategoryIds.Contains(e.CategoryId));
                 }
-                if (filters.BrandIds != null && filters.BrandIds.Count() > 0)
+                if (filters.BrandIds != null && filters.BrandIds.Any())
                 {
                     expression = CombineExpressions(expression, e => filters.BrandIds.Contains(e.BrandId));
                 }
-                if (filters.MaterialIds != null && filters.MaterialIds.Count() > 0)
+                if (filters.MaterialIds != null && filters.MaterialIds.Any())
                 {
                     expression = CombineExpressions(expression,
                         e => filters.MaterialIds.Any(id => e.Materials.Any(m => m.MaterialId == id)));
+                }
+                if (filters.Genders != null && filters.Genders.Any())
+                {
+                    expression = CombineExpressions(expression, e => filters.Genders.Contains(e.Gender));
                 }
 
                 totalProduct = await _productRepository.CountAsync(expression);
                 Expression<Func<Product, double>> priceExp = e => e.Price - (e.Price * (e.DiscountPercent / 100.0));
 
-                switch (filters.Sorter)
+                products = filters.Sorter switch
                 {
-                    case SortEnum.SOLD:
-                        products = await _productRepository
-                           .GetPagedOrderByDescendingAsync(filters.Page, filters.PageSize, expression, e => e.Sold);
-                        break;
-                    case SortEnum.PRICE_ASC:
-                        products = await _productRepository
-                            .GetPagedAsync(filters.Page, filters.PageSize, expression, priceExp);
-                        break;
-                    case SortEnum.PRICE_DESC:
-                        products = await _productRepository
-                           .GetPagedOrderByDescendingAsync(filters.Page, filters.PageSize, expression, priceExp);
-                        break;
-                    case SortEnum.NEWEST:
-                        products = await _productRepository
-                           .GetPagedOrderByDescendingAsync(filters.Page, filters.PageSize, expression, e => e.CreatedAt);
-                        break;
-
-                    default:
-                        products = await _productRepository
-                           .GetPagedOrderByDescendingAsync(filters.Page, filters.PageSize, expression, e => e.CreatedAt);
-                        break;
-                }
-
-                var res = _mapper.Map<IEnumerable<ProductDTO>>(products).ToList();
-
-                foreach (var product in res)
+                    SortEnum.SOLD => await _productRepository
+                                               .GetPagedOrderByDescendingAsync(filters.Page, filters.PageSize, expression, e => e.Sold),
+                    SortEnum.PRICE_ASC => await _productRepository
+                                                .GetPagedAsync(filters.Page, filters.PageSize, expression, priceExp),
+                    SortEnum.PRICE_DESC => await _productRepository
+                                               .GetPagedOrderByDescendingAsync(filters.Page, filters.PageSize, expression, priceExp),
+                    SortEnum.NEWEST => await _productRepository
+                                               .GetPagedOrderByDescendingAsync(filters.Page, filters.PageSize, expression, e => e.CreatedAt),
+                    _ => await _productRepository
+                                               .GetPagedOrderByDescendingAsync(filters.Page, filters.PageSize, expression, e => e.CreatedAt),
+                };
+                var res = _mapper.Map<IEnumerable<ProductDTO>>(products).Select(x =>
                 {
-                    var image = await _imageRepository.GetFirstImageByProductIdAsync(product.Id);
+                    var image = products.Single(e => e.Id == x.Id).Images.FirstOrDefault();
                     if (image != null)
                     {
-                        product.ImageUrl = image.ImageUrl;
+                        x.ImageUrl = image.ImageUrl;
                     }
-                }
+                    return x;
+                });
 
                 return new PagedResponse<ProductDTO>
                 {
@@ -306,7 +283,7 @@ namespace MyStore.Application.Services.Products
 
         public async Task<ProductDetailsResponse> GetProductAsync(int id)
         {
-            var product = await _productRepository.SingleOrDefaultAsync(e => e.Id == id); //no Find -> Include
+            var product = await _productRepository.SingleOrDefaultAsyncInclude(e => e.Id == id);
             if (product != null)
             {
                 var res = _mapper.Map<ProductDetailsResponse>(product);
@@ -323,149 +300,147 @@ namespace MyStore.Application.Services.Products
 
         public async Task<ProductDTO> UpdateProductAsync(int id, ProductRequest request, IFormFileCollection images)
         {
-            var product = await _productRepository.SingleOrDefaultAsync(e => e.Id == id);
+            var product = await _productRepository.SingleOrDefaultAsyncInclude(e => e.Id == id);
             if (product != null)
             {
-                using (var transaction = await _transactionRepository.BeginTransactionAsync())
+                using var transaction = await _transactionRepository.BeginTransactionAsync();
+                try
                 {
-                    try
+                    product.Name = request.Name;
+                    product.Description = request.Description;
+                    product.Price = request.Price;
+                    product.Gender = request.Gender;
+                    product.CategoryId = request.CategoryId;
+                    product.BrandId = request.BrandId;
+                    product.Enable = request.Enable;
+                    product.DiscountPercent = request.DiscountPercent;
+
+                    var productPath = path + "/" + product.Id;
+
+                    List<string> colorFileNames = new();
+                    List<IFormFile> colorImages = new();
+                    List<ProductSize> productSizes = new();
+
+                    List<ProductColor> pColorDelete = new();
+                    var oldProductColors = await _productColorRepository.GetAsync(e => e.ProductId == product.Id);
+
+                    var oldColor = request.ColorSizes.Select(e => e.Id);
+                    if (oldColor == null || !oldColor.Any())
                     {
-                        product.Name = request.Name;
-                        product.Description = request.Description;
-                        product.Price = request.Price;
-                        product.Gender = request.Gender;
-                        product.CategoryId = request.CategoryId;
-                        product.BrandId = request.BrandId;
-                        product.Enable = request.Enable;
-                        product.DiscountPercent = request.DiscountPercent;
+                        pColorDelete.AddRange(oldProductColors);
+                    }
+                    else
+                    {
+                        var colorDel = oldProductColors.Where(old => !request.ColorSizes.Select(e => e.Id).Contains(old.Id));
+                        pColorDelete.AddRange(colorDel);
 
-                        var productPath = path + "/" + product.Id;
+                        //cập nhật số lượng size cũ
+                        var oldIds = request.ColorSizes.Where(e => e.Id != null).Select(e => e.Id);
+                        var colorUpdate = oldProductColors.Where(old => oldIds.Contains(old.Id));
 
-                        List<string> colorFileNames = new();
-                        List<IFormFile> colorImages = new();
-                        List<ProductSize> productSizes = new();
-
-                        List<ProductColor> pColorDelete = new();
-                        var oldProductColors = await _productColorRepository.GetAsync(e => e.ProductId == product.Id);
-
-                        var oldColor = request.ColorSizes.Select(e => e.Id);
-                        if(oldColor == null || !oldColor.Any())
+                        foreach (var color in colorUpdate)
                         {
-                            pColorDelete.AddRange(oldProductColors);
-                        }
-                        else
-                        {
-                            var colorDel = oldProductColors.Where(old => !request.ColorSizes.Select(e => e.Id).Contains(old.Id));
-                            pColorDelete.AddRange(colorDel);
-
-                            //cập nhật số lượng size cũ
-                            var oldIds = request.ColorSizes.Where(e => e.Id != null).Select(e => e.Id);
-                            var colorUpdate = oldProductColors.Where(old => oldIds.Contains(old.Id));
-
-                            foreach (var color in colorUpdate)
+                            var matchingColor = request.ColorSizes.Single(e => e.Id == color.Id);
+                            foreach (var size in color.ProductSizes)
                             {
-                                var matchingColor = request.ColorSizes.Single(e => e.Id == color.Id);
-                                foreach (var size in color.ProductSizes)
-                                {
-                                    var matchingSize = matchingColor.SizeInStocks.Single(s => s.SizeId == size.SizeId);
-                                    size.InStock = matchingSize.InStock;
-                                }
+                                var matchingSize = matchingColor.SizeInStocks.Single(s => s.SizeId == size.SizeId);
+                                size.InStock = matchingSize.InStock;
+                            }
+                        }
+
+                    }
+                    //xóa màu
+                    _fileStorage.Delete(pColorDelete.Select(e => e.ImageUrl));
+                    await _productColorRepository.DeleteRangeAsync(pColorDelete);
+
+                    //thêm màu
+                    var newColorImage = request.ColorSizes.Where(e => e.Image != null && e.Id == null);
+                    if (newColorImage.Any())
+                    {
+                        foreach (var color in newColorImage)
+                        {
+                            var name = "";
+                            if (color.Image != null)
+                            {
+                                name = Guid.NewGuid().ToString() + Path.GetExtension(color.Image.FileName);
+                                colorFileNames.Add(name);
+                                colorImages.Add(color.Image);
                             }
 
-                        }
-                        //xóa màu
-                        _fileStorage.Delete(pColorDelete.Select(e => e.ImageUrl));
-                        await _productColorRepository.DeleteRangeAsync(pColorDelete);
-
-                        //thêm màu
-                        var newColorImage = request.ColorSizes.Where(e => e.Image != null && e.Id == null);
-                        if (newColorImage.Count() > 0)
-                        {
-                            foreach (var color in newColorImage)
+                            var productColor = new ProductColor
                             {
-                                var name = "";
-                                if (color.Image != null)
-                                {
-                                    name = Guid.NewGuid().ToString() + Path.GetExtension(color.Image.FileName);
-                                    colorFileNames.Add(name);
-                                    colorImages.Add(color.Image);
-                                }
+                                ColorName = color.ColorName,
+                                ProductId = product.Id,
+                                ImageUrl = Path.Combine(productPath, name)
+                            };
 
-                                var productColor = new ProductColor
-                                {
-                                    ColorName = color.ColorName,
-                                    ProductId = product.Id,
-                                    ImageUrl = Path.Combine(productPath, name)
-                                };
+                            await _productColorRepository.AddAsync(productColor);
 
-                                await _productColorRepository.AddAsync(productColor);
-
-                                var sizes = color.SizeInStocks.Select(size =>
-                                {
-                                    return new ProductSize
-                                    {
-                                        ProductColorId = productColor.Id,
-                                        SizeId = size.SizeId,
-                                        InStock = size.InStock,
-                                    };
-                                });
-                                productSizes.AddRange(sizes);
-                            }
-                            await _productSizeRepository.AddAsync(productSizes);
-                            await _fileStorage.SaveAsync(productPath, colorImages, colorFileNames);
-                        }
-
-                        var pMaterials = await _productMaterialRepository.GetAsync(e => e.ProductId == product.Id);
-                        await _productMaterialRepository.DeleteRangeAsync(pMaterials);
-
-                        var productMaterials = request.MaterialIds.Select(e => new ProductMaterial
-                        {
-                            ProductId = id,
-                            MaterialId = e
-                        });
-                        await _productMaterialRepository.AddAsync(productMaterials);
-
-                        List<Image> imageDelete = new();
-                        var oldImgs = await _imageRepository.GetImageByProductIdAsync(id);
-                        if (request.ImageUrls == null || !request.ImageUrls.Any())
-                        {
-                            imageDelete.AddRange(oldImgs);
-                        }
-                        else
-                        {
-                            var imgsToDelete = oldImgs.Where(old => !request.ImageUrls.Contains(old.ImageUrl));
-                            imageDelete.AddRange(imgsToDelete);
-                        }
-                        _fileStorage.Delete(imageDelete.Select(e => e.ImageUrl));
-                        await _imageRepository.DeleteRangeAsync(imageDelete);
-
-                        if (images.Count > 0)
-                        {
-                            List<string> fileNames = new();
-                            var imgs = images.Select(file =>
+                            var sizes = color.SizeInStocks.Select(size =>
                             {
-                                var name = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
-                                fileNames.Add(name);
-                                var image = new Image()
+                                return new ProductSize
                                 {
-                                    ProductId = id,
-                                    ImageUrl = Path.Combine(productPath, name),
+                                    ProductColorId = productColor.Id,
+                                    SizeId = size.SizeId,
+                                    InStock = size.InStock,
                                 };
-                                return image;
                             });
-                            await _imageRepository.AddAsync(imgs);
-                            await _fileStorage.SaveAsync(productPath, images, fileNames);
+                            productSizes.AddRange(sizes);
                         }
+                        await _productSizeRepository.AddAsync(productSizes);
+                        await _fileStorage.SaveAsync(productPath, colorImages, colorFileNames);
+                    }
 
-                        await _productRepository.UpdateAsync(product);
-                        await transaction.CommitAsync();
-                        return _mapper.Map<ProductDTO>(product);
-                    }
-                    catch (Exception ex)
+                    var pMaterials = await _productMaterialRepository.GetAsync(e => e.ProductId == product.Id);
+                    await _productMaterialRepository.DeleteRangeAsync(pMaterials);
+
+                    var productMaterials = request.MaterialIds.Select(e => new ProductMaterial
                     {
-                        await transaction.RollbackAsync();
-                        throw new Exception(ex.InnerException?.Message ?? ex.Message);
+                        ProductId = id,
+                        MaterialId = e
+                    });
+                    await _productMaterialRepository.AddAsync(productMaterials);
+
+                    List<Image> imageDelete = new();
+                    var oldImgs = await _imageRepository.GetImageByProductIdAsync(id);
+                    if (request.ImageUrls == null || !request.ImageUrls.Any())
+                    {
+                        imageDelete.AddRange(oldImgs);
                     }
+                    else
+                    {
+                        var imgsToDelete = oldImgs.Where(old => !request.ImageUrls.Contains(old.ImageUrl));
+                        imageDelete.AddRange(imgsToDelete);
+                    }
+                    _fileStorage.Delete(imageDelete.Select(e => e.ImageUrl));
+                    await _imageRepository.DeleteRangeAsync(imageDelete);
+
+                    if (images.Count > 0)
+                    {
+                        List<string> fileNames = new();
+                        var imgs = images.Select(file =>
+                        {
+                            var name = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
+                            fileNames.Add(name);
+                            var image = new Image()
+                            {
+                                ProductId = id,
+                                ImageUrl = Path.Combine(productPath, name),
+                            };
+                            return image;
+                        });
+                        await _imageRepository.AddAsync(imgs);
+                        await _fileStorage.SaveAsync(productPath, images, fileNames);
+                    }
+
+                    await _productRepository.UpdateAsync(product);
+                    await transaction.CommitAsync();
+                    return _mapper.Map<ProductDTO>(product);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    throw new Exception(ex.InnerException?.Message ?? ex.Message);
                 }
             }
             else throw new ArgumentException($"Id {id} " + ErrorMessage.NOT_FOUND);

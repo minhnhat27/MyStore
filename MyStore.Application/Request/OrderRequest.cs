@@ -1,5 +1,4 @@
-﻿using MyStore.Domain.Enumerations;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace MyStore.Application.Request
 {
@@ -18,5 +17,11 @@ namespace MyStore.Application.Request
         public int PaymentMethodId { get; set; }
 
         public string? UserIP { get; set; }
+    }
+
+    public class UpdateOrderRequest
+    {
+        public string? DeliveryAddress { get; set; }
+        public string? ReceiverInfo { get; set; }
     }
 }

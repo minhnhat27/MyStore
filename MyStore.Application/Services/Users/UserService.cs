@@ -1,8 +1,9 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Identity;
-using MyStore.Application.Admin.Response;
-using MyStore.Application.DTO;
+using MyStore.Application.DTOs;
+using MyStore.Application.IRepositories.Products;
 using MyStore.Application.IRepositories.Users;
+using MyStore.Application.Request;
 using MyStore.Application.Response;
 using MyStore.Domain.Constants;
 using MyStore.Domain.Entities;
@@ -16,15 +17,20 @@ namespace MyStore.Application.Services.Users
         private readonly IUserRepository _userRepository;
         private readonly IDeliveryAddressRepository _deliveryAddressRepository;
 
+        private readonly IProductFavoriteRepository _productFavoriteRepository;
+
         private readonly IMapper _mapper;
 
         public UserService(UserManager<User> userManager, 
-            IUserRepository userRepository, IMapper mapper, IDeliveryAddressRepository deliveryAddressRepository)
+            IUserRepository userRepository, IMapper mapper, 
+            IDeliveryAddressRepository deliveryAddressRepository, 
+            IProductFavoriteRepository productFavoriteRepository)
         {
             _userManager = userManager;
             _userRepository = userRepository;
             _mapper = mapper;
             _deliveryAddressRepository = deliveryAddressRepository;
+            _productFavoriteRepository = productFavoriteRepository;
         }
 
         public async Task<PagedResponse<UserResponse>> GetAllUsersAsync(int page, int pageSize, string? keySearch)
@@ -74,43 +80,28 @@ namespace MyStore.Application.Services.Users
             return null;
         }
 
-        public async Task<AddressDTO?> UpdateUserAddress(string userId, AddressDTO address)
+        public async Task<AddressDTO?> UpdateOrCreateUserAddress(string userId, AddressDTO address)
         {
-            try
-            {
-                var delivery = await _deliveryAddressRepository.SingleOrDefaultAsync(e => e.UserId == userId);
-                if (delivery != null)
-                {
-                    delivery.Province_id = address.Province_id;
-                    delivery.Province_name = address.Province_name;
-                    delivery.District_id = address.District_id;
-                    delivery.District_name = address.District_name;
-                    delivery.Ward_id = address.Ward_id;
-                    delivery.Ward_name = address.Ward_name;
-                    delivery.Detail = address.Detail;
+            var delivery = await _deliveryAddressRepository.SingleOrDefaultAsync(e => e.UserId == userId);
 
-                    delivery.Name = address.Name;
-                    delivery.PhoneNumber = address.PhoneNumber;
-
-                    await _deliveryAddressRepository.UpdateAsync(delivery);
-                    return _mapper.Map<AddressDTO?>(delivery);
-                }
-                throw new ArgumentException(ErrorMessage.NOT_FOUND);
-            }
-            catch (Exception ex)
+            if (delivery == null)
             {
-                throw new Exception(ex.Message);
+                delivery = new DeliveryAddress { UserId = userId, Name = address.Name };
+                await _deliveryAddressRepository.AddAsync(delivery);
             }
-        }
 
-        public async Task<UserDTO> GetUserByIdAsync(string id)
-        {
-            var user = await _userManager.FindByIdAsync(id);
-            if (user != null)
-            {
-                return _mapper.Map<UserDTO>(user);
-            }
-            else throw new ArgumentException($"Id {id} " + ErrorMessage.NOT_FOUND);
+            delivery.Province_id = address.Province_id;
+            delivery.Province_name = address.Province_name;
+            delivery.District_id = address.District_id;
+            delivery.District_name = address.District_name;
+            delivery.Ward_id = address.Ward_id;
+            delivery.Ward_name = address.Ward_name;
+            delivery.Detail = address.Detail;
+            delivery.Name = address.Name;
+            delivery.PhoneNumber = address.PhoneNumber;
+
+            await _deliveryAddressRepository.UpdateAsync(delivery);
+            return _mapper.Map<AddressDTO?>(delivery);
         }
 
         public async Task LockOut(string id, DateTimeOffset? endDate)
@@ -126,5 +117,94 @@ namespace MyStore.Application.Services.Users
             }
             else throw new ArgumentException($"Id {id} " + ErrorMessage.NOT_FOUND);
         }
+
+        private string MaskEmail(string email)
+        {
+            var emailParts = email.Split('@');
+            if (emailParts.Length != 2)
+            {
+                throw new ArgumentException("Email không hợp lệ");
+            }
+
+            string name = emailParts[0];
+            string domain = emailParts[1];
+
+            int visibleChars = name.Length < 5 ? 2 : 5;
+            string maskedName = name[..visibleChars].PadRight(name.Length, '*');
+
+            return $"{maskedName}@{domain}";
+        }
+
+        public async Task<UserDTO> GetUserInfo(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user != null)
+            {
+                var res = _mapper.Map<UserDTO>(user);
+                res.Email = res.Email != null ? MaskEmail(res.Email) : "";
+                return res;
+            }
+            throw new InvalidOperationException(ErrorMessage.USER_NOT_FOUND);
+        }
+
+        public async Task<UserInfo> UpdateUserInfo(string userId, UserInfo request)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user != null)
+            {
+                user.Fullname = request.Fullname;
+                user.PhoneNumber = request.PhoneNumber;
+                await _userManager.UpdateAsync(user);
+
+                return _mapper.Map<UserInfo>(user);
+            }
+            throw new InvalidOperationException(ErrorMessage.USER_NOT_FOUND);
+        }
+
+        public async Task<IEnumerable<long>> GetFavorites(string userId)
+        {
+            var favorites = await _productFavoriteRepository.GetAsync(e => e.UserId == userId);
+            return favorites.Select(e => e.ProductId);
+        }
+        public async Task<PagedResponse<ProductDTO>> GetProductFavorites(string userId, PageRequest page)
+        {
+            var favorites = await _productFavoriteRepository
+                .GetPagedAsync(page.Page, page.PageSize, e => e.UserId == userId, e => e.CreatedAt);
+
+            var total = await _productFavoriteRepository.CountAsync(e => e.UserId == userId);
+
+            var products = favorites.Select(e => e.Product).ToList();
+
+            var items = _mapper.Map<IEnumerable<ProductDTO>>(products).Select(x =>
+            {
+                var image = products.Single(e => e.Id == x.Id).Images.FirstOrDefault();
+                if (image != null)
+                {
+                    x.ImageUrl = image.ImageUrl;
+                }
+                return x;
+            });
+
+            return new PagedResponse<ProductDTO>
+            {
+                Items = items,
+                Page = page.Page,
+                PageSize = page.PageSize,
+                TotalItems = total
+            };
+        }
+
+        public async Task AddProductFavorite(string userId, long productId)
+        {
+            var favorites = new ProductFavorite
+            {
+                UserId = userId,
+                ProductId = productId,
+            };
+            await _productFavoriteRepository.AddAsync(favorites);
+        }
+
+        public async Task DeleteProductFavorite(string userId, long productId)
+            => await _productFavoriteRepository.DeleteAsync(userId, productId);
     }
 }

@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
-using MyStore.Application.DTO;
+using MyStore.Application.DTOs;
 
 namespace MyStore.Application.Services.Brands
 {

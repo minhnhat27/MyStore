@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MyStore.Application.Request;
 using MyStore.Infrastructure.AuthenticationService;
+using System.Security.Claims;
 
 namespace MyStore.Presentation.Controllers
 {
@@ -76,19 +77,48 @@ namespace MyStore.Presentation.Controllers
             }
         }
 
-
-        [HttpPost("login-google")]
-        public async Task<IActionResult> LoginGoogle([FromBody] TokenRequest request)
+        [HttpPut("change-password")]
+        [Authorize]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
         {
             try
             {
-                var result = await _authService.LoginGoogle(request.Token);
-                return Ok(result);
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (userId == null)
+                {
+                    return Unauthorized();
+                }
+
+                await _authService.ChangePassword(userId, request.CurrentPassword, request.NewPassword);
+                return Ok();
+            }
+            catch (InvalidDataException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(ex.Message);
             }
             catch (Exception ex)
             {
                 return StatusCode(500, ex.Message);
             }
         }
+
+
+        //[HttpPost("login-google")]
+        //public async Task<IActionResult> LoginGoogle([FromBody] TokenRequest request)
+        //{
+        //    try
+        //    {
+        //        var result = await _authService.LoginGoogle(request.Token);
+        //        return Ok(result);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return StatusCode(500, ex.Message);
+        //    }
+        //}
     }
 }

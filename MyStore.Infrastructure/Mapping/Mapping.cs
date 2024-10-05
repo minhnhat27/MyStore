@@ -1,7 +1,5 @@
 ﻿using AutoMapper;
-using MyStore.Application.Admin.Request;
-using MyStore.Application.Admin.Response;
-using MyStore.Application.DTO;
+using MyStore.Application.DTOs;
 using MyStore.Application.ModelView;
 using MyStore.Application.Request;
 using MyStore.Application.Response;
@@ -21,12 +19,13 @@ namespace MyStore.Infrastructure.Mapping
             //user
             CreateMap<User, UserResponse>();
             CreateMap<User, UserDTO>().ReverseMap();
+            CreateMap<User, UserInfo>().ReverseMap();
             CreateMap<DeliveryAddress, AddressDTO>().ReverseMap();
 
             //order
-            CreateMap<OrderDTO, Order>().ReverseMap();
-                //.ForMember(d => d.PaymentMethod, opt => opt.MapFrom(src => src.PaymentMethodId));
-                //.ForMember(d => d.OrderStatus, opt => opt.MapFrom(src => src.OrderStatus));
+            CreateMap<OrderDTO, Order>().ReverseMap()
+                .ForMember(d => d.PaymentMethod, opt => opt.MapFrom(src => src.PaymentMethodName));
+            //.ForMember(d => d.OrderStatus, opt => opt.MapFrom(src => src.OrderStatus));
 
             CreateMap<OrderRequest, Order>().ReverseMap();
             CreateMap<Order, OrderDetailsResponse>();

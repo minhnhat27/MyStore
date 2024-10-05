@@ -1,4 +1,4 @@
-﻿using MyStore.Application.DTO;
+﻿using MyStore.Application.DTOs;
 
 namespace MyStore.Application.Services.Vouchers
 {

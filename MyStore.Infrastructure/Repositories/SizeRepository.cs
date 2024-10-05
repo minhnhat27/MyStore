@@ -4,10 +4,7 @@ using MyStore.Infrastructure.DbContext;
 
 namespace MyStore.Infrastructure.Repositories
 {
-    public class SizeRepository : Repository<Size>, ISizeRepository
+    public class SizeRepository(MyDbContext dbcontext) : Repository<Size>(dbcontext), ISizeRepository
     {
-        public SizeRepository(MyDbContext dbcontext) : base(dbcontext)
-        {
-        }
     }
 }

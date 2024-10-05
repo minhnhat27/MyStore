@@ -4,10 +4,7 @@ using MyStore.Infrastructure.DbContext;
 
 namespace MyStore.Infrastructure.Repositories
 {
-    public class MaterialRepository : Repository<Material>, IMaterialRepository
+    public class MaterialRepository(MyDbContext dbcontext) : Repository<Material>(dbcontext), IMaterialRepository
     {
-        public MaterialRepository(MyDbContext dbcontext) : base(dbcontext)
-        {
-        }
     }
 }

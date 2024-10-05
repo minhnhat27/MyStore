@@ -4,10 +4,7 @@ using MyStore.Infrastructure.DbContext;
 
 namespace MyStore.Infrastructure.Repositories
 {
-    public class BrandRepository : Repository<Brand>, IBrandRepository
+    public class BrandRepository(MyDbContext dbcontext) : Repository<Brand>(dbcontext), IBrandRepository
     {
-        public BrandRepository(MyDbContext dbcontext) : base(dbcontext)
-        {
-        }
     }
 }

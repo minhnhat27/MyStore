@@ -4,6 +4,7 @@ using MyStore.Infrastructure.DbContext;
 using MyStore.Domain.Entities;
 using Microsoft.Extensions.DependencyInjection;
 using MyStore.Domain.Enumerations;
+using System.Data;
 
 namespace MyStore.Infrastructure.DataSeeding
 {
@@ -11,26 +12,25 @@ namespace MyStore.Infrastructure.DataSeeding
     {
         public static async Task Initialize(IServiceProvider serviceProvider)
         {
-            using (var scope = serviceProvider.CreateAsyncScope())
+            using var scope = serviceProvider.CreateAsyncScope();
+            var context = scope.ServiceProvider.GetRequiredService<MyDbContext>();
+            if(context != null)
             {
-                var context = scope.ServiceProvider.GetRequiredService<MyDbContext>();
-                if (context != null && context.Database.GetPendingMigrations().Any())
+                using var transaction = await context.Database.BeginTransactionAsync();
+                try
                 {
-                    context.Database.Migrate();
-                    using (var transaction = await context.Database.BeginTransactionAsync())
+                    if (context.Database.GetPendingMigrations().Any())
                     {
-                        try
-                        {
-                            await InitializeRoles(scope.ServiceProvider, context);
-                            await InitializeProductAttributes(context);
-                            await transaction.CommitAsync();
-                        }
-                        catch (Exception)
-                        {
-                            await transaction.RollbackAsync();
-                            throw;
-                        }
+                        context.Database.Migrate();
                     }
+                    await InitializeProductAttributes(context);
+                    await InitializeRoles(scope.ServiceProvider, context);
+                    await transaction.CommitAsync();
+                }
+                catch
+                {
+                    await transaction.RollbackAsync();
+                    throw;
                 }
             }
         }
@@ -77,16 +77,26 @@ namespace MyStore.Infrastructure.DataSeeding
         }
         private static async Task InitializeProductAttributes(MyDbContext context)
         {
-            var lstPaymentMethod = Enum.GetNames(typeof(PaymentMethodEnum))
-                .Select(name => new PaymentMethod { Name = name, IsActive = false });
+            if (!context.PaymentMethods.Any())
+            {
+                var lstPaymentMethod = Enum.GetNames(typeof(PaymentMethodEnum))
+                    .Select(name => new PaymentMethod { Name = name, IsActive = false });
 
-            var lstSize = Enum.GetNames(typeof(SizeEnum))
-                .Select(name => new Size { Name = name });
+                await context.PaymentMethods.AddRangeAsync(lstPaymentMethod);
+            };
 
-            await context.PaymentMethods.AddRangeAsync(lstPaymentMethod);
-            await context.Sizes.AddRangeAsync(lstSize);
-            await context.SaveChangesAsync();
+            if (!context.Sizes.Any())
+            {
+                var lstSize = Enum.GetNames(typeof(SizeEnum))
+                    .Select(name => new Size { Name = name });
+
+                await context.Sizes.AddRangeAsync(lstSize);
+            };
+
+            if(!context.PaymentMethods.Any() || !context.Sizes.Any())
+            {
+                await context.SaveChangesAsync();
+            }
         }
-        
     }
 }

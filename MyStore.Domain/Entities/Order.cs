@@ -26,14 +26,15 @@ namespace MyStore.Domain.Entities
         public string? PaymentTranId { get; set; }
 
         public int? PaymentMethodId { get; set; }
+        public string PaymentMethodName { get; set; }
         public PaymentMethod? PaymentMethod { get; set; }
 
 
         //public string? OrderStatusName { get; set; } = DeliveryStatusEnum.Proccessing.ToString();
         public DeliveryStatusEnum? OrderStatus { get; set; } = DeliveryStatusEnum.Processing;
 
-        public string UserId { get; set; }
-        public User User { get; set; }
+        public string? UserId { get; set; }
+        public User? User { get; set; }
 
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }

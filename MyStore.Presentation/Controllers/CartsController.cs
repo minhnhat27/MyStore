@@ -34,7 +34,27 @@ namespace MyStore.Presentation.Controllers
 
         }
 
-        [HttpPost("create")]
+        [HttpGet("count")]
+        public async Task<IActionResult> CountCart()
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (userId == null)
+                {
+                    return Unauthorized();
+                }
+                var quantity = await _cartService.CountCart(userId);
+                return Ok(quantity);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+
+        }
+
+        [HttpPost]
         public async Task<IActionResult> Create([FromBody] CartRequest request)
         {
             try

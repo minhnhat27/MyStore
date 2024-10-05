@@ -4,9 +4,7 @@ using MyStore.Infrastructure.DbContext;
 
 namespace MyStore.Infrastructure.Repositories.Users
 {
-    public class UserRepository : Repository<User>, IUserRepository
+    public class UserRepository(MyDbContext dbcontext) : Repository<User>(dbcontext), IUserRepository
     {
-        public UserRepository(MyDbContext dbcontext) : base(dbcontext) { }
-
     }
 }

@@ -4,10 +4,7 @@ using MyStore.Infrastructure.DbContext;
 
 namespace MyStore.Infrastructure.Repositories
 {
-    public class CategoryRepository : Repository<Category>, ICategoryRepository
+    public class CategoryRepository(MyDbContext dbcontext) : Repository<Category>(dbcontext), ICategoryRepository
     {
-        public CategoryRepository(MyDbContext dbcontext) : base(dbcontext)
-        {
-        }
     }
 }

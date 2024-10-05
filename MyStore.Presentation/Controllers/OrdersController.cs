@@ -17,7 +17,7 @@ namespace MyStore.Presentation.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAll([FromQuery] PageRequest request)
         {
-            return Ok(await _orderService.GetOrders(request.Page, request.PageSize, request.Key));
+            return Ok(await _orderService.GetAll(request.Page, request.PageSize, request.Key));
         }
 
         [HttpGet]

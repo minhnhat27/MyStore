@@ -4,10 +4,7 @@ using MyStore.Infrastructure.DbContext;
 
 namespace MyStore.Infrastructure.Repositories.Products
 {
-    public class ProductPreviewRepository : Repository<ProductReview>, IProductPreviewRepository
+    public class ProductPreviewRepository(MyDbContext dbcontext) : Repository<ProductReview>(dbcontext), IProductPreviewRepository
     {
-        public ProductPreviewRepository(MyDbContext dbcontext) : base(dbcontext)
-        {
-        }
     }
 }
