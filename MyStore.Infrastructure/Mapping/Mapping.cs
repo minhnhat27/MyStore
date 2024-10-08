@@ -28,13 +28,14 @@ namespace MyStore.Infrastructure.Mapping
             //.ForMember(d => d.OrderStatus, opt => opt.MapFrom(src => src.OrderStatus));
 
             CreateMap<OrderRequest, Order>().ReverseMap();
-            CreateMap<Order, OrderDetailsResponse>();
-            //CreateMap<OrderDetail, ProductsOrderDetail>()
-            //    .ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.Product.Name));
+            CreateMap<OrderDetail, ProductOrderDetails>();
+            CreateMap<Order, OrderDetailsResponse>()
+                .ForMember(dest => dest.ProductOrderDetails, opt => opt.MapFrom(src => src.OrderDetails));
 
             //product
             CreateMap<Product, ProductDTO>().ReverseMap();
             CreateMap<Product, ProductDTO>()
+                .ForMember(dest => dest.ImageUrl, opt => opt.MapFrom(src => src.Images.FirstOrDefault() != null ? src.Images.FirstOrDefault()!.ImageUrl : null))
                 .ForMember(dest => dest.BrandName, opt => opt.MapFrom(src => src.Brand.Name))
                 .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.Name));
 

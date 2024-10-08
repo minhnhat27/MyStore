@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MyStore.Domain.Entities
 {
@@ -7,14 +8,17 @@ namespace MyStore.Domain.Entities
         [Key]
         public string Id { get; set; } = Guid.NewGuid().ToString();
 
-        [MaxLength(100)]
-        public string Review { get; set; }
+        [MaxLength(200)]
+        public string Description { get; set; }
 
         [Range(1, 5)]
         public int Star { get; set; }
 
         public long ProductId { get; set; }
         public Product Product { get; set; }
+
+        [Column(TypeName = "jsonb")]
+        public IList<string> ImagesUrls { get; set; } = new List<string>();
 
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }

@@ -14,4 +14,21 @@ namespace MyStore.Application.DTOs
 
         public string? PayBackUrl { get; set; }
     }
+
+    public class ProductOrderDetails
+    {
+        public string ProductName { get; set; }
+
+        public string SizeName { get; set; }
+        public string ColorName { get; set; }
+        public long SizeId { get; set; }
+        public long ColorId { get; set; }
+
+        public double OriginPrice { get; set; }
+        public double Price { get; set; }
+        public int Quantity { get; set; }
+
+        public string? ImageUrl { get; set; }
+
+    }
 }

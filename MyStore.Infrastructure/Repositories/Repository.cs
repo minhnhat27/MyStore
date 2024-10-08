@@ -55,25 +55,26 @@ namespace MyStore.Infrastructure.Repositories
             _dbContext.UpdateRange(entities);
             await _dbContext.SaveChangesAsync();
         }
-        //public virtual async Task<IEnumerable<T>> GetPagedAsync<TKey>(int page, int pageSize, Expression<Func<T, TKey>> orderBy)
-        //    =>  await _dbContext.Set<T>()
-        //        .OrderBy(orderBy)
-        //        .Paginate(page, pageSize)
-        //        .ToArrayAsync();
+
         public virtual async Task<IEnumerable<T>> GetPagedAsync<TKey>(int page, int pageSize, Expression<Func<T, bool>>? expression, Expression<Func<T, TKey>> orderBy)
             => expression == null 
-            ? await _dbContext.Set<T>().OrderBy(orderBy).Paginate(page, pageSize).ToArrayAsync()
-            : await _dbContext.Set<T>().Where(expression).OrderBy(orderBy).Paginate(page, pageSize).ToArrayAsync();
+            ? await _dbContext.Set<T>()
+                .OrderBy(orderBy)
+                .Paginate(page, pageSize).ToArrayAsync()
+            : await _dbContext.Set<T>()
+                .Where(expression)
+                .OrderBy(orderBy)
+                .Paginate(page, pageSize).ToArrayAsync();
 
-        //public virtual async Task<IEnumerable<T>> GetPagedOrderByDescendingAsync<TKey>(int page, int pageSize, Expression<Func<T, TKey>> orderByDesc) 
-        //    => await _dbContext.Set<T>()
-        //        .OrderBy(orderByDesc)
-        //        .Paginate(page, pageSize)
-        //        .ToArrayAsync();
         public virtual async Task<IEnumerable<T>> GetPagedOrderByDescendingAsync<TKey>(int page, int pageSize, Expression<Func<T, bool>>? expression, Expression<Func<T, TKey>> orderByDesc) 
             => expression == null 
-            ? await _dbContext.Set<T>().OrderByDescending(orderByDesc).Paginate(page, pageSize).ToArrayAsync() 
-            : await _dbContext.Set<T>().Where(expression).OrderByDescending(orderByDesc).Paginate(page, pageSize).ToArrayAsync();
+            ? await _dbContext.Set<T>()
+                .OrderByDescending(orderByDesc)
+                .Paginate(page, pageSize).ToArrayAsync() 
+            : await _dbContext.Set<T>()
+                .Where(expression)
+                .OrderByDescending(orderByDesc)
+                .Paginate(page, pageSize).ToArrayAsync();
         public virtual async Task<int> CountAsync()
            => await _dbContext.Set<T>().CountAsync();
         public virtual async Task<int> CountAsync(Expression<Func<T, bool>> expression)

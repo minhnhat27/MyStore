@@ -13,7 +13,7 @@ namespace MyStore.Presentation.Controllers
         private readonly IProductService _productService = productService;
 
         [HttpGet]
-        //[Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Get([FromQuery] PageRequest request)
         {
             try
@@ -28,7 +28,7 @@ namespace MyStore.Presentation.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> Get(int id)
+        public async Task<IActionResult> GetDetail(int id)
         {
             try
             {
@@ -45,7 +45,6 @@ namespace MyStore.Presentation.Controllers
             }
         }
 
-
         [HttpGet("filters")]
         public async Task<IActionResult> GetFilterProducts([FromQuery] ProductFiltersRequest filters)
         {
@@ -60,6 +59,21 @@ namespace MyStore.Presentation.Controllers
             }
             catch (Exception ex)
             {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+        [HttpGet("search")]
+        public async Task<IActionResult> GetSearchProducts([FromQuery] string key)
+        {
+            try
+            {
+                var result = await _productService.GetSearchProducts(key);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
                 return StatusCode(500, ex.Message);
             }
         }

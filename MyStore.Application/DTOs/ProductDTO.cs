@@ -15,6 +15,7 @@ namespace MyStore.Application.DTOs
         public float DiscountPercent { get; set; }
         public string CategoryName { get; set; }
         public string BrandName { get; set; }
+        public float Rating { get; set; }
         public string ImageUrl { get; set; }
     }
     public class ColorSizeRequest

@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MyStore.Application.Request;
 using MyStore.Application.Services.Orders;
+using MyStore.Domain.Entities;
 using System.Security.Claims;
 
 namespace MyStore.Presentation.Controllers
@@ -17,7 +18,14 @@ namespace MyStore.Presentation.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAll([FromQuery] PageRequest request)
         {
-            return Ok(await _orderService.GetAll(request.Page, request.PageSize, request.Key));
+            try
+            {
+                return Ok(await _orderService.GetAll(request.Page, request.PageSize, request.Key));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
         }
 
         [HttpGet]
@@ -34,6 +42,40 @@ namespace MyStore.Presentation.Controllers
                 return Ok(orders);
             }
             catch(ArgumentException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> OrderDetails(long id)
+        {
+            try
+            {
+                var roles = User.FindAll(ClaimTypes.Role).Select(e => e.Value);
+                var isAdmin = roles.Contains("Admin");
+
+                if(isAdmin)
+                {
+                    var orders = await _orderService.GetOrderDetail(id);
+                    return Ok(orders);
+                }
+                else
+                {
+                    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                    if (userId == null)
+                    {
+                        return Unauthorized();
+                    }
+                    var orders = await _orderService.GetOrderDetail(id, userId);
+                    return Ok(orders);
+                }
+            }
+            catch (InvalidOperationException ex)
             {
                 return NotFound(ex.Message);
             }
@@ -112,18 +154,19 @@ namespace MyStore.Presentation.Controllers
             }
         }
 
-        [HttpGet("detail/{id}")]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> OrderDetail(int id)
+
+        [HttpPost("review/{id}")]
+        public async Task<IActionResult> Review(long id, [FromForm] ReviewProductRequest request)
         {
             try
             {
-                var orderDetail = await _orderService.GetOrderDetail(id);
-                return Ok(orderDetail);
-            }
-            catch (ArgumentException ex)
-            {
-                return NotFound(ex.Message);
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (userId == null)
+                {
+                    return Unauthorized();
+                }
+                await _orderService.Review(id, userId, request);
+                return Ok();
             }
             catch (Exception ex)
             {

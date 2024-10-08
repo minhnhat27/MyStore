@@ -2,7 +2,6 @@
 
 namespace MyStore.Domain.Entities
 {
-    //[PrimaryKey(nameof(ProductId), nameof(UserId), nameof(SizeId), nameof(ColorId))]
     public class CartItem : IBaseEntity
     {
         [Key]

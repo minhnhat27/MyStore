@@ -4,6 +4,7 @@
     {
         public const string USER_NOT_FOUND = "Không tìm thấy người dùng.";
         public const string NOT_FOUND = "Không tìm thấy.";
+        public const string ORDER_NOT_FOUND = "Không tìm thấy đơn hàng.";
         public const string UNAUTHORIZED = "Vui lòng đăng nhập.";
         public const string INCORRECT_PASSWORD = "Tên tài khoản hoặc mật khẩu không chính xác.";
         public const string INVALID_PASSWORD = "Mật khẩu không chính xác.";

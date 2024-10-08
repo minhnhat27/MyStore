@@ -11,6 +11,8 @@ using MyStore.Domain.Constants;
 using MyStore.Domain.Entities;
 using MyStore.Domain.Enumerations;
 using System.Linq.Expressions;
+using System.Text.RegularExpressions;
+using System.Text;
 
 namespace MyStore.Application.Services.Products
 {
@@ -156,15 +158,16 @@ namespace MyStore.Application.Services.Products
                     products = await _productRepository.GetPagedOrderByDescendingAsync(page, pageSize, expression, e => e.CreatedAt);
                 }
 
-                var res = _mapper.Map<IEnumerable<ProductDTO>>(products).Select(x =>
-                {
-                    var image = products.Single(e => e.Id == x.Id).Images.FirstOrDefault();
-                    if (image != null)
-                    {
-                        x.ImageUrl = image.ImageUrl;
-                    }
-                    return x;
-                });
+                var res = _mapper.Map<IEnumerable<ProductDTO>>(products);
+                    //.Select(x =>
+                    //{
+                    //    var image = products.Single(e => e.Id == x.Id).Images.FirstOrDefault();
+                    //    if (image != null)
+                    //    {
+                    //        x.ImageUrl = image.ImageUrl;
+                    //    }
+                    //    return x;
+                    //});
 
                 return new PagedResponse<ProductDTO>
                 {
@@ -214,8 +217,15 @@ namespace MyStore.Application.Services.Products
                         expression = CombineExpressions(expression, e => (e.Price - (e.Price * (e.DiscountPercent / 100.0))) <= filters.MaxPrice);
                     }
                 }
-                
-                if(filters.Discount != null && filters.Discount == true)
+
+                if (!string.IsNullOrEmpty(filters.Key))
+                {
+                    var inputWords = filters.Key.Trim().Split(' ').Select(word => word.ToLower());
+
+                    expression = CombineExpressions(expression, e => inputWords.All(word => e.Name.ToLower().Contains(word)));
+                }
+
+                if (filters.Discount != null && filters.Discount == true)
                 {
                     expression = CombineExpressions(expression, e => e.DiscountPercent > 0);
                 }
@@ -257,15 +267,16 @@ namespace MyStore.Application.Services.Products
                     _ => await _productRepository
                                                .GetPagedOrderByDescendingAsync(filters.Page, filters.PageSize, expression, e => e.CreatedAt),
                 };
-                var res = _mapper.Map<IEnumerable<ProductDTO>>(products).Select(x =>
-                {
-                    var image = products.Single(e => e.Id == x.Id).Images.FirstOrDefault();
-                    if (image != null)
-                    {
-                        x.ImageUrl = image.ImageUrl;
-                    }
-                    return x;
-                });
+                var res = _mapper.Map<IEnumerable<ProductDTO>>(products);
+                    //.Select(x =>
+                    //{
+                    //    var image = products.Single(e => e.Id == x.Id).Images.FirstOrDefault();
+                    //    if (image != null)
+                    //    {
+                    //        x.ImageUrl = image.ImageUrl;
+                    //    }
+                    //    return x;
+                    //});
 
                 return new PagedResponse<ProductDTO>
                 {
@@ -277,8 +288,63 @@ namespace MyStore.Application.Services.Products
             }
             catch (Exception ex)
             {
-                throw new Exception(ex.InnerException?.Message ?? ex.Message);
+                throw new Exception(ex.Message);
             }
+        }
+
+        public async Task<PagedResponse<ProductDTO>> GetGetFeaturedProductsAsync(int page, int pageSize)
+        {
+            var products = await _productRepository
+                .GetPagedOrderByDescendingAsync(page, pageSize, e => e.Enable,
+                //x => x.ProductReviews.Count != 0 ? x.ProductReviews.Select(pR => pR.Star).Average() : 0);
+                x => x.ProductFavorites.Count);
+            var total = await _productRepository.CountAsync(e => e.Enable);
+
+            var items = _mapper.Map<IEnumerable<ProductDTO>>(products);
+
+            return new PagedResponse<ProductDTO>
+            {
+                Items = items,
+                Page = page,
+                PageSize = pageSize,
+                TotalItems = total
+            };
+        }
+
+        public static string RemoveVietnameseTones(string str)
+        {
+            string normalizedString = str.Normalize(NormalizationForm.FormD);
+
+            var regex = new Regex("\\p{IsCombiningDiacriticalMarks}+");
+            string withoutTones = regex.Replace(normalizedString, string.Empty);
+
+            return withoutTones.Replace('đ', 'd').Replace('Đ', 'D');
+        }
+
+        private bool IsMatchingSearchCriteriaWithoutTones(string productName, IEnumerable<string> inputWords)
+        {
+            var normalizedProductName = RemoveVietnameseTones(productName).ToLower();
+            return inputWords
+                .Select(word => RemoveVietnameseTones(word.ToLower()))
+                .All(normalizedProductName.Contains);
+        }
+
+        public async Task<IEnumerable<ProductDTO>> GetSearchProducts(string key)
+        {
+            //áo thun co tron
+            var inputWords = key.Trim().Split(' ').Select(word => word.ToLower());
+
+            var products = await _productRepository.GetPagedAsync(1, 5,
+                e => inputWords.All(word => e.Name.ToLower().Contains(word)), e => e.Name);
+            
+            if (!products.Any())
+            {
+                var productList = await _productRepository.GetPagedAsync(1, 20,
+                    e => inputWords.Any(word => e.Name.ToLower().Contains(word)), e => e.Name);
+
+                products = productList.Where(e => IsMatchingSearchCriteriaWithoutTones(e.Name, inputWords)).Take(5);
+            }
+            return _mapper.Map<IEnumerable<ProductDTO>>(products);
         }
 
         public async Task<ProductDetailsResponse> GetProductAsync(int id)

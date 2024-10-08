@@ -10,6 +10,7 @@ using MyStore.Application.IRepositories;
 using MyStore.Application.IRepositories.Orders;
 using MyStore.Application.IRepositories.Products;
 using MyStore.Application.IRepositories.Users;
+using MyStore.Application.IStorage;
 using MyStore.Application.ModelView;
 using MyStore.Application.Request;
 using MyStore.Application.Response;
@@ -21,6 +22,7 @@ using Net.payOS;
 using Newtonsoft.Json;
 using System.Collections;
 using System.Collections.Concurrent;
+using System.IO;
 using System.Linq.Expressions;
 using System.Net.Http.Json;
 
@@ -37,6 +39,10 @@ namespace MyStore.Application.Services.Orders
         private readonly IUserVoucherRepository _userVoucherRepository;
         private readonly IPaymentService _paymentService;
         private readonly IPaymentMethodRepository _paymentMethodRepository;
+        private readonly IProductReviewRepository _productReviewRepository;
+
+        private readonly IFileStorage _fileStorage;
+
         private readonly IConfiguration _configuration;
 
         private readonly IMapper _mapper;
@@ -46,6 +52,8 @@ namespace MyStore.Application.Services.Orders
         private readonly IServiceScopeFactory _serviceScopeFactory;
         private readonly PayOS _payOS;
 
+        private readonly string pathReviewImages = "assets/images/reviews";
+
         public OrderService(IOrderRepository orderRepository,
             ICartItemRepository cartItemRepository,
             IOrderDetailRepository orderDetailRepository,
@@ -54,8 +62,9 @@ namespace MyStore.Application.Services.Orders
             IPaymentMethodRepository paymentMethodRepository,
             ITransactionRepository transaction,
             IPaymentService paymentService,
+            IProductReviewRepository productReviewRepository,
             IPaymentMethodRepository methodRepository,
-            ICache cache, IVNPayLibrary vnPayLibrary,
+            ICache cache, IVNPayLibrary vnPayLibrary, IFileStorage fileStorage,
             IConfiguration configuration, IServiceScopeFactory serviceScopeFactory,
             PayOS payOS, IUserVoucherRepository userVoucherRepository, IMapper mapper)
         {
@@ -67,6 +76,9 @@ namespace MyStore.Application.Services.Orders
             _userVoucherRepository = userVoucherRepository;
             _paymentService = paymentService;
             _paymentMethodRepository = paymentMethodRepository;
+            _productReviewRepository = productReviewRepository;
+            _fileStorage = fileStorage;
+
             _vnPayLibrary = vnPayLibrary;
             _payOS = payOS;
 
@@ -116,14 +128,44 @@ namespace MyStore.Application.Services.Orders
             };
         }
 
-        public async Task<OrderDTO> GetOrder(int id)
+        public async Task<OrderDetailsResponse> GetOrderDetail(long orderId)
         {
-            var order = await _orderRepository.FindAsync(id);
+            var order = await _orderRepository.SingleOrDefaultAsyncInclude(e => e.Id == orderId);
             if (order != null)
             {
-                return _mapper.Map<OrderDTO>(order);
+                return _mapper.Map<OrderDetailsResponse>(order);
             }
-            else throw new ArgumentException($"Id {id}" + ErrorMessage.NOT_FOUND);
+            else throw new InvalidOperationException(ErrorMessage.ORDER_NOT_FOUND);
+        }
+
+        public async Task<OrderDetailsResponse> GetOrderDetail(long orderId, string userId)
+        {
+            var order = await _orderRepository.SingleOrDefaultAsyncInclude(e => e.Id == orderId && e.UserId == userId);
+            if (order != null)
+            {
+                return _mapper.Map<OrderDetailsResponse>(order);
+            }
+            else throw new InvalidOperationException(ErrorMessage.ORDER_NOT_FOUND);
+        }
+
+        public async Task<PagedResponse<OrderDTO>> GetOrdersByUserId(string userId, PageRequest page)
+        {
+            var orders = await _orderRepository.GetPagedOrderByDescendingAsync(page.Page, page.PageSize, e => e.UserId == userId, x => x.CreatedAt);
+            var total = await _orderRepository.CountAsync(e => e.UserId == userId);
+
+            var items = _mapper.Map<IEnumerable<OrderDTO>>(orders).Select(x =>
+            {
+                x.PayBackUrl = _cache.Get<OrderCache?>("Order " + x.Id)?.Url;
+                return x;
+            });
+
+            return new PagedResponse<OrderDTO>
+            {
+                Items = items,
+                TotalItems = total,
+                Page = page.Page,
+                PageSize = page.PageSize
+            };
         }
 
         private double CalcShip(double price) => price >= 400000 ? 0 : price >= 200000 ? 10000 : 30000;
@@ -156,13 +198,15 @@ namespace MyStore.Application.Services.Orders
 
                 var cartItems = await _cartItemRepository.GetAsync(e => e.UserId == userId && request.CartIds.Contains(e.Id));
 
-                var lstpSizeUpdate = new ConcurrentBag<ProductSize>();
-                var lstProductUpdate = new ConcurrentBag<Product>(); //truy cap dong thoi (da luong)
-                var details = await Task.WhenAll(cartItems.Select(async cartItem =>
+                var lstpSizeUpdate = new List<ProductSize>();
+                var lstProductUpdate = new List<Product>();
+                var lstDetails = new List<OrderDetail>();
+
+                foreach (var cartItem in cartItems)
                 {
                     var size = await _productSizeRepository
                         .SingleAsyncInclude(e => e.ProductColorId == cartItem.ColorId && e.SizeId == cartItem.SizeId);
-                    
+
                     if (size.InStock < cartItem.Quantity)
                     {
                         throw new Exception(ErrorMessage.SOLDOUT);
@@ -178,7 +222,7 @@ namespace MyStore.Application.Services.Orders
                     size.InStock -= cartItem.Quantity;
                     lstpSizeUpdate.Add(size);
 
-                    return new OrderDetail
+                    lstDetails.Add(new OrderDetail
                     {
                         OrderId = order.Id,
                         ProductId = cartItem.ProductId,
@@ -190,8 +234,45 @@ namespace MyStore.Application.Services.Orders
                         ProductName = cartItem.Product.Name,
                         OriginPrice = cartItem.Product.Price,
                         Price = price,
-                    };
-                }));
+                        ImageUrl = size.ProductColor.ImageUrl,
+                    });
+                }
+
+                //var details = await Task.WhenAll(cartItems.Select(async cartItem =>
+                //{
+                //    var size = await _productSizeRepository
+                //        .SingleAsyncInclude(e => e.ProductColorId == cartItem.ColorId && e.SizeId == cartItem.SizeId);
+                    
+                //    if (size.InStock < cartItem.Quantity)
+                //    {
+                //        throw new Exception(ErrorMessage.SOLDOUT);
+                //    }
+
+                //    double price = cartItem.Product.Price - cartItem.Product.Price * (cartItem.Product.DiscountPercent / 100.0);
+                //    price *= cartItem.Quantity;
+                //    total += price;
+
+                //    cartItem.Product.Sold += cartItem.Quantity;
+                //    lstProductUpdate.Add(cartItem.Product);
+
+                //    size.InStock -= cartItem.Quantity;
+                //    lstpSizeUpdate.Add(size);
+
+                //    return new OrderDetail
+                //    {
+                //        OrderId = order.Id,
+                //        ProductId = cartItem.ProductId,
+                //        SizeName = size.Size.Name,
+                //        SizeId = size.SizeId,
+                //        Quantity = cartItem.Quantity,
+                //        ColorName = size.ProductColor.ColorName,
+                //        ColorId = size.ProductColorId,
+                //        ProductName = cartItem.Product.Name,
+                //        OriginPrice = cartItem.Product.Price,
+                //        Price = price,
+                //        ImageUrl = size.ProductColor.ImageUrl,
+                //    };
+                //}));
 
                 UserVoucher? voucher = null;
                 if (request.Code != null)
@@ -235,7 +316,7 @@ namespace MyStore.Application.Services.Orders
 
                 await _productSizeRepository.UpdateAsync(lstpSizeUpdate);
                 await _productRepository.UpdateAsync(lstProductUpdate);
-                await _orderDetailRepository.AddAsync(details);
+                await _orderDetailRepository.AddAsync(lstDetails);
                 await _cartItemRepository.DeleteRangeAsync(cartItems);
                 if (voucher != null)
                 {
@@ -283,7 +364,7 @@ namespace MyStore.Application.Services.Orders
                     {
                         OrderId = order.Id,
                         Amount = total,
-                        Products = details.Select(e => new ProductInfo
+                        Products = lstDetails.Select(e => new ProductInfo
                         {
                             Name = e.ProductName,
                             Price = e.Price,
@@ -428,7 +509,7 @@ namespace MyStore.Application.Services.Orders
             }
         }
 
-        public async Task<OrderDTO> UpdateOrder(int id, string userId, UpdateOrderRequest request)
+        public async Task<OrderDTO> UpdateOrder(long id, string userId, UpdateOrderRequest request)
         {
             var order = await _orderRepository.SingleOrDefaultAsync(e => e.Id == id && e.UserId == userId);
             if(order != null && order.OrderStatus.Equals(DeliveryStatusEnum.Processing))
@@ -447,9 +528,9 @@ namespace MyStore.Application.Services.Orders
             else throw new ArgumentException($"Id {id} " + ErrorMessage.NOT_FOUND);
         }
 
-        public async Task DeleteOrder(int id, string userId)
+        public async Task DeleteOrder(long id)
         {
-            var order = await _orderRepository.SingleOrDefaultAsync(e => e.Id == id && e.UserId == userId);
+            var order = await _orderRepository.SingleOrDefaultAsync(e => e.Id == id);
             if (order != null)
             {
                 await _orderRepository.DeleteAsync(order);
@@ -457,27 +538,7 @@ namespace MyStore.Application.Services.Orders
             else throw new ArgumentException($"Id {id} " + ErrorMessage.NOT_FOUND);
         }
 
-        public async Task<PagedResponse<OrderDTO>> GetOrdersByUserId(string userId, PageRequest page)
-        {
-            var orders = await _orderRepository.GetPagedOrderByDescendingAsync(page.Page, page.PageSize, e => e.UserId == userId, x => x.CreatedAt);
-            var total = await _orderRepository.CountAsync(e => e.UserId == userId);
-
-            var items = _mapper.Map<IEnumerable<OrderDTO>>(orders).Select(x =>
-            {
-                x.PayBackUrl = _cache.Get<OrderCache?>("Order " + x.Id)?.Url;
-                return x;
-            });
-
-            return new PagedResponse<OrderDTO>
-            {
-                Items = items,
-                TotalItems = total,
-                Page = page.Page,
-                PageSize = page.PageSize
-            };
-        }
-
-        public async Task CancelOrder(int orderId, string userId)
+        public async Task CancelOrder(long orderId, string userId)
         {
             var order = await _orderRepository.SingleOrDefaultAsync(e => e.Id == orderId && e.UserId == userId);
             if (order != null)
@@ -503,20 +564,33 @@ namespace MyStore.Application.Services.Orders
             else throw new ArgumentException($"Id {orderId} " + ErrorMessage.NOT_FOUND);
         }
 
-        public async Task<OrderDetailsResponse> GetOrderDetail(int id)
+        public async Task Review(long orderId, string userId, ReviewProductRequest request)
         {
-            var order = await _orderRepository.SingleOrDefaultAsync(e => e.Id == id);
-            if (order != null)
+            var order = await _orderRepository.FindAsync(orderId);
+            if (order == null || order.OrderStatus != DeliveryStatusEnum.Received)
             {
-                var orderDetail = await _orderDetailRepository.GetAsync(e => e.OrderId == id);
-                var products = _mapper.Map<IEnumerable<ProductsOrderDetail>>(orderDetail);
-
-                var res = _mapper.Map<OrderDetailsResponse>(order);
-                res.Products = products;
-
-                return res;
+                throw new InvalidDataException(ErrorMessage.ORDER_NOT_FOUND);
             }
-            else throw new ArgumentException($"Id {id} " + ErrorMessage.NOT_FOUND);
+
+            var productPreview = await Task.WhenAll(request.Reviews.Select(async rv =>
+            {
+                var productPath = pathReviewImages + "/" + rv.ProductId;
+                var listName = rv.Images.Select(image =>
+                {
+                    var name = Guid.NewGuid().ToString() + Path.GetExtension(image.FileName);
+                    return Path.Combine(productPath, name);
+                }).ToList();
+                await _fileStorage.SaveAsync(productPath, rv.Images, listName);
+
+                return new ProductReview
+                {
+                    ProductId = rv.ProductId,
+                    Star = rv.Star,
+                    Description = rv.Description,
+                    ImagesUrls = listName,
+                };
+            }));
+            await _productReviewRepository.AddAsync(productPreview);
         }
     }
 }

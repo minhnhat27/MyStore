@@ -14,6 +14,7 @@ namespace MyStore.Infrastructure.Repositories.Products
         {
             return await _dbContext.ProductSizes
                 .Include(e => e.ProductColor)
+                .Include(e => e.Size)
                 .SingleAsync(expression);
         }
     }
