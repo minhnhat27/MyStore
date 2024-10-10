@@ -17,6 +17,8 @@ using Twilio.Rest.Api.V2010.Account;
 using Twilio.Types;
 using System.Text.RegularExpressions;
 using MyStore.Application.DTOs;
+using MyStore.Domain.Enumerations;
+using MyStore.Application.IRepositories;
 
 namespace MyStore.Infrastructure.AuthenticationService
 {
@@ -28,9 +30,11 @@ namespace MyStore.Infrastructure.AuthenticationService
         private readonly ICache _cache;
         private readonly IConfiguration _configuration;
         private readonly IMapper _mapper;
+        private readonly ITransactionRepository _transaction;
         public AuthenticationService(UserManager<User> userManager,
             SignInManager<User> signInManager,
             ISendMailService sendMailService,
+            ITransactionRepository transactionRepository,
             ICache cache, IConfiguration configuration, IMapper mapper)
         {
             _userManager = userManager;
@@ -39,6 +43,7 @@ namespace MyStore.Infrastructure.AuthenticationService
             _cache = cache;
             _configuration = configuration;
             _mapper = mapper;
+            _transaction = transactionRepository;
         }
 
         private async Task<string> CreateJwtToken(User user, bool isRefreshToken = false)
@@ -88,9 +93,9 @@ namespace MyStore.Infrastructure.AuthenticationService
                         Session = user.ConcurrencyStamp ?? Guid.NewGuid().ToString(),
                     };
                 }
-                throw new Exception(ErrorMessage.USER_NOT_FOUND);
+                throw new InvalidDataException(ErrorMessage.USER_NOT_FOUND);
             }
-            throw new ArgumentException(ErrorMessage.INCORRECT_PASSWORD);
+            throw new InvalidOperationException(ErrorMessage.INCORRECT_PASSWORD);
         }
 
         public async Task<JwtResponse> LoginGoogle(string token)
@@ -133,7 +138,9 @@ namespace MyStore.Infrastructure.AuthenticationService
         {
             try
             {
-                var code = _cache.Get<string>("Register " + request.Email);
+                var registerCache = AuthTypeEnum.Register.ToString() + request.Email;
+
+                var code = _cache.Get<string>(registerCache);
                 if (code != null && code.Equals(request.Token))
                 {
                     var user = new User
@@ -157,7 +164,7 @@ namespace MyStore.Infrastructure.AuthenticationService
                         throw new Exception(string.Join(";", result.Errors.Select(e => e.Description)));
                     }
 
-                    _cache.Remove("Register " + request.Email);
+                    _cache.Remove(registerCache);
                     return _mapper.Map<UserDTO>(user);
                 }
                 throw new Exception(ErrorMessage.INVALID_OTP);
@@ -187,16 +194,16 @@ namespace MyStore.Infrastructure.AuthenticationService
             return phoneNumber;
         }
 
-        public async Task SendCodeToEmail(string email)
+        public async Task SendCodeToEmail(AuthTypeEnum authType, string email)
         {
             var user = await _userManager.FindByNameAsync(email);
             if (user != null)
             {
-                throw new Exception(ErrorMessage.EXISTED_USER);
+                throw new InvalidOperationException(ErrorMessage.EMAIL_EXISTED);
             }
 
             var code = new Random().Next(100000, 999999);
-            _cache.Set("Register " + email, code.ToString(), TimeSpan.FromMinutes(30));
+            _cache.Set(authType.ToString() + email, code.ToString(), TimeSpan.FromMinutes(30));
 
             var subject = code + " is your verification code";
             var body = $"Hi!<br/><br/>" +
@@ -207,12 +214,12 @@ namespace MyStore.Infrastructure.AuthenticationService
             await _sendMailService.SendMailToOne(email, subject, body);
         }
 
-        public void VerifyOTP(string email, string token)
+        public void VerifyOTP(VerifyOTPRequest verifyOTPRequest)
         {
-            var codeCache = _cache.Get<string>("Register " + email);
-            if(codeCache == null || !codeCache.Equals(token))
+            var codeCache = _cache.Get<string>(verifyOTPRequest.Type.ToString() + verifyOTPRequest.Email);
+            if(codeCache == null || !codeCache.Equals(verifyOTPRequest.Token))
             {
-                throw new ArgumentException(ErrorMessage.INVALID_OTP);
+                throw new InvalidDataException(ErrorMessage.INVALID_OTP);
             }
         }
 
@@ -264,6 +271,43 @@ namespace MyStore.Infrastructure.AuthenticationService
             if (!changePasswordResult.Succeeded)
             {
                 throw new InvalidOperationException(ErrorMessage.ERROR);
+            }
+        }
+
+        public async Task<bool> CheckPassword(string userId, string password)
+        {
+            var user = await _userManager.FindByIdAsync(userId) ?? throw new InvalidOperationException(ErrorMessage.USER_NOT_FOUND);
+            var result = await _signInManager.CheckPasswordSignInAsync(user, password, false);
+            return result.Succeeded;
+        }
+
+        public async Task ChangeEmail(string userId, string newEmail, string token)
+        {
+            var user = await _userManager.FindByIdAsync(userId) ?? throw new InvalidOperationException(ErrorMessage.USER_NOT_FOUND);
+            var changeEmailCache = AuthTypeEnum.ChangeEmail.ToString() + newEmail;
+
+            var code = _cache.Get<string>(changeEmailCache);
+            if (code == null || !code.Equals(token))
+            {
+                throw new InvalidDataException(ErrorMessage.INVALID_OTP);
+            }
+
+            using var transaction = await _transaction.BeginTransactionAsync();
+            try
+            {
+                var result = await _userManager.SetEmailAsync(user, newEmail);
+                var resultUserName = await _userManager.SetUserNameAsync(user, newEmail);
+
+                if (!result.Succeeded || !resultUserName.Succeeded)
+                {
+                    throw new Exception(ErrorMessage.ERROR);
+                }
+                _cache.Remove(changeEmailCache);
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                throw new Exception(ex.Message);
             }
         }
     }

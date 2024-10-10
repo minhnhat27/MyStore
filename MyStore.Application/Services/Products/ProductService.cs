@@ -231,7 +231,7 @@ namespace MyStore.Application.Services.Products
                 }
                 if (filters.Rating != null)
                 {
-                    expression = CombineExpressions(expression, e => e.ProductReviews.Average(e => e.Star) >= filters.Rating);
+                    expression = CombineExpressions(expression, e => e.Rating >= filters.Rating);
                 }
                 if (filters.CategoryIds != null && filters.CategoryIds.Any())
                 {
@@ -267,7 +267,12 @@ namespace MyStore.Application.Services.Products
                     _ => await _productRepository
                                                .GetPagedOrderByDescendingAsync(filters.Page, filters.PageSize, expression, e => e.CreatedAt),
                 };
-                var res = _mapper.Map<IEnumerable<ProductDTO>>(products);
+                var res = _mapper.Map<IEnumerable<ProductDTO>>(products)
+                    .Select(x =>
+                    {
+                        x.Rating = (float)Math.Round(x.Rating, 1);
+                        return x;
+                    });
                     //.Select(x =>
                     //{
                     //    var image = products.Single(e => e.Id == x.Id).Images.FirstOrDefault();

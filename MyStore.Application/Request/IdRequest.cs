@@ -8,4 +8,12 @@
     {
         public string Name { get; set; }
     }
+    public class EmailRequest
+    {
+        public string Email { get; set; }
+    }
+    public class PasswordRequest
+    {
+        public string Password { get; set; }
+    }
 }

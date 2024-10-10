@@ -564,33 +564,53 @@ namespace MyStore.Application.Services.Orders
             else throw new ArgumentException($"Id {orderId} " + ErrorMessage.NOT_FOUND);
         }
 
-        public async Task Review(long orderId, string userId, ReviewProductRequest request)
+        public async Task Review(long orderId, string userId, IEnumerable<ReviewRequest> reviews)
         {
-            var order = await _orderRepository.FindAsync(orderId);
-            if (order == null || order.OrderStatus != DeliveryStatusEnum.Received)
+            var order = await _orderRepository.SingleOrDefaultAsync(e => e.Id == orderId && e.UserId == userId)
+                ?? throw new InvalidOperationException(ErrorMessage.ORDER_NOT_FOUND);
+            if (order.OrderStatus != DeliveryStatusEnum.Received)
             {
-                throw new InvalidDataException(ErrorMessage.ORDER_NOT_FOUND);
+                throw new InvalidDataException("Chưa thể đánh giá đơn hàng này.");
             }
+            List<ProductReview> pReviews = new();
+            List<Product> products = new();
 
-            var productPreview = await Task.WhenAll(request.Reviews.Select(async rv =>
+            foreach (var rv in reviews)
             {
                 var productPath = pathReviewImages + "/" + rv.ProductId;
-                var listName = rv.Images.Select(image =>
-                {
-                    var name = Guid.NewGuid().ToString() + Path.GetExtension(image.FileName);
-                    return Path.Combine(productPath, name);
-                }).ToList();
-                await _fileStorage.SaveAsync(productPath, rv.Images, listName);
+                List<string>? pathNames = null;
 
-                return new ProductReview
+                if (rv.Images != null)
                 {
-                    ProductId = rv.ProductId,
-                    Star = rv.Star,
-                    Description = rv.Description,
-                    ImagesUrls = listName,
-                };
-            }));
-            await _productReviewRepository.AddAsync(productPreview);
+                    pathNames = new();
+                    var imgNames = rv.Images.Select(image =>
+                    {
+                        var name = Guid.NewGuid().ToString() + Path.GetExtension(image.FileName);
+                        pathNames.Add(Path.Combine(productPath, name));
+                        return name;
+                    }).ToList();
+                    await _fileStorage.SaveAsync(productPath, rv.Images, imgNames);
+                }
+
+                var product = await _productRepository.FindAsync(rv.ProductId);
+                if (product != null)
+                {
+                    var currentStar = product.Rating * product.RatingCount;
+                    product.Rating = (currentStar + rv.Star) / (product.RatingCount + 1);
+                    product.RatingCount += 1;
+
+                    products.Add(product);
+                    pReviews.Add(new ProductReview
+                    {
+                        ProductId = rv.ProductId,
+                        Star = rv.Star,
+                        Description = rv.Description,
+                        ImagesUrls = pathNames,
+                    });
+                }
+            }
+            await _productReviewRepository.AddAsync(pReviews);
+            await _productRepository.UpdateAsync(products);
         }
     }
 }

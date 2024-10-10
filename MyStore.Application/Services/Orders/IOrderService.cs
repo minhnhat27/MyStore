@@ -12,7 +12,7 @@ namespace MyStore.Application.Services.Orders
         Task CancelOrder(long orderId, string userId);
         Task<string?> CreateOrder(string userId, OrderRequest request);
 
-        Task Review(long orderId, string userId, ReviewProductRequest request);
+        Task Review(long orderId, string userId, IEnumerable<ReviewRequest> reviews);
 
         Task<PagedResponse<OrderDTO>> GetAll(int page, int pageSize, string? keySearch);
         Task<OrderDetailsResponse> GetOrderDetail(long orderId);

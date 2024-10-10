@@ -35,6 +35,7 @@ namespace MyStore.Domain.Entities
 
         [Range(0, 5)]
         public float Rating { get; set; }
+        public long RatingCount { get; set; }
 
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }

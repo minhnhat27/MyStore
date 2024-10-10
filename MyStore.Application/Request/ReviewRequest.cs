@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace MyStore.Application.Request
 {
-    public class Review
+    public class ReviewRequest
     {
         public long ProductId { get; set; }
 
@@ -11,11 +11,7 @@ namespace MyStore.Application.Request
         public int Star { get; set; }
 
         [MaxLength(200)]
-        public string Description { get; set; }
-        public IFormFileCollection Images { get; set; }
-    }
-    public class ReviewProductRequest
-    {
-        public IEnumerable<Review> Reviews { get; set; }
+        public string? Description { get; set; }
+        public IFormFileCollection? Images { get; set; }
     }
 }

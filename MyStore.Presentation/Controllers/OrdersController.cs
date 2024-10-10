@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using MyStore.Application.Request;
 using MyStore.Application.Services.Orders;
-using MyStore.Domain.Entities;
 using System.Security.Claims;
 
 namespace MyStore.Presentation.Controllers
@@ -156,7 +155,7 @@ namespace MyStore.Presentation.Controllers
 
 
         [HttpPost("review/{id}")]
-        public async Task<IActionResult> Review(long id, [FromForm] ReviewProductRequest request)
+        public async Task<IActionResult> Review(long id, [FromForm] IEnumerable<ReviewRequest> reviews)
         {
             try
             {
@@ -165,12 +164,20 @@ namespace MyStore.Presentation.Controllers
                 {
                     return Unauthorized();
                 }
-                await _orderService.Review(id, userId, request);
+                await _orderService.Review(id, userId, reviews);
                 return Ok();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (InvalidDataException ex)
+            {
+                return BadRequest(ex.Message);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ex.Message);
+                return StatusCode(500, ex.InnerException?.Message ?? ex.Message);
             }
         }
     }

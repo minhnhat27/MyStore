@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyStore.Application.Request;
+using MyStore.Domain.Constants;
 using MyStore.Infrastructure.AuthenticationService;
 using System.Security.Claims;
 
@@ -21,7 +22,7 @@ namespace MyStore.Presentation.Controllers
                 var result = await _authService.Login(request.Username, request.Password);
                 return Ok(result);
             }
-            catch(ArgumentException ex)
+            catch(InvalidOperationException ex)
             {
                 return Unauthorized(ex.Message);
             }
@@ -50,8 +51,12 @@ namespace MyStore.Presentation.Controllers
         {
             try
             {
-                await _authService.SendCodeToEmail(request.Email);
-                return Ok();
+                await _authService.SendCodeToEmail(request.Type, request.Email);
+                return NoContent();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
             }
             catch (Exception ex)
             {
@@ -64,10 +69,10 @@ namespace MyStore.Presentation.Controllers
         {
             try
             {
-                _authService.VerifyOTP(request.Email, request.Token);
-                return Ok();
+                _authService.VerifyOTP(request);
+                return NoContent();
             }
-            catch (ArgumentException ex)
+            catch (InvalidDataException ex)
             {
                 return BadRequest(ex.Message);
             }
@@ -79,7 +84,7 @@ namespace MyStore.Presentation.Controllers
 
         [HttpPut("change-password")]
         [Authorize]
-        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePaswordRequest request)
         {
             try
             {
@@ -90,7 +95,7 @@ namespace MyStore.Presentation.Controllers
                 }
 
                 await _authService.ChangePassword(userId, request.CurrentPassword, request.NewPassword);
-                return Ok();
+                return NoContent();
             }
             catch (InvalidDataException ex)
             {
@@ -99,6 +104,56 @@ namespace MyStore.Presentation.Controllers
             catch (InvalidOperationException ex)
             {
                 return Conflict(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+        [HttpPost("check-password")]
+        [Authorize]
+        public async Task<IActionResult> CheckPassword([FromBody] PasswordRequest request)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (userId == null)
+                {
+                    return Unauthorized();
+                }
+
+                var result = await _authService.CheckPassword(userId, request.Password);
+                return result ? NoContent() : BadRequest(ErrorMessage.INVALID_PASSWORD);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+        [HttpPut("change-email")]
+        [Authorize]
+        public async Task<IActionResult> ChangeEmail([FromBody] VerifyOTPRequest request)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (userId == null)
+                {
+                    return Unauthorized();
+                }
+
+                await _authService.ChangeEmail(userId, request.Email, request.Token);
+                return NoContent();
+            }
+            catch (InvalidDataException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Unauthorized(ex.Message);
             }
             catch (Exception ex)
             {
