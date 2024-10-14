@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using MyStore.Application.ICaching;
 using MyStore.Application.ILibrary;
@@ -10,7 +11,6 @@ using MyStore.Application.IRepositories.Products;
 using MyStore.Application.IRepositories.Users;
 using MyStore.Application.ISendMail;
 using MyStore.Application.IStorage;
-using MyStore.Application.ModelView;
 using MyStore.Application.Services.Brands;
 using MyStore.Application.Services.Carts;
 using MyStore.Application.Services.Categories;
@@ -35,7 +35,10 @@ using MyStore.Infrastructure.Repositories.Orders;
 using MyStore.Infrastructure.Repositories.Products;
 using MyStore.Infrastructure.Repositories.Users;
 using MyStore.Infrastructure.Storage;
+using MyStore.Presentation.Hubs;
+using MyStore.Presentation.Hubs.Message;
 using Net.payOS;
+using System.Security.Claims;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -86,14 +89,31 @@ builder.Services.AddAuthentication(opt =>
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWT:SecretKey"] ?? "")),
         ClockSkew = TimeSpan.Zero
     };
+    opt.Events = new JwtBearerEvents()
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+
+            var path = context.HttpContext.Request.Path;
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/chat"))
+            {
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        }
+    };
 });
 builder.Services.AddAutoMapper(typeof(Mapping));
 
 builder.Services.Configure<SenderSettings>(builder.Configuration.GetSection("SenderSettings"));
 
+builder.Services.AddSignalR();
+
 builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<ISendMailService, SendMailService>();
 builder.Services.AddSingleton<ICache, Cache>();
+builder.Services.AddSingleton<IMessageManager, MessageManager>();
 
 PayOS payOS = new(builder.Configuration["PayOS:clientId"] ?? throw new Exception(ErrorMessage.ARGUMENT_NULL),
                         builder.Configuration["PayOS:apiKey"] ?? throw new Exception(ErrorMessage.ARGUMENT_NULL),
@@ -156,6 +176,8 @@ app.UseDefaultFiles();
 app.UseCors("MyCors");
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapHub<ChatBox>("/chat");
 
 app.MapControllers();
 

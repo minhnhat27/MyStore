@@ -14,6 +14,8 @@ namespace MyStore.Domain.Entities
         public double ShippingCost { get; set; }
 
         public DateTime OrderDate { get; set; }
+        public DateTime? ReceivedDate { get; set; }
+        public bool Reviewed { get; set; }
 
         [MaxLength(160)]
         public string DeliveryAddress { get; set; }

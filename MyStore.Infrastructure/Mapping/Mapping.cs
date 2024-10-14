@@ -37,7 +37,8 @@ namespace MyStore.Infrastructure.Mapping
             CreateMap<Product, ProductDTO>()
                 .ForMember(dest => dest.ImageUrl, opt => opt.MapFrom(src => src.Images.FirstOrDefault() != null ? src.Images.FirstOrDefault()!.ImageUrl : null))
                 .ForMember(dest => dest.BrandName, opt => opt.MapFrom(src => src.Brand.Name))
-                .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.Name));
+                .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.Name))
+                .ForMember(dest => dest.Rating, opt => opt.MapFrom(src => Math.Round(src.Rating, 1)));
 
             CreateMap<ProductRequest, Product>();
             CreateMap<Product, ProductDetailsResponse>();

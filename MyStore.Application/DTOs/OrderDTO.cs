@@ -9,6 +9,9 @@ namespace MyStore.Application.DTOs
         public double Total { get; set; }
         public double AmountPaid { get; set; }
         public DateTime OrderDate { get; set; }
+        public DateTime? ReceivedDate { get; set; }
+        public bool Reviewed { get; set; }
+
         public string PaymentMethod { get; set; }
         public DeliveryStatusEnum OrderStatus { get; set; }
 

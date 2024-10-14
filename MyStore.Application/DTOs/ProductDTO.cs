@@ -16,6 +16,7 @@ namespace MyStore.Application.DTOs
         public string CategoryName { get; set; }
         public string BrandName { get; set; }
         public float Rating { get; set; }
+        public long RatingCount { get; set; }
         public string ImageUrl { get; set; }
     }
     public class ColorSizeRequest

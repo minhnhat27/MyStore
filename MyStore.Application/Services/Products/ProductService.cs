@@ -30,12 +30,10 @@ namespace MyStore.Application.Services.Products
 
         private readonly string path = "assets/images/products";
 
-        public ProductService(IProductRepository productRepository,
-            IProductSizeRepository productSizeRepository,
-            IProductColorRepository productColorRepository,
-            IProductMaterialRepository productMaterialRepository,
-            IImageRepository imageRepository, IFileStorage fileStorage, 
-            ITransactionRepository transactionRepository, IMapper mapper)
+        public ProductService(IProductRepository productRepository, IProductSizeRepository productSizeRepository,
+                              IProductColorRepository productColorRepository,
+                              IProductMaterialRepository productMaterialRepository, IImageRepository imageRepository,
+                              IFileStorage fileStorage, ITransactionRepository transactionRepository, IMapper mapper)
         {
             _productRepository = productRepository;
             _productSizeRepository = productSizeRepository;
@@ -159,15 +157,6 @@ namespace MyStore.Application.Services.Products
                 }
 
                 var res = _mapper.Map<IEnumerable<ProductDTO>>(products);
-                    //.Select(x =>
-                    //{
-                    //    var image = products.Single(e => e.Id == x.Id).Images.FirstOrDefault();
-                    //    if (image != null)
-                    //    {
-                    //        x.ImageUrl = image.ImageUrl;
-                    //    }
-                    //    return x;
-                    //});
 
                 return new PagedResponse<ProductDTO>
                 {
@@ -267,21 +256,7 @@ namespace MyStore.Application.Services.Products
                     _ => await _productRepository
                                                .GetPagedOrderByDescendingAsync(filters.Page, filters.PageSize, expression, e => e.CreatedAt),
                 };
-                var res = _mapper.Map<IEnumerable<ProductDTO>>(products)
-                    .Select(x =>
-                    {
-                        x.Rating = (float)Math.Round(x.Rating, 1);
-                        return x;
-                    });
-                    //.Select(x =>
-                    //{
-                    //    var image = products.Single(e => e.Id == x.Id).Images.FirstOrDefault();
-                    //    if (image != null)
-                    //    {
-                    //        x.ImageUrl = image.ImageUrl;
-                    //    }
-                    //    return x;
-                    //});
+                var res = _mapper.Map<IEnumerable<ProductDTO>>(products);
 
                 return new PagedResponse<ProductDTO>
                 {
