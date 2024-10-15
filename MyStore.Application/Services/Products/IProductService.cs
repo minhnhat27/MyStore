@@ -18,5 +18,7 @@ namespace MyStore.Application.Services.Products
         Task<ProductDTO> UpdateProductAsync(int id, ProductRequest request, IFormFileCollection images);
         Task<bool> UpdateProductEnableAsync(int id, UpdateEnableRequest request);
         Task DeleteProductAsync(int id);
+
+        Task<PagedResponse<ReviewDTO>> GetReviews(long id, PageRequest request);
     }
 }

@@ -22,6 +22,7 @@ namespace MyStore.Application.Services.Products
         private readonly IProductSizeRepository _productSizeRepository;
         private readonly IProductColorRepository _productColorRepository;
         private readonly IProductMaterialRepository _productMaterialRepository;
+        private readonly IProductReviewRepository _productReviewRepository;
         private readonly IImageRepository _imageRepository;
         private readonly ITransactionRepository _transactionRepository;
 
@@ -31,7 +32,7 @@ namespace MyStore.Application.Services.Products
         private readonly string path = "assets/images/products";
 
         public ProductService(IProductRepository productRepository, IProductSizeRepository productSizeRepository,
-                              IProductColorRepository productColorRepository,
+                              IProductColorRepository productColorRepository, IProductReviewRepository productReviewRepository,
                               IProductMaterialRepository productMaterialRepository, IImageRepository imageRepository,
                               IFileStorage fileStorage, ITransactionRepository transactionRepository, IMapper mapper)
         {
@@ -39,6 +40,7 @@ namespace MyStore.Application.Services.Products
             _productSizeRepository = productSizeRepository;
             _productColorRepository = productColorRepository;
             _productMaterialRepository = productMaterialRepository;
+            _productReviewRepository = productReviewRepository;
             _imageRepository = imageRepository;
             _fileStorage = fileStorage;
             _transactionRepository = transactionRepository;
@@ -333,10 +335,7 @@ namespace MyStore.Application.Services.Products
             if (product != null)
             {
                 var res = _mapper.Map<ProductDetailsResponse>(product);
-                res.MaterialIds = product.Materials.Select(e => e.MaterialId);
-
                 res.ColorSizes = _mapper.Map<IEnumerable<ColorSizeResponse>>(product.ProductColors);
-
                 res.ImageUrls = product.Images.Select(e => e.ImageUrl);
 
                 return res;
@@ -519,6 +518,42 @@ namespace MyStore.Application.Services.Products
                 await _productRepository.DeleteAsync(product);
             }
             else throw new ArgumentException($"Id {id} " + ErrorMessage.NOT_FOUND);
+        }
+
+        private string MaskUsername(string username)
+        {
+            var words = username.Split(" ");
+            return string.Join(" ", words.Select(x =>
+            {
+                var trimmedWord = x.Trim();
+                if (trimmedWord.Length > 1)
+                {
+                    return $"{trimmedWord[0]}{new string('*', trimmedWord.Length - 1)}";
+                }
+                return trimmedWord;
+            }));
+        }
+
+        public async Task<PagedResponse<ReviewDTO>> GetReviews(long id, PageRequest request)
+        {
+            var reviews = await _productReviewRepository
+                .GetPagedOrderByDescendingAsync(request.Page, request.PageSize, e => e.ProductId == id, e=> e.CreatedAt);
+
+            var total = await _productReviewRepository.CountAsync(e => e.ProductId == id);
+
+            var items = _mapper.Map<IEnumerable<ReviewDTO>>(reviews).Select(x =>
+            {
+                x.Username = MaskUsername(x.Username);
+                return x;
+            });
+
+            return new PagedResponse<ReviewDTO>
+            {
+                Items = items,
+                TotalItems = total,
+                Page = request.Page,
+                PageSize = request.PageSize,
+            };
         }
     }
 }

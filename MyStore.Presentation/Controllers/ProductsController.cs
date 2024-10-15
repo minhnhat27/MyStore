@@ -73,7 +73,6 @@ namespace MyStore.Presentation.Controllers
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
                 return StatusCode(500, ex.Message);
             }
         }
@@ -143,6 +142,20 @@ namespace MyStore.Presentation.Controllers
             catch (ArgumentException ex)
             {
                 return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+        [HttpGet("{id}/reviews")]
+        public async Task<IActionResult> GetSearchProducts(long id, [FromQuery] PageRequest request)
+        {
+            try
+            {
+                var result = await _productService.GetReviews(id, request);
+                return Ok(result);
             }
             catch (Exception ex)
             {

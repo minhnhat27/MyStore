@@ -15,11 +15,11 @@ namespace MyStore.Domain.Entities
         [Range(1, 5)]
         public int Star { get; set; }
 
-        public long ProductId { get; set; }
-        public Product Product { get; set; }
+        public long? ProductId { get; set; }
+        public Product? Product { get; set; }
 
-        //[Column(TypeName = "jsonb")]
-        //public IList<string>? ImagesUrls { get; set; } = new List<string>();
+        public string? UserId { get; set; }
+        public User? User { get; set; }
 
         [NotMapped]
         public List<string>? ImagesUrls { get; set; } = new List<string>();

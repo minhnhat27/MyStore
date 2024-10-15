@@ -10,7 +10,6 @@ using MyStore.Domain.Entities;
 using MyStore.Domain.Enumerations;
 using Net.payOS;
 using Net.payOS.Types;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace MyStore.Application.Services.Payments
 {
@@ -192,7 +191,6 @@ namespace MyStore.Application.Services.Payments
                 "Thanh toan don hang: " + orderInfo.OrderId, items, cancelUrl, returnUrl);
 
             CreatePaymentResult createPayment = await _payOS.createPaymentLink(paymentData);
-
             return createPayment.checkoutUrl;
         }
 

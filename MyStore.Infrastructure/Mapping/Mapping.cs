@@ -41,7 +41,8 @@ namespace MyStore.Infrastructure.Mapping
                 .ForMember(dest => dest.Rating, opt => opt.MapFrom(src => Math.Round(src.Rating, 1)));
 
             CreateMap<ProductRequest, Product>();
-            CreateMap<Product, ProductDetailsResponse>();
+            CreateMap<Product, ProductDetailsResponse>()
+                .ForMember(dest => dest.Rating, opt => opt.MapFrom(src => Math.Round(src.Rating, 1)));
             CreateMap<ProductColor, ColorSizeResponse>()
                 .ForMember(dest => dest.SizeInStocks, opt => opt.MapFrom(src => src.ProductSizes));
 
@@ -53,6 +54,10 @@ namespace MyStore.Infrastructure.Mapping
 
             //Payment Method
             CreateMap<PaymentMethod, PaymentMethodDTO>().ReverseMap();
+
+            //review
+            CreateMap<ProductReview, ReviewDTO>()
+                .ForMember(dest => dest.Username, opt => opt.MapFrom(src => src.User != null ? src.User.Fullname : null));
         }
     }
 }

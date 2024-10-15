@@ -29,7 +29,7 @@ namespace MyStore.Presentation.Controllers
 
         [HttpPost]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Update([FromBody] CreatePaymentMethodRequest request)
+        public async Task<IActionResult> Create([FromBody] CreatePaymentMethodRequest request)
         {
             try
             {

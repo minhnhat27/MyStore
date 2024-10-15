@@ -19,10 +19,6 @@ using MyStore.Domain.Constants;
 using MyStore.Domain.Entities;
 using MyStore.Domain.Enumerations;
 using Net.payOS;
-using Newtonsoft.Json;
-using System.Collections;
-using System.Collections.Concurrent;
-using System.IO;
 using System.Linq.Expressions;
 using System.Net.Http.Json;
 
@@ -324,8 +320,7 @@ namespace MyStore.Application.Services.Orders
                     await _userVoucherRepository.UpdateAsync(voucher);
                 }
 
-                await transaction.CommitAsync();
-
+                string? paymentUrl = null;
                 if (method.Name == PaymentMethodEnum.VNPay.ToString())
                 {
                     var orderInfo = new VNPayOrderInfo
@@ -338,7 +333,7 @@ namespace MyStore.Application.Services.Orders
                     };
 
                     var userIP = "127.0.0.1";
-                    var paymentUrl = _paymentService.GetVNPayURL(orderInfo, userIP);
+                    paymentUrl = _paymentService.GetVNPayURL(orderInfo, userIP);
 
                     var orderCache = new OrderCache()
                     {
@@ -356,7 +351,6 @@ namespace MyStore.Application.Services.Orders
                     cacheOptions.RegisterPostEvictionCallback(OnVNPayDeadline, this);
                     _cache.Set("Order " + order.Id, orderCache, cacheOptions);
 
-                    return paymentUrl;
                 }
                 else if(method.Name == PaymentMethodEnum.PayOS.ToString())
                 {
@@ -372,7 +366,7 @@ namespace MyStore.Application.Services.Orders
                         })
                     };
 
-                    var paymentUrl = await _paymentService.GetPayOSURL(orders);
+                    paymentUrl = await _paymentService.GetPayOSURL(orders);
 
                     var orderCache = new OrderCache()
                     {
@@ -386,15 +380,14 @@ namespace MyStore.Application.Services.Orders
                     };
                     cacheOptions.RegisterPostEvictionCallback(OnPayOSDeadline, this);
                     _cache.Set("Order " + order.Id, orderCache, cacheOptions);
-
-                    return paymentUrl;
                 }
-                else return null;
+                await transaction.CommitAsync();
+                return paymentUrl;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 await transaction.RollbackAsync();
-                throw new Exception(ex.Message);
+                throw;
             }
         }
 
@@ -606,6 +599,7 @@ namespace MyStore.Application.Services.Orders
                         pReviews.Add(new ProductReview
                         {
                             ProductId = rv.ProductId,
+                            UserId = userId,
                             Star = rv.Star,
                             Description = rv.Description,
                             ImagesUrls = pathNames,

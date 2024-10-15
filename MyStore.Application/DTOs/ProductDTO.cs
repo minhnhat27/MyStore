@@ -10,7 +10,7 @@ namespace MyStore.Application.DTOs
         public string Name { get; set; }
         public bool Enable { get; set; }
         public int Sold { get; set; }
-        public string Gender { get; set; }
+        public GenderEnum Gender { get; set; }
         public double Price { get; set; }
         public float DiscountPercent { get; set; }
         public string CategoryName { get; set; }
