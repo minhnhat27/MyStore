@@ -9,12 +9,12 @@ namespace MyStore.Infrastructure.Repositories
     {
         private readonly MyDbContext _dbContext = dbcontext;
 
-        public async Task<Image?> GetFirstImageByProductIdAsync(int id)
+        public async Task<Image?> GetFirstImageByProductIdAsync(long id)
         {
             return await _dbContext.Images.FirstOrDefaultAsync(e => e.ProductId == id);
         }
 
-        public async Task<IEnumerable<Image>> GetImageByProductIdAsync(int productId) 
+        public async Task<IEnumerable<Image>> GetImageByProductIdAsync(long productId) 
             => await _dbContext.Images.Where(e => e.ProductId == productId).ToListAsync();
     }
 }

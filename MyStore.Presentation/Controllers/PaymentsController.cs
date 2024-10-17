@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using MyStore.Application.DTOs;
 using MyStore.Application.ModelView;
-using MyStore.Application.Request;
 using MyStore.Application.Services.Payments;
 
 namespace MyStore.Presentation.Controllers

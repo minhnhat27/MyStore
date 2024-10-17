@@ -45,7 +45,7 @@ namespace MyStore.Application.Services.Users
             else
             {
                 Expression<Func<User, bool>> expression = e =>
-                    e.Id.Contains(keySearch)
+                    e.Id.Equals(keySearch)
                     || (e.Fullname != null && e.Fullname.Contains(keySearch))
                     || (e.Email != null && e.Email.Contains(keySearch))
                     || (e.PhoneNumber != null && e.PhoneNumber.Contains(keySearch));
@@ -90,12 +90,12 @@ namespace MyStore.Application.Services.Users
                 await _deliveryAddressRepository.AddAsync(delivery);
             }
 
-            delivery.Province_id = address.Province_id;
-            delivery.Province_name = address.Province_name;
-            delivery.District_id = address.District_id;
-            delivery.District_name = address.District_name;
-            delivery.Ward_id = address.Ward_id;
-            delivery.Ward_name = address.Ward_name;
+            delivery.ProvinceID = address.ProvinceID;
+            delivery.ProvinceName = address.ProvinceName;
+            delivery.DistrictID = address.DistrictID;
+            delivery.DistrictName = address.DistrictName;
+            delivery.WardID = address.WardID;
+            delivery.WardName = address.WardName;
             delivery.Detail = address.Detail;
             delivery.Name = address.Name;
             delivery.PhoneNumber = address.PhoneNumber;

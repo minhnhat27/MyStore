@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MyStore.Infrastructure.DbContext;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MyStore.Infrastructure.Migrations
 {
     [DbContext(typeof(MyDbContext))]
-    partial class MyDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241017101843_rename-address")]
+    partial class renameaddress
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -283,7 +286,7 @@ namespace MyStore.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<int?>("DistrictID")
+                    b.Property<int?>("DistrictId")
                         .HasColumnType("integer");
 
                     b.Property<string>("DistrictName")
@@ -296,7 +299,7 @@ namespace MyStore.Infrastructure.Migrations
                     b.Property<string>("PhoneNumber")
                         .HasColumnType("text");
 
-                    b.Property<int?>("ProvinceID")
+                    b.Property<int?>("ProvinceId")
                         .HasColumnType("integer");
 
                     b.Property<string>("ProvinceName")
@@ -305,7 +308,7 @@ namespace MyStore.Infrastructure.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp without time zone");
 
-                    b.Property<int?>("WardID")
+                    b.Property<int?>("WardId")
                         .HasColumnType("integer");
 
                     b.Property<string>("WardName")
@@ -386,11 +389,8 @@ namespace MyStore.Infrastructure.Migrations
                         .HasMaxLength(160)
                         .HasColumnType("character varying(160)");
 
-                    b.Property<int>("DistrictID")
+                    b.Property<int>("DistrictId")
                         .HasColumnType("integer");
-
-                    b.Property<DateTime?>("Expected_delivery_time")
-                        .HasColumnType("timestamp without time zone");
 
                     b.Property<DateTime>("OrderDate")
                         .HasColumnType("timestamp without time zone");
@@ -419,9 +419,6 @@ namespace MyStore.Infrastructure.Migrations
                     b.Property<bool>("Reviewed")
                         .HasColumnType("boolean");
 
-                    b.Property<string>("ShippingCode")
-                        .HasColumnType("text");
-
                     b.Property<double>("ShippingCost")
                         .HasColumnType("double precision");
 
@@ -434,7 +431,7 @@ namespace MyStore.Infrastructure.Migrations
                     b.Property<string>("UserId")
                         .HasColumnType("text");
 
-                    b.Property<string>("WardID")
+                    b.Property<string>("WardCode")
                         .IsRequired()
                         .HasColumnType("text");
 

@@ -4,7 +4,7 @@ namespace MyStore.Application.IRepositories
 {
     public interface IImageRepository : IRepository<Image>
     {
-        Task<Image?> GetFirstImageByProductIdAsync(int id);
-        Task<IEnumerable<Image>> GetImageByProductIdAsync(int productId);
+        Task<Image?> GetFirstImageByProductIdAsync(long id);
+        Task<IEnumerable<Image>> GetImageByProductIdAsync(long productId);
     }
 }

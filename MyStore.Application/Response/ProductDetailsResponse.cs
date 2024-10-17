@@ -1,6 +1,5 @@
 ﻿using MyStore.Application.DTOs;
 using MyStore.Application.ModelView;
-using MyStore.Domain.Enumerations;
 
 namespace MyStore.Application.Response
 {
@@ -13,6 +12,10 @@ namespace MyStore.Application.Response
     }
     public class ProductDetailsResponse : ProductDTO
     {
+        public int CategoryId { get; set; }
+        public int BrandId { get; set; }
+        public IEnumerable<int> MaterialIds { get; set; }
+
         public string? Description { get; set; }
         public IEnumerable<ColorSizeResponse> ColorSizes { get; set; }
         public IEnumerable<string> ImageUrls { get; set; }

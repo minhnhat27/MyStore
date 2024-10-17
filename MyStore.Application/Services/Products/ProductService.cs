@@ -149,9 +149,14 @@ namespace MyStore.Application.Services.Products
                 }
                 else
                 {
+                    var isLong = long.TryParse(keySearch, out long longSearch);
+                    keySearch = keySearch.ToLower();
+
                     Expression<Func<Product, bool>> expression = e =>
-                        e.Name.Contains(keySearch)
-                        || e.Sold.ToString().Equals(keySearch)
+                        isLong && e.Id.Equals(longSearch) 
+                        || e.Name.Contains(keySearch)
+                        || e.Brand.Name.ToLower().Contains(keySearch)
+                        || e.Category.Name.ToLower().Contains(keySearch)
                         || e.Price.ToString().Equals(keySearch);
 
                     totalProduct = await _productRepository.CountAsync(expression);
@@ -329,7 +334,7 @@ namespace MyStore.Application.Services.Products
             return _mapper.Map<IEnumerable<ProductDTO>>(products);
         }
 
-        public async Task<ProductDetailsResponse> GetProductAsync(int id)
+        public async Task<ProductDetailsResponse> GetProductAsync(long id)
         {
             var product = await _productRepository.SingleOrDefaultAsyncInclude(e => e.Id == id);
             if (product != null)
@@ -343,7 +348,7 @@ namespace MyStore.Application.Services.Products
             else throw new ArgumentException($"Id {id} " + ErrorMessage.NOT_FOUND);
         }
 
-        public async Task<ProductDTO> UpdateProductAsync(int id, ProductRequest request, IFormFileCollection images)
+        public async Task<ProductDTO> UpdateProductAsync(long id, ProductRequest request, IFormFileCollection images)
         {
             var product = await _productRepository.SingleOrDefaultAsyncInclude(e => e.Id == id);
             if (product != null)
@@ -491,7 +496,7 @@ namespace MyStore.Application.Services.Products
             else throw new ArgumentException($"Id {id} " + ErrorMessage.NOT_FOUND);
         }
 
-        public async Task<bool> UpdateProductEnableAsync(int id, UpdateEnableRequest request)
+        public async Task<bool> UpdateProductEnableAsync(long id, UpdateEnableRequest request)
         {
             var product = await _productRepository.FindAsync(id);
             if (product != null)
@@ -503,7 +508,7 @@ namespace MyStore.Application.Services.Products
             else throw new ArgumentException($"Id {id} " + ErrorMessage.NOT_FOUND);
         }
 
-        public async Task DeleteProductAsync(int id)
+        public async Task DeleteProductAsync(long id)
         {
             var product = await _productRepository.FindAsync(id);
             if (product != null)

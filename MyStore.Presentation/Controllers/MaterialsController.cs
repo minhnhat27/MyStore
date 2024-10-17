@@ -26,7 +26,7 @@ namespace MyStore.Presentation.Controllers
             }
         }
 
-        [HttpPost("create")]
+        [HttpPost]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Create([FromBody] NameRequest request)
         {
@@ -41,7 +41,7 @@ namespace MyStore.Presentation.Controllers
             }
         }
 
-        [HttpPut("update/{id}")]
+        [HttpPut("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Update(int id, [FromBody] NameRequest request)
         {
@@ -60,7 +60,7 @@ namespace MyStore.Presentation.Controllers
             }
         }
 
-        [HttpDelete("delete/{id}")]
+        [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {

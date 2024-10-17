@@ -77,7 +77,7 @@ namespace MyStore.Presentation.Controllers
             }
         }
 
-        [HttpPost("create")]
+        [HttpPost]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Create([FromForm] ProductRequest request, [FromForm] IFormFileCollection images)
         {
@@ -92,9 +92,9 @@ namespace MyStore.Presentation.Controllers
             }
         }
 
-        [HttpPut("update/{id}")]
+        [HttpPut("{id}")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Update(int id, [FromForm] ProductRequest request, [FromForm] IFormFileCollection images)
+        public async Task<IActionResult> Update(long id, [FromForm] ProductRequest request, [FromForm] IFormFileCollection images)
         {
             try
             {
@@ -113,7 +113,7 @@ namespace MyStore.Presentation.Controllers
 
         [HttpPut("updateEnable/{id}")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> UpdateProductEnable(int id, [FromBody] UpdateEnableRequest request)
+        public async Task<IActionResult> UpdateProductEnable(long id, [FromBody] UpdateEnableRequest request)
         {
             try
             {
@@ -130,9 +130,9 @@ namespace MyStore.Presentation.Controllers
             }
         }
 
-        [HttpDelete("delete/{id}")]
+        [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Delete(int id)
+        public async Task<IActionResult> Delete(long id)
         {
             try
             {

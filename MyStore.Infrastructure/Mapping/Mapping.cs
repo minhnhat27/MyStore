@@ -23,8 +23,7 @@ namespace MyStore.Infrastructure.Mapping
             CreateMap<DeliveryAddress, AddressDTO>().ReverseMap();
 
             //order
-            CreateMap<OrderDTO, Order>().ReverseMap()
-                .ForMember(d => d.PaymentMethod, opt => opt.MapFrom(src => src.PaymentMethodName));
+            CreateMap<OrderDTO, Order>().ReverseMap();
             //.ForMember(d => d.OrderStatus, opt => opt.MapFrom(src => src.OrderStatus));
 
             CreateMap<OrderRequest, Order>().ReverseMap();
@@ -42,6 +41,7 @@ namespace MyStore.Infrastructure.Mapping
 
             CreateMap<ProductRequest, Product>();
             CreateMap<Product, ProductDetailsResponse>()
+                .ForMember(dest => dest.MaterialIds, opt => opt.MapFrom(src => src.Materials.Select(e => e.MaterialId)))
                 .ForMember(dest => dest.Rating, opt => opt.MapFrom(src => Math.Round(src.Rating, 1)));
             CreateMap<ProductColor, ColorSizeResponse>()
                 .ForMember(dest => dest.SizeInStocks, opt => opt.MapFrom(src => src.ProductSizes));
