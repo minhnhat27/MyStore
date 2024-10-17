@@ -19,8 +19,11 @@ using MyStore.Domain.Constants;
 using MyStore.Domain.Entities;
 using MyStore.Domain.Enumerations;
 using Net.payOS;
+using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Net.Http.Json;
+using System.Runtime.CompilerServices;
+using System.Xml.Linq;
 
 namespace MyStore.Application.Services.Orders
 {
@@ -105,13 +108,58 @@ namespace MyStore.Application.Services.Orders
             }
             else
             {
+                bool isLong = long.TryParse(keySearch, out long idSearch);
+                keySearch = keySearch.ToLower();
+
                 Expression<Func<Order, bool>> expression =
-                    e => e.Id.ToString().Contains(keySearch)
-                        || (e.OrderStatus != null && e.OrderStatus.Value.ToString().Contains(keySearch));
-                //|| (e.PaymentMethodName != null && e.PaymentMethodName.Contains(keySearch)
+                    e => e.Id.Equals(idSearch)
+                        || e.PaymentMethodName.ToLower().Contains(keySearch);
 
                 totalOrder = await _orderRepository.CountAsync(expression);
                 orders = await _orderRepository.GetPagedOrderByDescendingAsync(page, pageSize, expression, e => e.CreatedAt);
+            }
+            var items = _mapper.Map<IEnumerable<OrderDTO>>(orders);
+
+            return new PagedResponse<OrderDTO>
+            {
+                Items = items,
+                Page = page,
+                PageSize = pageSize,
+                TotalItems = totalOrder
+            };
+        }
+        public async Task<PagedResponse<OrderDTO>> GetWithOrderStatus(DeliveryStatusEnum statusEnum, PageRequest request)
+        {
+            int totalOrder;
+            IEnumerable<Order> orders;
+
+            int page = request.Page, pageSize = request.PageSize;
+            string? key = request.Key?.ToLower();
+
+
+            Expression<Func<Order, DateTime?>> sortExpression = e => e.UpdatedAt;
+
+            if(statusEnum == DeliveryStatusEnum.Processing)
+            {
+                sortExpression = e => e.CreatedAt;
+            }
+
+            if (string.IsNullOrEmpty(key))
+            {
+                totalOrder = await _orderRepository.CountAsync(e => e.OrderStatus == statusEnum);
+                orders = await _orderRepository.GetPagedOrderByDescendingAsync(page, pageSize, e => e.OrderStatus == statusEnum, sortExpression);
+            }
+            else
+            {
+                bool isLong = long.TryParse(key, out long idSearch);
+
+                Expression<Func<Order, bool>> expression =
+                    e => e.OrderStatus == statusEnum && 
+                    (isLong && e.Id.Equals(idSearch)
+                    || e.PaymentMethodName.ToLower().Contains(key));
+
+                totalOrder = await _orderRepository.CountAsync(expression);
+                orders = await _orderRepository.GetPagedOrderByDescendingAsync(page, pageSize, expression, sortExpression);
             }
             var items = _mapper.Map<IEnumerable<OrderDTO>>(orders);
 
@@ -179,6 +227,8 @@ namespace MyStore.Application.Services.Orders
                     UserId = userId,
                     Receiver = request.Receiver,
                     Total = request.Total,
+                    DistrictID = request.DistrictID,
+                    WardID = request.WardID,
                 };
 
                 var method = await _paymentMethodRepository
@@ -552,9 +602,26 @@ namespace MyStore.Application.Services.Orders
                     _cache.Remove("Order " + orderId);
                     await _orderRepository.UpdateAsync(order);
                 }
-                else throw new Exception(ErrorMessage.CANNOT_CANCEL);
+                else throw new InvalidDataException(ErrorMessage.CANNOT_CANCEL);
             }
-            else throw new ArgumentException($"Id {orderId} " + ErrorMessage.NOT_FOUND);
+            else throw new InvalidOperationException(ErrorMessage.ORDER_NOT_FOUND);
+        }
+
+        public async Task CancelOrder(long orderId)
+        {
+            var order = await _orderRepository.SingleOrDefaultAsync(e => e.Id == orderId);
+            if (order != null)
+            {
+                if (order.OrderStatus.Equals(DeliveryStatusEnum.Processing)
+                    || order.OrderStatus.Equals(DeliveryStatusEnum.Confirmed))
+                {
+                    order.OrderStatus = DeliveryStatusEnum.Canceled;
+                    _cache.Remove("Order " + orderId);
+                    await _orderRepository.UpdateAsync(order);
+                }
+                else throw new InvalidDataException(ErrorMessage.CANNOT_CANCEL);
+            }
+            else throw new InvalidOperationException(ErrorMessage.ORDER_NOT_FOUND);
         }
 
         public async Task Review(long orderId, string userId, IEnumerable<ReviewRequest> reviews)
@@ -618,6 +685,103 @@ namespace MyStore.Application.Services.Orders
                 await transaction.RollbackAsync();
                 throw;
             }
+        }
+
+        public async Task NextOrderStatus(long orderId)
+        {
+            var order = await _orderRepository.FindAsync(orderId);
+            if(order != null)
+            {
+                if(!order.OrderStatus.Equals(DeliveryStatusEnum.Received) || !order.OrderStatus.Equals(DeliveryStatusEnum.Canceled))
+                {
+                    order.OrderStatus += 1;
+                    await _orderRepository.UpdateAsync(order);
+                }
+                else throw new InvalidDataException(ErrorMessage.BAD_REQUEST);
+            }
+            else throw new InvalidOperationException(ErrorMessage.ORDER_NOT_FOUND);
+        }
+
+        public async Task OrderToShipping(long orderId, OrderToShippingRequest request)
+        {
+            var order = await _orderRepository.SingleOrDefaultAsyncInclude(e => e.Id == orderId)
+                ?? throw new InvalidOperationException(ErrorMessage.ORDER_NOT_FOUND);
+
+            if(order.OrderStatus != DeliveryStatusEnum.Confirmed)
+            {
+                throw new InvalidDataException(ErrorMessage.BAD_REQUEST);
+            }
+
+            var token = _configuration["GHN:Token"];
+            var shopId = _configuration["GHN:ShopId"];
+            var url = _configuration["GHN:Url"];
+            //var shopName = _configuration["Store:Name"];
+            //var from_phone = _configuration["Store:PhoneNumber"];
+
+            //var from_address = _configuration["Store:Address"];
+            //var from_ward_name = _configuration["Store:WardName"];
+            //var from_district_name = _configuration["Store:DistrictName"];
+            //var from_provice_name = _configuration["Store:ProvinceName"];
+
+            var receiver = order.Receiver.Split(", ").Select(e => e?.Trim()).ToArray();
+            var to_name = receiver[0];
+            var to_phone = receiver[1];
+
+
+            if (token == null || shopId == null || url == null 
+                || to_name == null || to_phone == null)
+            {
+                throw new ArgumentNullException(ErrorMessage.ARGUMENT_NULL);
+            }
+
+            var to_address = order.DeliveryAddress;
+            var to_ward_code = order.WardID;
+            var to_district_id = order.DistrictID;
+
+            var items = order.OrderDetails.Select(e => new
+            {
+                name = e.ProductName,
+                quantity = e.Quantity,
+                price = (int)Math.Floor(e.Price)
+            }).ToArray();
+
+            var cod_amount = order.AmountPaid < order.Total ? order.Total : 0;
+
+            var data = new
+            {
+                cod_amount,
+                to_name,
+                to_phone,
+                to_address,
+                to_ward_code,
+                to_district_id,
+                service_type_id = 2,
+                payment_type_id = 1,
+                weight = request.Weight,
+                length = request.Length,
+                width = request.Width,
+                height = request.Height,
+                required_note = request.RequiredNote.ToString(),
+                items,
+            };
+
+            using var httpClient = new HttpClient();
+
+            httpClient.DefaultRequestHeaders.Add("ShopId", shopId);
+            httpClient.DefaultRequestHeaders.Add("Token", token);
+
+            var res = await httpClient.PostAsJsonAsync(url + "/create", data);
+            var dataResponse = await res.Content.ReadFromJsonAsync<GHNResponse>();
+            if (!res.IsSuccessStatusCode)
+            {
+                throw new InvalidDataException(dataResponse?.Message ?? ErrorMessage.BAD_REQUEST);
+            }
+
+            order.ShippingCode = dataResponse?.Data?.Order_code;
+            order.Expected_delivery_time = dataResponse?.Data?.Expected_delivery_time;
+
+            order.OrderStatus = DeliveryStatusEnum.AwaitingPickup;
+            await _orderRepository.UpdateAsync(order);
         }
     }
 }

@@ -22,9 +22,13 @@ namespace MyStore.Presentation.Controllers
                 var result = await _authService.Login(request.Username, request.Password);
                 return Ok(result);
             }
-            catch(InvalidOperationException ex)
+            catch(InvalidDataException ex)
             {
                 return Unauthorized(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return NotFound(ex.Message);
             }
             catch (Exception ex)
             {

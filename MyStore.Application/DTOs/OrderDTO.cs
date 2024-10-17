@@ -12,10 +12,23 @@ namespace MyStore.Application.DTOs
         public DateTime? ReceivedDate { get; set; }
         public bool Reviewed { get; set; }
 
-        public string PaymentMethod { get; set; }
+        public string PaymentMethodName { get; set; }
         public DeliveryStatusEnum OrderStatus { get; set; }
 
+        public string DeliveryAddress { get; set; }
+        public string Receiver { get; set; }
+
+        //public string WardID { get; set; }
+        //public int DistrictID { get; set; }
+        public string? ShippingCode { get; set; }
+        public DateTime? Expected_delivery_time { get; set; }
         public string? PayBackUrl { get; set; }
+    }
+
+    public class OrderDetailsResponse : OrderDTO
+    {
+        public IEnumerable<ProductOrderDetails> ProductOrderDetails { get; set; }
+ 
     }
 
     public class ProductOrderDetails

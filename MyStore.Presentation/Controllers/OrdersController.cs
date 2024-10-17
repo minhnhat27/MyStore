@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MyStore.Application.Request;
 using MyStore.Application.Services.Orders;
+using MyStore.Domain.Enumerations;
 using System.Security.Claims;
 
 namespace MyStore.Presentation.Controllers
@@ -13,13 +14,74 @@ namespace MyStore.Presentation.Controllers
     {
         private readonly IOrderService _orderService = orderService;
 
-        [HttpGet("get-all")]
+        [HttpGet("all")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAll([FromQuery] PageRequest request)
         {
             try
             {
                 return Ok(await _orderService.GetAll(request.Page, request.PageSize, request.Key));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+        [HttpGet("status/{status}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetOrderWithStatus(DeliveryStatusEnum status, [FromQuery] PageRequest request)
+        {
+            try
+            {
+                var result = await _orderService.GetWithOrderStatus(status, request);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+        [HttpPut("next-status/{orderId}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> AcceptOrder(long orderId)
+        {
+            try
+            {
+                await _orderService.NextOrderStatus(orderId);
+                return Ok();
+            }
+            catch (InvalidDataException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+        [HttpPut("shipping/{orderId}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Shipping(long orderId, [FromBody] OrderToShippingRequest request)
+        {
+            try
+            {
+                await _orderService.OrderToShipping(orderId, request);
+                return Ok();
+            }
+            catch (InvalidDataException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return NotFound(ex.Message);
             }
             catch (Exception ex)
             {
@@ -131,19 +193,34 @@ namespace MyStore.Presentation.Controllers
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Cancel(int id)
+        public async Task<IActionResult> Cancel(long id)
         {
             try
             {
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                if (userId == null)
+                var roles = User.FindAll(ClaimTypes.Role).Select(e => e.Value);
+                var isAdmin = roles.Contains("Admin");
+
+                if (isAdmin)
                 {
-                    return Unauthorized();
+                    await _orderService.CancelOrder(id);
+                    return Ok();
                 }
-                await _orderService.CancelOrder(id, userId);
-                return Ok();
+                else
+                {
+                    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                    if (userId == null)
+                    {
+                        return Unauthorized();
+                    }
+                    await _orderService.CancelOrder(id, userId);
+                    return Ok();
+                }
             }
-            catch (ArgumentException ex)
+            catch (InvalidDataException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (InvalidOperationException ex)
             {
                 return NotFound(ex.Message);
             }

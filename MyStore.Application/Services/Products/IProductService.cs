@@ -14,10 +14,10 @@ namespace MyStore.Application.Services.Products
 
         Task<IEnumerable<ProductDTO>> GetSearchProducts(string key);
 
-        Task<ProductDetailsResponse> GetProductAsync(int id);
-        Task<ProductDTO> UpdateProductAsync(int id, ProductRequest request, IFormFileCollection images);
-        Task<bool> UpdateProductEnableAsync(int id, UpdateEnableRequest request);
-        Task DeleteProductAsync(int id);
+        Task<ProductDetailsResponse> GetProductAsync(long id);
+        Task<ProductDTO> UpdateProductAsync(long id, ProductRequest request, IFormFileCollection images);
+        Task<bool> UpdateProductEnableAsync(long id, UpdateEnableRequest request);
+        Task DeleteProductAsync(long id);
 
         Task<PagedResponse<ReviewDTO>> GetReviews(long id, PageRequest request);
     }

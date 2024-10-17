@@ -23,6 +23,11 @@ namespace MyStore.Domain.Entities
         [MaxLength(100)]
         public string Receiver { get; set; }
 
+        public string WardID { get; set; } //GHN -> WardCode
+        public int DistrictID { get; set; }
+        public string? ShippingCode { get; set; }
+        public DateTime? Expected_delivery_time { get; set; }
+
         public double AmountPaid { get; set; }
 
         public string? PaymentTranId { get; set; }

@@ -93,9 +93,9 @@ namespace MyStore.Infrastructure.AuthenticationService
                         Session = user.ConcurrencyStamp ?? Guid.NewGuid().ToString(),
                     };
                 }
-                throw new InvalidDataException(ErrorMessage.USER_NOT_FOUND);
+                throw new InvalidOperationException(ErrorMessage.USER_NOT_FOUND);
             }
-            throw new InvalidOperationException(ErrorMessage.INCORRECT_PASSWORD);
+            throw new InvalidDataException(ErrorMessage.INCORRECT_PASSWORD);
         }
 
         public async Task<JwtResponse> LoginGoogle(string token)
@@ -303,6 +303,7 @@ namespace MyStore.Infrastructure.AuthenticationService
                     throw new Exception(ErrorMessage.ERROR);
                 }
                 _cache.Remove(changeEmailCache);
+                await _transaction.CommitTransactionAsync();
             }
             catch (Exception ex)
             {
