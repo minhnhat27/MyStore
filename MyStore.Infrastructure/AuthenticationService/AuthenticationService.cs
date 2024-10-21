@@ -12,9 +12,6 @@ using MyStore.Domain.Entities;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using Twilio;
-using Twilio.Rest.Api.V2010.Account;
-using Twilio.Types;
 using System.Text.RegularExpressions;
 using MyStore.Application.DTOs;
 using MyStore.Domain.Enumerations;
@@ -46,14 +43,14 @@ namespace MyStore.Infrastructure.AuthenticationService
             _transaction = transactionRepository;
         }
 
-        private async Task<string> CreateJwtToken(User user, bool isRefreshToken = false)
+        private async Task<string> CreateJwtToken(User user, DateTime exp, bool isRefreshToken = false)
         {
             var roles = await _userManager.GetRolesAsync(user);
             var claims = new List<Claim>
                 {
-                    new Claim(JwtRegisteredClaimNames.Jti, user.Id),
-                    new Claim(ClaimTypes.NameIdentifier, user.Id),
-                    new Claim(ClaimTypes.Email, user.Email ?? "")
+                    new(JwtRegisteredClaimNames.Jti, user.Id),
+                    new(ClaimTypes.NameIdentifier, user.Id),
+                    new(ClaimTypes.Email, user.Email ?? "")
                 };
             foreach (var role in roles)
             {
@@ -68,8 +65,8 @@ namespace MyStore.Infrastructure.AuthenticationService
             var jwtToken = new JwtSecurityToken(
                     issuer: _configuration["JWT:Issuer"],
                     audience: _configuration["JWT:Audience"],
-                    claims: claims,
-                    expires: DateTime.Now.AddHours(24),
+                    claims,
+                    expires: exp,
                     signingCredentials: new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256));
             return new JwtSecurityTokenHandler().WriteToken(jwtToken);
         }
@@ -82,15 +79,17 @@ namespace MyStore.Infrastructure.AuthenticationService
                 var user = await _userManager.FindByEmailAsync(username);
                 if (user != null)
                 {
-                    var accessToken = await CreateJwtToken(user);
-                    var refreshToken = await CreateJwtToken(user, true);
+                    var expires = DateTime.Now.AddHours(24);
+                    var accessToken = await CreateJwtToken(user, expires);
+                    //var refreshToken = await CreateJwtToken(user, true);
 
                     return new JwtResponse
                     {
                         AccessToken = accessToken,
-                        RefreshToken = refreshToken,
+                        //RefreshToken = refreshToken,
+                        Expires = expires,
                         Fullname = user.Fullname,
-                        Session = user.ConcurrencyStamp ?? Guid.NewGuid().ToString(),
+                        Session = user.ConcurrencyStamp ?? user.Id,
                     };
                 }
                 throw new InvalidOperationException(ErrorMessage.USER_NOT_FOUND);
@@ -98,40 +97,61 @@ namespace MyStore.Infrastructure.AuthenticationService
             throw new InvalidDataException(ErrorMessage.INCORRECT_PASSWORD);
         }
 
-        public async Task<JwtResponse> LoginGoogle(string token)
+        public async Task<JwtResponse> LoginGoogle(string credentials)
         {
-            try
+            var payload = await GoogleJsonWebSignature.ValidateAsync(credentials);
+
+            var googleId = payload.Subject;
+            var email = payload.Email;
+
+            var provider = ExternalLoginEnum.GOOGLE.ToString();
+            var user = await _userManager.FindByEmailAsync(email)
+                ?? throw new Exception(ErrorMessage.USER_NOT_FOUND);
+
+            var result = await _signInManager.ExternalLoginSignInAsync(provider, googleId, false);
+            if (!result.Succeeded)
             {
-                GoogleJsonWebSignature.Payload google =
-                    await GoogleJsonWebSignature.ValidateAsync(token);
-
-                string provider = "Google";
-                var user = await _userManager.FindByEmailAsync(google.Email);
-                if (user == null)
-                {
-                    throw new Exception(ErrorMessage.USER_NOT_FOUND);
-                }
-
-                var result = await _signInManager.ExternalLoginSignInAsync(provider, google.Subject, false);
-                if (!result.Succeeded)
-                {
-                    var userInfo = new UserLoginInfo(provider, provider, google.Subject);
-                    await _userManager.AddLoginAsync(user, userInfo);
-                }
-                var accessToken = await CreateJwtToken(user);
-                var refreshToken = await CreateJwtToken(user, true);
-
-                return new JwtResponse
-                {
-                    AccessToken = accessToken,
-                    RefreshToken = refreshToken,
-                    Fullname = user.Fullname,
-                };
+                var userInfo = new UserLoginInfo(provider, provider, googleId);
+                await _userManager.AddLoginAsync(user, userInfo);
             }
-            catch (Exception ex)
+
+            var expires = DateTime.Now.AddHours(24);
+            var myAccessToken = await CreateJwtToken(user, expires);
+            //var refreshToken = await CreateJwtToken(user, true);
+
+            return new JwtResponse
             {
-                throw new Exception(ex.Message);
+                AccessToken = myAccessToken,
+                Expires = expires,
+                //RefreshToken = refreshToken,
+                Fullname = user.Fullname,
+                Session = user.ConcurrencyStamp ?? user.Id
+            };
+        }
+
+        public async Task<JwtResponse> LoginFacebook(string providerId)
+        {
+            var provider = ExternalLoginEnum.FACEBOOK.ToString();
+
+            var user = await _userManager.FindByLoginAsync(provider, providerId)
+                ?? throw new InvalidOperationException(ErrorMessage.NOT_REGISTERED);
+
+            var result = await _signInManager.ExternalLoginSignInAsync(provider, providerId, false);
+            if (!result.Succeeded)
+            {
+                throw new InvalidDataException(ErrorMessage.LOGIN_FAILD);
             }
+
+            var expires = DateTime.Now.AddHours(24);
+            var myAccessToken = await CreateJwtToken(user, expires);
+
+            return new JwtResponse
+            {
+                AccessToken = myAccessToken,
+                Expires = expires,
+                Fullname = user.Fullname,
+                Session = user.ConcurrencyStamp ?? user.Id
+            };
         }
 
         public async Task<UserDTO> Register(RegisterRequest request)
@@ -223,34 +243,34 @@ namespace MyStore.Infrastructure.AuthenticationService
             }
         }
 
-        public async Task SendCodeToPhoneNumber(string phoneNumber)
-        {
-            try
-            {
-                var user = await _userManager.FindByNameAsync(phoneNumber);
-                if (user != null)
-                {
-                    throw new Exception(ErrorMessage.EXISTED_USER);
-                }
+        //public async Task SendCodeToPhoneNumber(string phoneNumber)
+        //{
+        //    try
+        //    {
+        //        var user = await _userManager.FindByNameAsync(phoneNumber);
+        //        if (user != null)
+        //        {
+        //            throw new Exception(ErrorMessage.EXISTED_USER);
+        //        }
 
-                var code = new Random().Next(100000, 999999);
-                _cache.Set("Register " + phoneNumber, code.ToString(), TimeSpan.FromMinutes(30));
+        //        var code = new Random().Next(100000, 999999);
+        //        _cache.Set("Register " + phoneNumber, code.ToString(), TimeSpan.FromMinutes(30));
 
-                string accountSid = _configuration["TWILIO:TWILIO_ACCOUNT_SID"] ?? "";
-                string authToken = _configuration["TWILIO:TWILIO_AUTH_TOKEN"] ?? "";
-                string myPhoneNumber = _configuration["TWILIO:TWILIO_PHONE_NUMBER"] ?? "";
+        //        string accountSid = _configuration["TWILIO:TWILIO_ACCOUNT_SID"] ?? "";
+        //        string authToken = _configuration["TWILIO:TWILIO_AUTH_TOKEN"] ?? "";
+        //        string myPhoneNumber = _configuration["TWILIO:TWILIO_PHONE_NUMBER"] ?? "";
 
-                TwilioClient.Init(accountSid, authToken);
-                var message = await MessageResource.CreateAsync(
-                    body: "Mã xác thực VOA Store của bạn là: " + code,
-                    from: new PhoneNumber(myPhoneNumber),
-                    to: new PhoneNumber(ConvertToVietnamPhoneNumber(phoneNumber)));
-            }
-            catch (Exception ex)
-            {
-                throw new Exception(ex.Message);
-            }
-        }
+        //        TwilioClient.Init(accountSid, authToken);
+        //        var message = await MessageResource.CreateAsync(
+        //            body: "Mã xác thực VOA Store của bạn là: " + code,
+        //            from: new PhoneNumber(myPhoneNumber),
+        //            to: new PhoneNumber(ConvertToVietnamPhoneNumber(phoneNumber)));
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        throw new Exception(ex.Message);
+        //    }
+        //}
 
         public async Task ChangePassword(string userId, string currentPassword, string newPassword)
         {

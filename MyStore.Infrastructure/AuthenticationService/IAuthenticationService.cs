@@ -11,7 +11,7 @@ namespace MyStore.Infrastructure.AuthenticationService
         Task<UserDTO> Register(RegisterRequest request);
 
         Task SendCodeToEmail(AuthTypeEnum authType, string email);
-        Task SendCodeToPhoneNumber(string phoneNumber);
+        //Task SendCodeToPhoneNumber(string phoneNumber);
         void VerifyOTP(VerifyOTPRequest verifyOTPRequest);
 
         Task<bool> CheckPassword(string userId, string password);
@@ -19,5 +19,6 @@ namespace MyStore.Infrastructure.AuthenticationService
         Task ChangeEmail(string userId, string newEmail, string token);
 
         Task<JwtResponse> LoginGoogle(string token);
+        Task<JwtResponse> LoginFacebook(string token);
     }
 }

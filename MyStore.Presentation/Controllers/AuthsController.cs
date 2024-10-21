@@ -36,6 +36,47 @@ namespace MyStore.Presentation.Controllers
             }
         }
 
+        [HttpPost("login/google")]
+        public async Task<IActionResult> LoginGoogle([FromBody] TokenRequest request)
+        {
+            try
+            {
+                var result = await _authService.LoginGoogle(request.Token);
+                return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+        [HttpPost("login/facebook")]
+        public async Task<IActionResult> LoginFacebook([FromBody] TokenRequest request)
+        {
+            try
+            {
+                var result = await _authService.LoginFacebook(request.Token);
+                return Ok(result);
+            }
+            catch (InvalidDataException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
@@ -165,19 +206,5 @@ namespace MyStore.Presentation.Controllers
             }
         }
 
-
-        //[HttpPost("login-google")]
-        //public async Task<IActionResult> LoginGoogle([FromBody] TokenRequest request)
-        //{
-        //    try
-        //    {
-        //        var result = await _authService.LoginGoogle(request.Token);
-        //        return Ok(result);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return StatusCode(500, ex.Message);
-        //    }
-        //}
     }
 }

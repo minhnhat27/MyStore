@@ -41,7 +41,6 @@ namespace MyStore.Application.Services.Orders
         private readonly IProductReviewRepository _productReviewRepository;
 
         private readonly IFileStorage _fileStorage;
-
         private readonly IConfiguration _configuration;
 
         private readonly IMapper _mapper;
@@ -49,7 +48,6 @@ namespace MyStore.Application.Services.Orders
         private readonly ITransactionRepository _transaction;
         private readonly IVNPayLibrary _vnPayLibrary;
         private readonly IServiceScopeFactory _serviceScopeFactory;
-        private readonly PayOS _payOS;
 
         private readonly string pathReviewImages = "assets/images/reviews";
 
@@ -65,7 +63,7 @@ namespace MyStore.Application.Services.Orders
             IPaymentMethodRepository methodRepository,
             ICache cache, IVNPayLibrary vnPayLibrary, IFileStorage fileStorage,
             IConfiguration configuration, IServiceScopeFactory serviceScopeFactory,
-            PayOS payOS, IUserVoucherRepository userVoucherRepository, IMapper mapper)
+            IUserVoucherRepository userVoucherRepository, IMapper mapper)
         {
             _orderRepository = orderRepository;
             _cartItemRepository = cartItemRepository;
@@ -79,7 +77,6 @@ namespace MyStore.Application.Services.Orders
             _fileStorage = fileStorage;
 
             _vnPayLibrary = vnPayLibrary;
-            _payOS = payOS;
 
             _configuration = configuration;
             _serviceScopeFactory = serviceScopeFactory;
