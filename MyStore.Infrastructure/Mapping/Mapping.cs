@@ -19,7 +19,7 @@ namespace MyStore.Infrastructure.Mapping
             //user
             CreateMap<User, UserResponse>();
             CreateMap<User, UserDTO>().ReverseMap();
-            CreateMap<User, UserInfo>().ReverseMap();
+            CreateMap<User, UserInfo>();
             CreateMap<DeliveryAddress, AddressDTO>().ReverseMap();
 
             //order

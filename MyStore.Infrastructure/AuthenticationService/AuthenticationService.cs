@@ -111,7 +111,7 @@ namespace MyStore.Infrastructure.AuthenticationService
             var result = await _signInManager.ExternalLoginSignInAsync(provider, googleId, false);
             if (!result.Succeeded)
             {
-                var userInfo = new UserLoginInfo(provider, provider, googleId);
+                var userInfo = new UserLoginInfo(provider, googleId, provider);
                 await _userManager.AddLoginAsync(user, userInfo);
             }
 
@@ -153,6 +153,38 @@ namespace MyStore.Infrastructure.AuthenticationService
                 Session = user.ConcurrencyStamp ?? user.Id
             };
         }
+
+        public async Task LinkToFacebook(string userId, string providerId)
+        {
+            var user = await _userManager.FindByIdAsync(userId)
+                ?? throw new InvalidOperationException(ErrorMessage.USER_NOT_FOUND);
+
+            var provider = ExternalLoginEnum.FACEBOOK.ToString();
+            var result = await _userManager.FindByLoginAsync(provider, providerId);
+            if(result != null)
+            {
+                throw new ArgumentException("Tài khoản đã được liên kết.");
+            }
+            await _userManager.AddLoginAsync(user, new UserLoginInfo(provider, providerId, provider));
+        }
+        public async Task UnlinkFacebook(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId)
+                ?? throw new InvalidOperationException(ErrorMessage.USER_NOT_FOUND);
+
+            var provider = ExternalLoginEnum.FACEBOOK.ToString();
+
+            var externalLogins = await _userManager.GetLoginsAsync(user);
+            var facebookLogin = externalLogins.SingleOrDefault(e => e.LoginProvider == provider)
+                ?? throw new InvalidOperationException("Tài khoản Facebook chưa được liên kết.");
+
+            var result = await _userManager.RemoveLoginAsync(user, provider, facebookLogin.ProviderKey);
+            if (!result.Succeeded)
+            {
+                throw new InvalidDataException(ErrorMessage.ERROR);
+            }
+        }
+
 
         public async Task<UserDTO> Register(RegisterRequest request)
         {
