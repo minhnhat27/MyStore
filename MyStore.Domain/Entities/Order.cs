@@ -16,6 +16,7 @@ namespace MyStore.Domain.Entities
         public DateTime OrderDate { get; set; }
         public DateTime? ReceivedDate { get; set; }
         public bool Reviewed { get; set; }
+        public double VoucherDiscount { get; set; }
 
         [MaxLength(160)]
         public string DeliveryAddress { get; set; }
@@ -25,6 +26,7 @@ namespace MyStore.Domain.Entities
 
         public string WardID { get; set; } //GHN -> WardCode
         public int DistrictID { get; set; }
+
         public string? ShippingCode { get; set; }
         public DateTime? Expected_delivery_time { get; set; }
 
@@ -36,8 +38,6 @@ namespace MyStore.Domain.Entities
         public string PaymentMethodName { get; set; }
         public PaymentMethod? PaymentMethod { get; set; }
 
-
-        //public string? OrderStatusName { get; set; } = DeliveryStatusEnum.Proccessing.ToString();
         public DeliveryStatusEnum? OrderStatus { get; set; } = DeliveryStatusEnum.Processing;
 
         public string? UserId { get; set; }

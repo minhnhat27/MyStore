@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MyStore.Infrastructure.DbContext;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MyStore.Infrastructure.Migrations
 {
     [DbContext(typeof(MyDbContext))]
-    partial class MyDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241022122031_order-voucherdiscount")]
+    partial class ordervoucherdiscount
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -238,6 +241,37 @@ namespace MyStore.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Categories");
+                });
+
+            modelBuilder.Entity("MyStore.Domain.Entities.CommonVoucher", b =>
+                {
+                    b.Property<string>("Code")
+                        .HasColumnType("text");
+
+                    b.Property<double?>("DiscountAmount")
+                        .HasColumnType("double precision");
+
+                    b.Property<int?>("DiscountPercent")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<double?>("MaxDiscount")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("MinOrder")
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.HasKey("Code");
+
+                    b.ToTable("CommonVouchers");
                 });
 
             modelBuilder.Entity("MyStore.Domain.Entities.DeliveryAddress", b =>
@@ -814,9 +848,6 @@ namespace MyStore.Infrastructure.Migrations
 
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("timestamp without time zone");
-
-                    b.Property<bool>("IsGlobal")
-                        .HasColumnType("boolean");
 
                     b.Property<double?>("MaxDiscount")
                         .HasColumnType("double precision");

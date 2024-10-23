@@ -14,24 +14,28 @@ namespace MyStore.Application.DTOs
 
         public string PaymentMethodName { get; set; }
         public DeliveryStatusEnum OrderStatus { get; set; }
+        public double VoucherDiscount { get; set; }
 
         public string DeliveryAddress { get; set; }
         public string Receiver { get; set; }
 
-        //public string WardID { get; set; }
-        //public int DistrictID { get; set; }
         public string? ShippingCode { get; set; }
         public DateTime? Expected_delivery_time { get; set; }
+    }
+
+    public class OrderResponse : OrderDTO
+    {
+        public ProductOrderDetail ProductOrderDetail { get; set; }
         public string? PayBackUrl { get; set; }
     }
 
     public class OrderDetailsResponse : OrderDTO
     {
-        public IEnumerable<ProductOrderDetails> ProductOrderDetails { get; set; }
+        public IEnumerable<ProductOrderDetail> ProductOrderDetails { get; set; }
  
     }
 
-    public class ProductOrderDetails
+    public class ProductOrderDetail
     {
         public long? ProductId { get; set; }
         public string ProductName { get; set; }

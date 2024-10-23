@@ -78,7 +78,7 @@ namespace MyStore.Presentation.Controllers
         }
 
         [HttpPost("link/facebook")]
-        public async Task<IActionResult> LinkToFacebook([FromBody] TokenRequest request)
+        public async Task<IActionResult> LinkToFacebook([FromBody] LinkFacebookRequest request)
         {
             try
             {
@@ -87,7 +87,7 @@ namespace MyStore.Presentation.Controllers
                 {
                     return Unauthorized();
                 }
-                await _authService.LinkToFacebook(userId, request.Token);
+                await _authService.LinkToFacebook(userId, request.Token, request.Name);
                 return Ok();
             }
             catch (ArgumentException ex)

@@ -146,7 +146,7 @@ namespace MyStore.Application.Services.Users
 
                 var loginProvider = await _userManager.GetLoginsAsync(user);
                 res.Facebook = loginProvider
-                    .Any(e => e.LoginProvider == ExternalLoginEnum.FACEBOOK.ToString());
+                    .SingleOrDefault(e => e.LoginProvider == ExternalLoginEnum.FACEBOOK.ToString())?.ProviderDisplayName;
 
                 return res;
             }
