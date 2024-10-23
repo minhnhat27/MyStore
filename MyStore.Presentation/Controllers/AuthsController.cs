@@ -22,7 +22,7 @@ namespace MyStore.Presentation.Controllers
                 var result = await _authService.Login(request.Username, request.Password);
                 return Ok(result);
             }
-            catch(InvalidDataException ex)
+            catch (InvalidDataException ex)
             {
                 return Unauthorized(ex.Message);
             }
@@ -55,6 +55,7 @@ namespace MyStore.Presentation.Controllers
         }
 
         [HttpPost("login/facebook")]
+        [Authorize]
         public async Task<IActionResult> LoginFacebook([FromBody] TokenRequest request)
         {
             try
@@ -76,6 +77,59 @@ namespace MyStore.Presentation.Controllers
             }
         }
 
+        [HttpPost("link/facebook")]
+        public async Task<IActionResult> LinkToFacebook([FromBody] LinkFacebookRequest request)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (userId == null)
+                {
+                    return Unauthorized();
+                }
+                await _authService.LinkToFacebook(userId, request.Token, request.Name);
+                return Ok();
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+        [HttpGet("unlink/facebook")]
+        public async Task<IActionResult> UnLinkFacebook()
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (userId == null)
+                {
+                    return Unauthorized();
+                }
+                await _authService.UnlinkFacebook(userId);
+                return Ok();
+            }
+            catch (InvalidDataException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
 
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)

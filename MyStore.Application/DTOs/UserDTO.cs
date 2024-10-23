@@ -2,6 +2,7 @@
 {
     public class UserInfo
     {
+        public string? Facebook { get; set; }
         public string? Fullname { get; set; }
         public string? PhoneNumber { get; set; }
     }

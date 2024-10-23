@@ -19,15 +19,18 @@ namespace MyStore.Infrastructure.Mapping
             //user
             CreateMap<User, UserResponse>();
             CreateMap<User, UserDTO>().ReverseMap();
-            CreateMap<User, UserInfo>().ReverseMap();
+            CreateMap<User, UserInfo>();
             CreateMap<DeliveryAddress, AddressDTO>().ReverseMap();
 
             //order
-            CreateMap<OrderDTO, Order>().ReverseMap();
-            //.ForMember(d => d.OrderStatus, opt => opt.MapFrom(src => src.OrderStatus));
+            CreateMap<Order, OrderDTO>().ReverseMap();
+            CreateMap<OrderDetail, ProductOrderDetail>();
+
+            CreateMap<Order, OrderResponse>()
+                .ForMember(dest => dest.ProductOrderDetail, opt => opt.MapFrom(src => src.OrderDetails.FirstOrDefault()));
 
             CreateMap<OrderRequest, Order>().ReverseMap();
-            CreateMap<OrderDetail, ProductOrderDetails>();
+            //--details--
             CreateMap<Order, OrderDetailsResponse>()
                 .ForMember(dest => dest.ProductOrderDetails, opt => opt.MapFrom(src => src.OrderDetails));
 
@@ -50,7 +53,7 @@ namespace MyStore.Infrastructure.Mapping
                 .ForMember(dest => dest.SizeName, opt => opt.MapFrom(src => src.Size.Name));
 
             //Voucher
-            CreateMap<Voucher, VoucherDTO>().ReverseMap();
+            CreateMap<Voucher, VoucherDTO>();
 
             //Payment Method
             CreateMap<PaymentMethod, PaymentMethodDTO>().ReverseMap();

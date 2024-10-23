@@ -106,12 +106,12 @@ namespace MyStore.Infrastructure.AuthenticationService
 
             var provider = ExternalLoginEnum.GOOGLE.ToString();
             var user = await _userManager.FindByEmailAsync(email)
-                ?? throw new Exception(ErrorMessage.USER_NOT_FOUND);
+                ?? throw new InvalidOperationException(ErrorMessage.USER_NOT_FOUND);
 
             var result = await _signInManager.ExternalLoginSignInAsync(provider, googleId, false);
             if (!result.Succeeded)
             {
-                var userInfo = new UserLoginInfo(provider, provider, googleId);
+                var userInfo = new UserLoginInfo(provider, googleId, provider);
                 await _userManager.AddLoginAsync(user, userInfo);
             }
 
@@ -152,6 +152,38 @@ namespace MyStore.Infrastructure.AuthenticationService
                 Fullname = user.Fullname,
                 Session = user.ConcurrencyStamp ?? user.Id
             };
+        }
+
+        public async Task LinkToFacebook(string userId, string providerId, string? name)
+        {
+            var user = await _userManager.FindByIdAsync(userId)
+                ?? throw new InvalidOperationException(ErrorMessage.USER_NOT_FOUND);
+
+            var provider = ExternalLoginEnum.FACEBOOK.ToString();
+            var result = await _userManager.FindByLoginAsync(provider, providerId);
+            if(result != null)
+            {
+                throw new ArgumentException("Tài khoản Facebook đã được liên kết với người dùng khác.");
+            }
+            await _userManager.AddLoginAsync(user, new UserLoginInfo(provider, providerId, name));
+        }
+        
+        public async Task UnlinkFacebook(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId)
+                ?? throw new InvalidOperationException(ErrorMessage.USER_NOT_FOUND);
+
+            var provider = ExternalLoginEnum.FACEBOOK.ToString();
+
+            var externalLogins = await _userManager.GetLoginsAsync(user);
+            var facebookLogin = externalLogins.SingleOrDefault(e => e.LoginProvider == provider)
+                ?? throw new InvalidOperationException("Tài khoản Facebook chưa được liên kết.");
+
+            var result = await _userManager.RemoveLoginAsync(user, provider, facebookLogin.ProviderKey);
+            if (!result.Succeeded)
+            {
+                throw new InvalidDataException(ErrorMessage.ERROR);
+            }
         }
 
         public async Task<UserDTO> Register(RegisterRequest request)
@@ -322,6 +354,19 @@ namespace MyStore.Infrastructure.AuthenticationService
                 {
                     throw new Exception(ErrorMessage.ERROR);
                 }
+                var provider = ExternalLoginEnum.GOOGLE.ToString();
+
+                var externalLogins = await _userManager.GetLoginsAsync(user);
+                var googleLogin = externalLogins.SingleOrDefault(e => e.LoginProvider == provider);
+                if(googleLogin != null)
+                {
+                    var resl = await _userManager.RemoveLoginAsync(user, provider, googleLogin.ProviderKey);
+                    if (!resl.Succeeded)
+                    {
+                        throw new Exception(ErrorMessage.ERROR);
+                    }
+                }
+
                 _cache.Remove(changeEmailCache);
                 await _transaction.CommitTransactionAsync();
             }

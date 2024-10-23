@@ -20,4 +20,8 @@
     {
         public string Token { get; set; }
     }
+    public class CodeRequest
+    {
+        public string Code { get; set; }
+    }
 }

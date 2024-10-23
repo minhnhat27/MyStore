@@ -36,6 +36,7 @@ namespace MyStore.Application.Services.Orders
         private readonly IProductSizeRepository _productSizeRepository;
 
         private readonly IUserVoucherRepository _userVoucherRepository;
+        private readonly IVoucherRepository _voucherRepository;
         private readonly IPaymentService _paymentService;
         private readonly IPaymentMethodRepository _paymentMethodRepository;
         private readonly IProductReviewRepository _productReviewRepository;
@@ -60,6 +61,7 @@ namespace MyStore.Application.Services.Orders
             ITransactionRepository transaction,
             IPaymentService paymentService,
             IProductReviewRepository productReviewRepository,
+            IVoucherRepository voucherRepository,
             IPaymentMethodRepository methodRepository,
             ICache cache, IVNPayLibrary vnPayLibrary, IFileStorage fileStorage,
             IConfiguration configuration, IServiceScopeFactory serviceScopeFactory,
@@ -72,6 +74,7 @@ namespace MyStore.Application.Services.Orders
             _productSizeRepository = productSizeRepository;
             _userVoucherRepository = userVoucherRepository;
             _paymentService = paymentService;
+            _voucherRepository = voucherRepository;
             _paymentMethodRepository = paymentMethodRepository;
             _productReviewRepository = productReviewRepository;
             _fileStorage = fileStorage;
@@ -189,18 +192,20 @@ namespace MyStore.Application.Services.Orders
             else throw new InvalidOperationException(ErrorMessage.ORDER_NOT_FOUND);
         }
 
-        public async Task<PagedResponse<OrderDTO>> GetOrdersByUserId(string userId, PageRequest page)
+        public async Task<PagedResponse<OrderResponse>> GetOrdersByUserId(string userId, PageRequest page)
         {
-            var orders = await _orderRepository.GetPagedOrderByDescendingAsync(page.Page, page.PageSize, e => e.UserId == userId, x => x.CreatedAt);
+            var orders = await _orderRepository
+                .GetPagedOrderByDescendingAsyncInclude(page.Page, page.PageSize, e => e.UserId == userId, x => x.CreatedAt);
+            
             var total = await _orderRepository.CountAsync(e => e.UserId == userId);
 
-            var items = _mapper.Map<IEnumerable<OrderDTO>>(orders).Select(x =>
+            var items = _mapper.Map<IEnumerable<OrderResponse>>(orders).Select(x =>
             {
                 x.PayBackUrl = _cache.Get<OrderCache?>("Order " + x.Id)?.Url;
                 return x;
             });
 
-            return new PagedResponse<OrderDTO>
+            return new PagedResponse<OrderResponse>
             {
                 Items = items,
                 TotalItems = total,
@@ -281,61 +286,18 @@ namespace MyStore.Application.Services.Orders
                     });
                 }
 
-                //var details = await Task.WhenAll(cartItems.Select(async cartItem =>
-                //{
-                //    var size = await _productSizeRepository
-                //        .SingleAsyncInclude(e => e.ProductColorId == cartItem.ColorId && e.SizeId == cartItem.SizeId);
-                    
-                //    if (size.InStock < cartItem.Quantity)
-                //    {
-                //        throw new Exception(ErrorMessage.SOLDOUT);
-                //    }
-
-                //    double price = cartItem.Product.Price - cartItem.Product.Price * (cartItem.Product.DiscountPercent / 100.0);
-                //    price *= cartItem.Quantity;
-                //    total += price;
-
-                //    cartItem.Product.Sold += cartItem.Quantity;
-                //    lstProductUpdate.Add(cartItem.Product);
-
-                //    size.InStock -= cartItem.Quantity;
-                //    lstpSizeUpdate.Add(size);
-
-                //    return new OrderDetail
-                //    {
-                //        OrderId = order.Id,
-                //        ProductId = cartItem.ProductId,
-                //        SizeName = size.Size.Name,
-                //        SizeId = size.SizeId,
-                //        Quantity = cartItem.Quantity,
-                //        ColorName = size.ProductColor.ColorName,
-                //        ColorId = size.ProductColorId,
-                //        ProductName = cartItem.Product.Name,
-                //        OriginPrice = cartItem.Product.Price,
-                //        Price = price,
-                //        ImageUrl = size.ProductColor.ImageUrl,
-                //    };
-                //}));
-
                 UserVoucher? voucher = null;
                 if (request.Code != null)
                 {
-                    voucher = await _userVoucherRepository.SingleOrDefaultAsyncInclude(x => x.UserId == userId && x.VoucherCode == request.Code);
+                    voucher = await _userVoucherRepository
+                        .SingleOrDefaultAsyncInclude(x => x.UserId == userId && !x.Used && x.VoucherCode == request.Code);
+                                        
                     if (voucher == null
                         || voucher.Voucher.EndDate < now
                         || voucher.Voucher.MinOrder > total)
                     {
                         throw new ArgumentException(ErrorMessage.INVALID_VOUCHER);
                     }
-
-                    //if (voucher.Voucher.DiscountPercent.HasValue)
-                    //{
-                    //    voucherDiscount = total * (voucher.Voucher.DiscountPercent.Value / 100.0);
-                    //}
-                    //else if (voucher.Voucher.DiscountAmount.HasValue)
-                    //{
-                    //    voucherDiscount = voucher.Voucher.DiscountAmount.Value;
-                    //}
 
                     voucherDiscount = voucher.Voucher.DiscountPercent.HasValue
                         ? total * (voucher.Voucher.DiscountPercent.Value / 100.0)
@@ -346,6 +308,7 @@ namespace MyStore.Application.Services.Orders
                         voucherDiscount = voucher.Voucher.MaxDiscount.Value;
                     }
                 }
+                order.VoucherDiscount = voucherDiscount;
 
                 double shipCost = CalcShip(total);
                 order.ShippingCost = shipCost;

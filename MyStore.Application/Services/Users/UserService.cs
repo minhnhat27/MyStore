@@ -7,6 +7,7 @@ using MyStore.Application.Request;
 using MyStore.Application.Response;
 using MyStore.Domain.Constants;
 using MyStore.Domain.Entities;
+using MyStore.Domain.Enumerations;
 using System.Linq.Expressions;
 
 namespace MyStore.Application.Services.Users
@@ -142,6 +143,11 @@ namespace MyStore.Application.Services.Users
             {
                 var res = _mapper.Map<UserDTO>(user);
                 res.Email = res.Email != null ? MaskEmail(res.Email) : "";
+
+                var loginProvider = await _userManager.GetLoginsAsync(user);
+                res.Facebook = loginProvider
+                    .SingleOrDefault(e => e.LoginProvider == ExternalLoginEnum.FACEBOOK.ToString())?.ProviderDisplayName;
+
                 return res;
             }
             throw new InvalidOperationException(ErrorMessage.USER_NOT_FOUND);

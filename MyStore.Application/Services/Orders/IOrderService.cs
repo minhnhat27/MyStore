@@ -7,7 +7,7 @@ namespace MyStore.Application.Services.Orders
 {
     public interface IOrderService
     {
-        Task<PagedResponse<OrderDTO>> GetOrdersByUserId(string userId, PageRequest request);
+        Task<PagedResponse<OrderResponse>> GetOrdersByUserId(string userId, PageRequest request);
         Task<OrderDetailsResponse> GetOrderDetail(long orderId, string userId);
         Task<OrderDTO> UpdateOrder(long orderId, string userId, UpdateOrderRequest request);
         Task CancelOrder(long orderId, string userId);

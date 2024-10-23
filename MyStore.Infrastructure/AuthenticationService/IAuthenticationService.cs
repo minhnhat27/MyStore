@@ -20,5 +20,7 @@ namespace MyStore.Infrastructure.AuthenticationService
 
         Task<JwtResponse> LoginGoogle(string token);
         Task<JwtResponse> LoginFacebook(string token);
+        Task LinkToFacebook(string userId, string providerId, string? name);
+        Task UnlinkFacebook(string userId);
     }
 }
