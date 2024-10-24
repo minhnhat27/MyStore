@@ -15,6 +15,7 @@ namespace MyStore.Application.Response
         public int CategoryId { get; set; }
         public int BrandId { get; set; }
         public IEnumerable<int> MaterialIds { get; set; }
+        public IEnumerable<string> MaterialNames { get; set; }
 
         public string? Description { get; set; }
         public IEnumerable<ColorSizeResponse> ColorSizes { get; set; }

@@ -15,6 +15,8 @@ namespace MyStore.Domain.Entities
         [Range(1, 5)]
         public int Star { get; set; }
 
+        public string Variant { get; set; }
+
         public long? ProductId { get; set; }
         public Product? Product { get; set; }
 

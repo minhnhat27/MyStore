@@ -37,6 +37,9 @@ namespace MyStore.Domain.Entities
         public float Rating { get; set; }
         public long RatingCount { get; set; }
 
+        public string? FlashSaleId { get; set; }
+        public FlashSale? FlashSale { get; set; }
+
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
 

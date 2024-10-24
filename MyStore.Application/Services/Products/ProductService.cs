@@ -340,8 +340,8 @@ namespace MyStore.Application.Services.Products
             if (product != null)
             {
                 var res = _mapper.Map<ProductDetailsResponse>(product);
-                res.ColorSizes = _mapper.Map<IEnumerable<ColorSizeResponse>>(product.ProductColors);
                 res.ImageUrls = product.Images.Select(e => e.ImageUrl);
+                res.MaterialNames = product.Materials.Select(e => e.Material.Name);
 
                 return res;
             }

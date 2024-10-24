@@ -274,10 +274,9 @@ namespace MyStore.Application.Services.Orders
                     {
                         OrderId = order.Id,
                         ProductId = cartItem.ProductId,
-                        SizeName = size.Size.Name,
                         SizeId = size.SizeId,
                         Quantity = cartItem.Quantity,
-                        ColorName = size.ProductColor.ColorName,
+                        Variant = size.ProductColor.ColorName + ", Size " + size.Size.Name,
                         ColorId = size.ProductColorId,
                         ProductName = cartItem.Product.Name,
                         OriginPrice = cartItem.Product.Price,
@@ -589,7 +588,7 @@ namespace MyStore.Application.Services.Orders
             using var transaction = await _transaction.BeginTransactionAsync();
             try
             {
-                var order = await _orderRepository.SingleOrDefaultAsync(e => e.Id == orderId && e.UserId == userId)
+                var order = await _orderRepository.SingleOrDefaultAsyncInclude(e => e.Id == orderId && e.UserId == userId)
                 ?? throw new InvalidOperationException(ErrorMessage.ORDER_NOT_FOUND);
                 if (order.OrderStatus != DeliveryStatusEnum.Received)
                 {
@@ -622,6 +621,9 @@ namespace MyStore.Application.Services.Orders
                         product.Rating = (currentStar + rv.Star) / (product.RatingCount + 1);
                         product.RatingCount += 1;
 
+                        var orderDetails = order.OrderDetails.SingleOrDefault(x => x.ProductId == rv.ProductId);
+                        var variant = orderDetails?.Variant ?? "";
+
                         products.Add(product);
                         pReviews.Add(new ProductReview
                         {
@@ -630,6 +632,7 @@ namespace MyStore.Application.Services.Orders
                             Star = rv.Star,
                             Description = rv.Description,
                             ImagesUrls = pathNames,
+                            Variant = variant
                         });
                     }
                 }
