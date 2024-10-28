@@ -18,9 +18,11 @@ namespace MyStore.Infrastructure.AuthenticationService
         Task ChangePassword(string userId, string currentPassword, string newPassword);
         Task ChangeEmail(string userId, string newEmail, string token);
 
-        Task<JwtResponse> LoginGoogle(string token);
+        Task<JwtResponse> LoginGoogle(string credentials);
         Task<JwtResponse> LoginFacebook(string token);
         Task LinkToFacebook(string userId, string providerId, string? name);
         Task UnlinkFacebook(string userId);
+
+        Task CheckGoogleRegister(string credentials);
     }
 }

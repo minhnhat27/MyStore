@@ -10,6 +10,7 @@ namespace MyStore.Application.DTOs
         public double AmountPaid { get; set; }
         public DateTime OrderDate { get; set; }
         public DateTime? ReceivedDate { get; set; }
+        public DateTime? ReviewDeadline { get; set; }
         public bool Reviewed { get; set; }
 
         public string PaymentMethodName { get; set; }

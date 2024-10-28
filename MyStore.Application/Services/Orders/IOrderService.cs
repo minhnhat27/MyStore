@@ -17,6 +17,7 @@ namespace MyStore.Application.Services.Orders
         Task NextOrderStatus(long orderId);
         Task OrderToShipping(long orderId, OrderToShippingRequest request);
 
+        Task ConfirmDelivery(long orderId, string userId);
         Task Review(long orderId, string userId, IEnumerable<ReviewRequest> reviews);
 
         Task<PagedResponse<OrderDTO>> GetAll(int page, int pageSize, string? keySearch);

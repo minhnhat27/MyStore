@@ -594,6 +594,11 @@ namespace MyStore.Application.Services.Orders
                 {
                     throw new InvalidDataException("Chưa thể đánh giá đơn hàng này.");
                 }
+                if(DateTime.Now > order.ReviewDeadline)
+                {
+                    throw new InvalidOperationException("Đã hết hạn đánh giá");
+                }
+
                 List<ProductReview> pReviews = new();
                 List<Product> products = new();
 
@@ -652,17 +657,36 @@ namespace MyStore.Application.Services.Orders
 
         public async Task NextOrderStatus(long orderId)
         {
-            var order = await _orderRepository.FindAsync(orderId);
-            if(order != null)
+            var order = await _orderRepository.FindAsync(orderId) 
+                ?? throw new InvalidOperationException(ErrorMessage.ORDER_NOT_FOUND);
+            if (!order.OrderStatus.Equals(DeliveryStatusEnum.Received) 
+                || !order.OrderStatus.Equals(DeliveryStatusEnum.Canceled))
             {
-                if(!order.OrderStatus.Equals(DeliveryStatusEnum.Received) || !order.OrderStatus.Equals(DeliveryStatusEnum.Canceled))
+                order.OrderStatus += 1;
+                if(order.OrderStatus == DeliveryStatusEnum.Received)
                 {
-                    order.OrderStatus += 1;
-                    await _orderRepository.UpdateAsync(order);
+                    order.ReceivedDate = DateTime.Now;
+                    order.ReviewDeadline = DateTime.Now.AddDays(15);
                 }
-                else throw new InvalidDataException(ErrorMessage.BAD_REQUEST);
+                await _orderRepository.UpdateAsync(order);
             }
-            else throw new InvalidOperationException(ErrorMessage.ORDER_NOT_FOUND);
+            else throw new InvalidDataException(ErrorMessage.BAD_REQUEST);
+        }
+
+        public async Task ConfirmDelivery(long orderId, string userId)
+        {
+            var order = await _orderRepository.SingleOrDefaultAsyncInclude(e => e.Id == orderId && e.UserId == userId)
+                ?? throw new InvalidOperationException(ErrorMessage.ORDER_NOT_FOUND);
+
+            if (order.OrderStatus != DeliveryStatusEnum.BeingDelivered)
+            {
+                throw new InvalidDataException(ErrorMessage.BAD_REQUEST);
+            }
+
+            order.OrderStatus = DeliveryStatusEnum.Received;
+            order.ReceivedDate = DateTime.Now;
+            order.ReviewDeadline = DateTime.Now.Date.AddDays(15);
+            await _orderRepository.UpdateAsync(order);
         }
 
         public async Task OrderToShipping(long orderId, OrderToShippingRequest request)

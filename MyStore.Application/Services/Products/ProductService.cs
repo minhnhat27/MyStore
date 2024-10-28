@@ -546,11 +546,12 @@ namespace MyStore.Application.Services.Products
 
             var total = await _productReviewRepository.CountAsync(e => e.ProductId == id);
 
-            var items = _mapper.Map<IEnumerable<ReviewDTO>>(reviews).Select(x =>
-            {
-                x.Username = MaskUsername(x.Username);
-                return x;
-            });
+            var items = _mapper.Map<IEnumerable<ReviewDTO>>(reviews);
+                //.Select(x =>
+                //{
+                //    x.Username = MaskUsername(x.Username);
+                //    return x;
+                //});
 
             return new PagedResponse<ReviewDTO>
             {

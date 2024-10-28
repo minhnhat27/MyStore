@@ -26,7 +26,7 @@
         public const string PAYMENT_DUE = "Đã hết hạn thanh toán.";
         public const string PAYMENT_FAILED = "Thanh toán không thành công";
         public const string EXISTED = "Đã tồn tại";
-        public const string EMAIL_EXISTED = "Email đã tồn tại";
+        public const string EMAIL_HAS_BEEN_REGISTERED = "Email đã được đăng ký.";
         public const string FOLDER_NOT_FOUND = "Thư mục không tồn tại.";
         public const string ARGUMENT_NULL = "Thiếu tham số.";
     }
