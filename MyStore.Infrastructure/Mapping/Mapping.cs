@@ -45,12 +45,12 @@ namespace MyStore.Infrastructure.Mapping
             CreateMap<ProductColor, ColorSizeResponse>()
                 .ForMember(dest => dest.SizeInStocks, opt => opt.MapFrom(src => src.ProductSizes));
 
+            CreateMap<ProductSize, SizeInStock>();
             CreateMap<Product, ProductDetailsResponse>()
                 .ForMember(dest => dest.MaterialIds, opt => opt.MapFrom(src => src.Materials.Select(e => e.MaterialId)))
                 .ForMember(dest => dest.ColorSizes, opt => opt.MapFrom(src => src.ProductColors))
                 .ForMember(dest => dest.Rating, opt => opt.MapFrom(src => Math.Round(src.Rating, 1)));
 
-            CreateMap<ProductSize, SizeInStock>();
 
             //Voucher
             CreateMap<Voucher, VoucherDTO>();

@@ -3,14 +3,16 @@ using Microsoft.AspNetCore.Mvc;
 using MyStore.Application.DTOs;
 using MyStore.Application.Request;
 using MyStore.Application.Services.Products;
+using System;
 
 namespace MyStore.Presentation.Controllers
 {
     [Route("api/products")]
     [ApiController]
-    public class ProductsController(IProductService productService) : ControllerBase
+    public class ProductsController(IProductService productService, IWebHostEnvironment environment) : ControllerBase
     {
         private readonly IProductService _productService = productService;
+        private readonly IWebHostEnvironment _environment = environment;
 
         [HttpGet]
         [Authorize(Roles = "Admin")]
@@ -70,6 +72,34 @@ namespace MyStore.Presentation.Controllers
             {
                 var result = await _productService.GetSearchProducts(key);
                 return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+        [HttpPost("search/image")]
+        public async Task<IActionResult> GetSearchProducts([FromForm] IFormFile image)
+        {
+            try
+            {
+                var rootPath = Path.Combine(_environment.WebRootPath);
+
+                var tempFilePath = Path.GetTempFileName();
+                using(var stream = new FileStream(tempFilePath, FileMode.Create))
+                {
+                    await image.CopyToAsync(stream);
+                }
+
+                var result = await _productService.GetSearchProducts(tempFilePath, rootPath);
+                System.IO.File.Delete(tempFilePath);
+
+                return Ok(result);
+            }
+            catch(FileNotFoundException ex)
+            {
+                return NotFound(ex.Message);
             }
             catch (Exception ex)
             {
@@ -150,7 +180,7 @@ namespace MyStore.Presentation.Controllers
         }
 
         [HttpGet("{id}/reviews")]
-        public async Task<IActionResult> GetSearchProducts(long id, [FromQuery] PageRequest request)
+        public async Task<IActionResult> GetReviews(long id, [FromQuery] ReviewFiltersRequest request)
         {
             try
             {

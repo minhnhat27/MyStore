@@ -50,7 +50,7 @@ namespace MyStore.Application.Services.Orders
         private readonly IVNPayLibrary _vnPayLibrary;
         private readonly IServiceScopeFactory _serviceScopeFactory;
 
-        private readonly string pathReviewImages = "assets/images/reviews";
+        private readonly string reviewImagesPath = "assets/images/reviews";
 
         public OrderService(IOrderRepository orderRepository,
             ICartItemRepository cartItemRepository,
@@ -588,7 +588,8 @@ namespace MyStore.Application.Services.Orders
             using var transaction = await _transaction.BeginTransactionAsync();
             try
             {
-                var order = await _orderRepository.SingleOrDefaultAsyncInclude(e => e.Id == orderId && e.UserId == userId)
+                var order = await _orderRepository
+                    .SingleOrDefaultAsyncInclude(e => e.Id == orderId && e.UserId == userId)
                 ?? throw new InvalidOperationException(ErrorMessage.ORDER_NOT_FOUND);
                 if (order.OrderStatus != DeliveryStatusEnum.Received)
                 {
@@ -604,7 +605,7 @@ namespace MyStore.Application.Services.Orders
 
                 foreach (var rv in reviews)
                 {
-                    var productPath = pathReviewImages + "/" + rv.ProductId;
+                    var productPath = Path.Combine(reviewImagesPath, rv.ProductId.ToString());
                     List<string>? pathNames = null;
 
                     if (rv.Images != null)
@@ -616,6 +617,7 @@ namespace MyStore.Application.Services.Orders
                             pathNames.Add(Path.Combine(productPath, name));
                             return name;
                         }).ToList();
+
                         await _fileStorage.SaveAsync(productPath, rv.Images, imgNames);
                     }
 
@@ -626,9 +628,6 @@ namespace MyStore.Application.Services.Orders
                         product.Rating = (currentStar + rv.Star) / (product.RatingCount + 1);
                         product.RatingCount += 1;
 
-                        var orderDetails = order.OrderDetails.SingleOrDefault(x => x.ProductId == rv.ProductId);
-                        var variant = orderDetails?.Variant ?? "";
-
                         products.Add(product);
                         pReviews.Add(new ProductReview
                         {
@@ -637,7 +636,7 @@ namespace MyStore.Application.Services.Orders
                             Star = rv.Star,
                             Description = rv.Description,
                             ImagesUrls = pathNames,
-                            Variant = variant
+                            Variant = rv.Variant
                         });
                     }
                 }
