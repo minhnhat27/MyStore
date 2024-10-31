@@ -6,6 +6,7 @@ namespace MyStore.Application.Request
     public class ReviewRequest
     {
         public long ProductId { get; set; }
+        public string Variant { get; set; }
 
         [Range(0, 5)]
         public int Star { get; set; }

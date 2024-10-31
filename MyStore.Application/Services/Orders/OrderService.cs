@@ -50,7 +50,7 @@ namespace MyStore.Application.Services.Orders
         private readonly IVNPayLibrary _vnPayLibrary;
         private readonly IServiceScopeFactory _serviceScopeFactory;
 
-        private readonly string pathReviewImages = "assets/images/reviews";
+        private readonly string reviewImagesPath = "assets/images/reviews";
 
         public OrderService(IOrderRepository orderRepository,
             ICartItemRepository cartItemRepository,
@@ -274,10 +274,9 @@ namespace MyStore.Application.Services.Orders
                     {
                         OrderId = order.Id,
                         ProductId = cartItem.ProductId,
-                        SizeName = size.Size.Name,
                         SizeId = size.SizeId,
                         Quantity = cartItem.Quantity,
-                        ColorName = size.ProductColor.ColorName,
+                        Variant = size.ProductColor.ColorName + ", Size " + size.Size.Name,
                         ColorId = size.ProductColorId,
                         ProductName = cartItem.Product.Name,
                         OriginPrice = cartItem.Product.Price,
@@ -589,18 +588,24 @@ namespace MyStore.Application.Services.Orders
             using var transaction = await _transaction.BeginTransactionAsync();
             try
             {
-                var order = await _orderRepository.SingleOrDefaultAsync(e => e.Id == orderId && e.UserId == userId)
+                var order = await _orderRepository
+                    .SingleOrDefaultAsyncInclude(e => e.Id == orderId && e.UserId == userId)
                 ?? throw new InvalidOperationException(ErrorMessage.ORDER_NOT_FOUND);
                 if (order.OrderStatus != DeliveryStatusEnum.Received)
                 {
                     throw new InvalidDataException("Chưa thể đánh giá đơn hàng này.");
                 }
+                if(DateTime.Now > order.ReviewDeadline)
+                {
+                    throw new InvalidOperationException("Đã hết hạn đánh giá");
+                }
+
                 List<ProductReview> pReviews = new();
                 List<Product> products = new();
 
                 foreach (var rv in reviews)
                 {
-                    var productPath = pathReviewImages + "/" + rv.ProductId;
+                    var productPath = Path.Combine(reviewImagesPath, rv.ProductId.ToString());
                     List<string>? pathNames = null;
 
                     if (rv.Images != null)
@@ -612,6 +617,7 @@ namespace MyStore.Application.Services.Orders
                             pathNames.Add(Path.Combine(productPath, name));
                             return name;
                         }).ToList();
+
                         await _fileStorage.SaveAsync(productPath, rv.Images, imgNames);
                     }
 
@@ -630,6 +636,7 @@ namespace MyStore.Application.Services.Orders
                             Star = rv.Star,
                             Description = rv.Description,
                             ImagesUrls = pathNames,
+                            Variant = rv.Variant
                         });
                     }
                 }
@@ -649,17 +656,36 @@ namespace MyStore.Application.Services.Orders
 
         public async Task NextOrderStatus(long orderId)
         {
-            var order = await _orderRepository.FindAsync(orderId);
-            if(order != null)
+            var order = await _orderRepository.FindAsync(orderId) 
+                ?? throw new InvalidOperationException(ErrorMessage.ORDER_NOT_FOUND);
+            if (!order.OrderStatus.Equals(DeliveryStatusEnum.Received) 
+                || !order.OrderStatus.Equals(DeliveryStatusEnum.Canceled))
             {
-                if(!order.OrderStatus.Equals(DeliveryStatusEnum.Received) || !order.OrderStatus.Equals(DeliveryStatusEnum.Canceled))
+                order.OrderStatus += 1;
+                if(order.OrderStatus == DeliveryStatusEnum.Received)
                 {
-                    order.OrderStatus += 1;
-                    await _orderRepository.UpdateAsync(order);
+                    order.ReceivedDate = DateTime.Now;
+                    order.ReviewDeadline = DateTime.Now.AddDays(15);
                 }
-                else throw new InvalidDataException(ErrorMessage.BAD_REQUEST);
+                await _orderRepository.UpdateAsync(order);
             }
-            else throw new InvalidOperationException(ErrorMessage.ORDER_NOT_FOUND);
+            else throw new InvalidDataException(ErrorMessage.BAD_REQUEST);
+        }
+
+        public async Task ConfirmDelivery(long orderId, string userId)
+        {
+            var order = await _orderRepository.SingleOrDefaultAsyncInclude(e => e.Id == orderId && e.UserId == userId)
+                ?? throw new InvalidOperationException(ErrorMessage.ORDER_NOT_FOUND);
+
+            if (order.OrderStatus != DeliveryStatusEnum.BeingDelivered)
+            {
+                throw new InvalidDataException(ErrorMessage.BAD_REQUEST);
+            }
+
+            order.OrderStatus = DeliveryStatusEnum.Received;
+            order.ReceivedDate = DateTime.Now;
+            order.ReviewDeadline = DateTime.Now.Date.AddDays(15);
+            await _orderRepository.UpdateAsync(order);
         }
 
         public async Task OrderToShipping(long orderId, OrderToShippingRequest request)

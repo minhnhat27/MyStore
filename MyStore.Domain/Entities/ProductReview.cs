@@ -15,6 +15,8 @@ namespace MyStore.Domain.Entities
         [Range(1, 5)]
         public int Star { get; set; }
 
+        public string Variant { get; set; }
+
         public long? ProductId { get; set; }
         public Product? Product { get; set; }
 
@@ -22,13 +24,13 @@ namespace MyStore.Domain.Entities
         public User? User { get; set; }
 
         [NotMapped]
-        public List<string>? ImagesUrls { get; set; } = new List<string>();
+        public List<string>? ImagesUrls { get; set; }
 
         [Column(TypeName = "jsonb")]
         public string? ImagesUrlsJson
         {
-            get => JsonConvert.SerializeObject(ImagesUrls);
-            set => ImagesUrls = value == null ? null : JsonConvert.DeserializeObject<List<string>>(value);
+            get => ImagesUrls == null ? null : JsonConvert.SerializeObject(ImagesUrls);
+            set => ImagesUrls = string.IsNullOrEmpty(value) ? null : JsonConvert.DeserializeObject<List<string>>(value);
         }
 
         public DateTime CreatedAt { get; set; }

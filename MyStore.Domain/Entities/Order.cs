@@ -15,6 +15,8 @@ namespace MyStore.Domain.Entities
 
         public DateTime OrderDate { get; set; }
         public DateTime? ReceivedDate { get; set; }
+        public DateTime? ReviewDeadline { get; set; }
+
         public bool Reviewed { get; set; }
         public double VoucherDiscount { get; set; }
 

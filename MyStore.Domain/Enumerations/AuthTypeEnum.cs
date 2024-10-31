@@ -3,6 +3,7 @@
     public enum AuthTypeEnum
     {
         Register,
-        ChangeEmail
+        ChangeEmail,
+        ForgetPassword
     }
 }

@@ -10,6 +10,7 @@ namespace MyStore.Application.DTOs
         public double AmountPaid { get; set; }
         public DateTime OrderDate { get; set; }
         public DateTime? ReceivedDate { get; set; }
+        public DateTime? ReviewDeadline { get; set; }
         public bool Reviewed { get; set; }
 
         public string PaymentMethodName { get; set; }
@@ -39,10 +40,7 @@ namespace MyStore.Application.DTOs
     {
         public long? ProductId { get; set; }
         public string ProductName { get; set; }
-
-        public string SizeName { get; set; }
-        public string ColorName { get; set; }
-
+        public string Variant { get; set; }
         public double OriginPrice { get; set; }
         public double Price { get; set; }
         public int Quantity { get; set; }

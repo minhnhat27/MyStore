@@ -1,9 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using MyStore.Application.IRepositories.Orders;
+using MyStore.Application.Response;
 using MyStore.Domain.Entities;
 using MyStore.Infrastructure.DbContext;
 using MyStore.Infrastructure.IQueryableExtensions;
-using System.Linq;
 using System.Linq.Expressions;
 
 namespace MyStore.Infrastructure.Repositories.Orders
@@ -31,5 +31,35 @@ namespace MyStore.Infrastructure.Repositories.Orders
                 .OrderByDescending(orderByDesc)
                 .Paginate(page, pageSize)
                 .Include(e => e.OrderDetails).ToArrayAsync();
+        
+        public async Task<double> GetRevenue(Expression<Func<Order, bool>>? expression)
+            => expression != null ?
+                await _dbContext.Orders
+                    .Where(expression)
+                    .Select(x => x.Total).SumAsync()
+                : await _dbContext.Orders
+                    .Select(x => x.Total).SumAsync();
+
+        //public async Task<IEnumerable<MonthRevenue>> GetRevenue12Month(int year)
+        //    => await _dbContext.Orders
+        //            .Where(e => e.ReceivedDate.HasValue && e.ReceivedDate.Value.Year.Equals(year))
+        //            .GroupBy(g => new { g.ReceivedDate!.Value.Year, g.ReceivedDate.Value.Month })
+        //            .Select(x => new MonthRevenue
+        //            {
+        //                Month = x.Key.Month,
+        //                Revenue = x.Sum(x => x.Total),
+        //                TotalOrders = x.Count()
+        //            }).ToArrayAsync();
+
+        public async Task<IEnumerable<StatisticData>> GetRevenue12Month(int year)
+            => await _dbContext.Orders
+                    .Where(e => e.OrderDate.Year.Equals(year))
+                    .GroupBy(g => new { g.OrderDate.Year, g.OrderDate.Month })
+                    .Select(x => new StatisticData
+                    {
+                        Month = x.Key.Month,
+                        Revenue = x.Sum(x => x.Total),
+                        TotalOrders = x.Count()
+                    }).ToArrayAsync();
     }
 }

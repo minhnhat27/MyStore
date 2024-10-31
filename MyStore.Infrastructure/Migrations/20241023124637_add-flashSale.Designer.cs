@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MyStore.Infrastructure.DbContext;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MyStore.Infrastructure.Migrations
 {
     [DbContext(typeof(MyDbContext))]
-    partial class MyDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241023124637_add-flashSale")]
+    partial class addflashSale
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -395,9 +398,6 @@ namespace MyStore.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<DateTime?>("ReviewDeadline")
-                        .HasColumnType("timestamp without time zone");
-
                     b.Property<bool>("Reviewed")
                         .HasColumnType("boolean");
 
@@ -443,6 +443,10 @@ namespace MyStore.Infrastructure.Migrations
                     b.Property<long>("ColorId")
                         .HasColumnType("bigint");
 
+                    b.Property<string>("ColorName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("ImageUrl")
                         .HasColumnType("text");
 
@@ -468,7 +472,7 @@ namespace MyStore.Infrastructure.Migrations
                     b.Property<long>("SizeId")
                         .HasColumnType("bigint");
 
-                    b.Property<string>("Variant")
+                    b.Property<string>("SizeName")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -519,8 +523,8 @@ namespace MyStore.Infrastructure.Migrations
                         .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("Description")
-                        .HasMaxLength(5000)
-                        .HasColumnType("character varying(5000)");
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<float>("DiscountPercent")
                         .HasColumnType("real");
@@ -664,10 +668,6 @@ namespace MyStore.Infrastructure.Migrations
                         .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("UserId")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Variant")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");

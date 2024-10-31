@@ -144,6 +144,28 @@ namespace MyStore.Presentation.Controllers
                 return StatusCode(500, ex.Message);
             }
         }
+        
+        [HttpPost("register/google")]
+        public async Task<IActionResult> GoogleRegister([FromBody] TokenRequest request)
+        {
+            try
+            {
+                await _authService.CheckGoogleRegister(request.Token);
+                return NoContent();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (InvalidDataException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
 
         [HttpPost("send-otp")]
         public async Task<IActionResult> SendOTP([FromBody] SendCodeRequest request)

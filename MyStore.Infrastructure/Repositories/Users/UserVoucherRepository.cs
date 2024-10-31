@@ -13,7 +13,7 @@ namespace MyStore.Infrastructure.Repositories.Users
         {
             return await _dbcontext.UserVouchers
                 .Where(expression)
-                .Include(e => e.Voucher).ToListAsync();
+                .Include(e => e.Voucher).ToArrayAsync();
         }
 
         public async Task<UserVoucher?> SingleOrDefaultAsyncInclude(Expression<Func<UserVoucher, bool>> expression)

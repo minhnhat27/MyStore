@@ -6,6 +6,5 @@ namespace MyStore.Application.IRepositories.Products
     public interface IProductRepository : IRepository<Product>
     {
         Task<Product?> SingleOrDefaultAsyncInclude(Expression<Func<Product, bool>> expression);
-        Task<IEnumerable<string>> GetName(Expression<Func<Product, bool>> expression);
     }
 }

@@ -13,6 +13,7 @@ using MyStore.Domain.Enumerations;
 using System.Linq.Expressions;
 using System.Text.RegularExpressions;
 using System.Text;
+using OpenCvSharp;
 
 namespace MyStore.Application.Services.Products
 {
@@ -334,14 +335,92 @@ namespace MyStore.Application.Services.Products
             return _mapper.Map<IEnumerable<ProductDTO>>(products);
         }
 
+        private bool CompareImages(Mat grayInputImage, Mat compareImage, double threshold = 1000.0)
+        {
+            var gray1 = new Mat();
+            var gray2 = new Mat();
+            Cv2.CvtColor(compareImage, gray2, ColorConversionCodes.BGR2GRAY);
+
+            return true;
+        }
+
+        public async Task<IEnumerable<ProductDTO>> GetSearchProducts(string tempFilePath, string rootPath)
+        {
+            var imagesPath = Path.Combine(rootPath, path);
+
+            var resultList = new List<string>();
+            var inputImage = Cv2.ImRead(tempFilePath);
+
+            if (inputImage.Empty())
+            {
+                throw new FileNotFoundException(ErrorMessage.NOT_FOUND + " ảnh");
+            }
+            var grayInputImage = new Mat();
+            Cv2.CvtColor(inputImage, grayInputImage, ColorConversionCodes.BGR2GRAY);
+
+            //var gray1 = new Mat();
+            //var blur = new Mat();
+            //Cv2.CvtColor(inputImage, gray1, ColorConversionCodes.BGR2GRAY);
+            //Cv2.GaussianBlur(gray1, blur, new OpenCvSharp.Size(5, 5), 0);
+            //var canny = new Mat();
+            //Cv2.Canny(blur, canny, 15, 120);
+            //Cv2.Dilate(canny, canny, new Mat(), null, 3);
+            //Point[][] contours;
+            //HierarchyIndex[] hierarchyIndices;
+
+            //Cv2.FindContours(canny, out contours, out hierarchyIndices,
+            //    RetrievalModes.External, method: ContourApproximationModes.ApproxSimple);
+
+            //foreach(var contour in contours)
+            //{
+            //    var rect = Cv2.BoundingRect(contour);
+            //    Cv2.Rectangle(inputImage, new Point(rect.X, rect.Y), new Point(rect.X + rect.Width, rect.Y + rect.Height), Scalar.DarkRed, 2);
+            //}
+            //gray1.Release();
+            //canny.Release();
+            //blur.Release();
+            //try
+            //{
+            //    Window.ShowImages(inputImage);
+            //}
+            //catch (Exception ex)
+            //{
+            //    Console.WriteLine(ex.Message);
+            //}
+
+            //var productImagePaths = Directory.GetDirectories(imagesPath)
+            //    .SelectMany(dir => Directory.GetFiles(dir, "*.*", SearchOption.TopDirectoryOnly))
+            //    .ToList();
+
+            //if(productImagePaths != null)
+            //{
+            //    foreach (var productImagePath in productImagePaths)
+            //    {
+            //        var productImage = Cv2.ImRead(productImagePath);
+            //        if (productImage.Empty())
+            //            continue;
+            //        if (CompareImages(grayInputImage, productImage))
+            //        {
+            //            resultList.Add(productImagePath.Split(Path.DirectorySeparatorChar)[^2]);
+            //        }
+            //    }
+            //}
+
+            //var products = await _productRepository.GetPagedAsync(1, 10, e => resultList.Any(x => x.Equals(e.Id)), e => e.Name);
+            //var products = await _productRepository
+            //    .GetPagedAsync(1, 10, e => resultList.Contains(e.Id.ToString()), e => e.Name);
+
+            //return _mapper.Map<IEnumerable<ProductDTO>>(products);
+            throw new NotImplementedException();
+        }
         public async Task<ProductDetailsResponse> GetProductAsync(long id)
         {
             var product = await _productRepository.SingleOrDefaultAsyncInclude(e => e.Id == id);
             if (product != null)
             {
                 var res = _mapper.Map<ProductDetailsResponse>(product);
-                res.ColorSizes = _mapper.Map<IEnumerable<ColorSizeResponse>>(product.ProductColors);
                 res.ImageUrls = product.Images.Select(e => e.ImageUrl);
+                res.MaterialNames = product.Materials.Select(e => e.Material.Name);
 
                 return res;
             }
@@ -393,8 +472,15 @@ namespace MyStore.Application.Services.Products
                             var matchingColor = request.ColorSizes.Single(e => e.Id == color.Id);
                             foreach (var size in color.ProductSizes)
                             {
-                                var matchingSize = matchingColor.SizeInStocks.Single(s => s.SizeId == size.SizeId);
-                                size.InStock = matchingSize.InStock;
+                                var matchingSize = matchingColor.SizeInStocks.SingleOrDefault(s => s.SizeId == size.SizeId);
+                                if(matchingSize == null)
+                                {
+                                    await _productSizeRepository.DeleteAsync(matchingColor.Id, size.SizeId);
+                                }
+                                else
+                                {
+                                    size.InStock = matchingSize.InStock;
+                                }
                             }
                         }
 
@@ -539,18 +625,27 @@ namespace MyStore.Application.Services.Products
             }));
         }
 
-        public async Task<PagedResponse<ReviewDTO>> GetReviews(long id, PageRequest request)
+        public async Task<PagedResponse<ReviewDTO>> GetReviews(long id, ReviewFiltersRequest request)
         {
-            var reviews = await _productReviewRepository
-                .GetPagedOrderByDescendingAsync(request.Page, request.PageSize, e => e.ProductId == id, e=> e.CreatedAt);
-
-            var total = await _productReviewRepository.CountAsync(e => e.ProductId == id);
-
-            var items = _mapper.Map<IEnumerable<ReviewDTO>>(reviews).Select(x =>
+            Expression<Func<ProductReview, bool>> expression = e => e.ProductId == id;
+            
+            expression = request.Rate switch
             {
-                x.Username = MaskUsername(x.Username);
-                return x;
-            });
+                ReviewFiltersEnum.ALL => expression,
+                ReviewFiltersEnum.HAVEPICTURE 
+                    => CombineExpressions(expression, e => e.ImagesUrlsJson != null),
+                ReviewFiltersEnum.HAVECOMMENT
+                    => CombineExpressions(expression, e => e.Description != null && e.Description.Length > 0),
+
+                _ => CombineExpressions(expression, e => e.Star == (int) request.Rate)
+            };
+
+            var reviews = await _productReviewRepository
+                .GetPagedOrderByDescendingAsync(request.Page, request.PageSize, expression, e => e.CreatedAt);
+
+            var total = await _productReviewRepository.CountAsync(expression);
+
+            var items = _mapper.Map<IEnumerable<ReviewDTO>>(reviews);
 
             return new PagedResponse<ReviewDTO>
             {

@@ -22,4 +22,9 @@ namespace MyStore.Application.Request
         public bool? Discount { get; set; }
         public bool? FlashSale { get; set; }
     }
+
+    public class ReviewFiltersRequest : PageRequest
+    {
+        public ReviewFiltersEnum Rate { get; set; } = ReviewFiltersEnum.ALL;
+    }
 }

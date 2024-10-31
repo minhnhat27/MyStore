@@ -12,7 +12,6 @@ using MyStore.Domain.Entities;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using System.Text.RegularExpressions;
 using MyStore.Application.DTOs;
 using MyStore.Domain.Enumerations;
 using MyStore.Application.IRepositories;
@@ -28,6 +27,7 @@ namespace MyStore.Infrastructure.AuthenticationService
         private readonly IConfiguration _configuration;
         private readonly IMapper _mapper;
         private readonly ITransactionRepository _transaction;
+
         public AuthenticationService(UserManager<User> userManager,
             SignInManager<User> signInManager,
             ISendMailService sendMailService,
@@ -71,28 +71,48 @@ namespace MyStore.Infrastructure.AuthenticationService
             return new JwtSecurityTokenHandler().WriteToken(jwtToken);
         }
 
+        private async Task<User> GetUserExistsByUserName(string username)
+        {
+            var user = await _userManager.FindByNameAsync(username)
+                ?? throw new InvalidOperationException(ErrorMessage.USER_NOT_FOUND);
+            return user;
+        }
+
+        private async Task<User> GetUserExistsById(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId)
+                ?? throw new InvalidOperationException(ErrorMessage.USER_NOT_FOUND);
+            return user;
+        }
+
+        private async Task ThrowIfUserExists(string username)
+        {
+            var user = await _userManager.FindByNameAsync(username);
+            if(user != null)
+            {
+                throw new InvalidDataException(ErrorMessage.EMAIL_HAS_BEEN_REGISTERED);
+            };
+        }
+
         public async Task<JwtResponse> Login(string username, string password)
         {
             var result = await _signInManager.PasswordSignInAsync(username, password, false, false);
             if (result.Succeeded)
             {
-                var user = await _userManager.FindByEmailAsync(username);
-                if (user != null)
-                {
-                    var expires = DateTime.Now.AddHours(24);
-                    var accessToken = await CreateJwtToken(user, expires);
-                    //var refreshToken = await CreateJwtToken(user, true);
+                var user = await GetUserExistsByUserName(username);
 
-                    return new JwtResponse
-                    {
-                        AccessToken = accessToken,
-                        //RefreshToken = refreshToken,
-                        Expires = expires,
-                        Fullname = user.Fullname,
-                        Session = user.ConcurrencyStamp ?? user.Id,
-                    };
-                }
-                throw new InvalidOperationException(ErrorMessage.USER_NOT_FOUND);
+                var expires = DateTime.Now.AddHours(24);
+                var accessToken = await CreateJwtToken(user, expires);
+                //var refreshToken = await CreateJwtToken(user, true);
+
+                return new JwtResponse
+                {
+                    AccessToken = accessToken,
+                    //RefreshToken = refreshToken,
+                    Expires = expires,
+                    Fullname = user.Fullname,
+                    Session = user.ConcurrencyStamp ?? user.Id,
+                };
             }
             throw new InvalidDataException(ErrorMessage.INCORRECT_PASSWORD);
         }
@@ -105,8 +125,7 @@ namespace MyStore.Infrastructure.AuthenticationService
             var email = payload.Email;
 
             var provider = ExternalLoginEnum.GOOGLE.ToString();
-            var user = await _userManager.FindByEmailAsync(email)
-                ?? throw new InvalidOperationException(ErrorMessage.USER_NOT_FOUND);
+            var user = await GetUserExistsByUserName(email);
 
             var result = await _signInManager.ExternalLoginSignInAsync(provider, googleId, false);
             if (!result.Succeeded)
@@ -156,8 +175,7 @@ namespace MyStore.Infrastructure.AuthenticationService
 
         public async Task LinkToFacebook(string userId, string providerId, string? name)
         {
-            var user = await _userManager.FindByIdAsync(userId)
-                ?? throw new InvalidOperationException(ErrorMessage.USER_NOT_FOUND);
+            var user = await GetUserExistsById(userId);
 
             var provider = ExternalLoginEnum.FACEBOOK.ToString();
             var result = await _userManager.FindByLoginAsync(provider, providerId);
@@ -170,8 +188,7 @@ namespace MyStore.Infrastructure.AuthenticationService
         
         public async Task UnlinkFacebook(string userId)
         {
-            var user = await _userManager.FindByIdAsync(userId)
-                ?? throw new InvalidOperationException(ErrorMessage.USER_NOT_FOUND);
+            var user = await GetUserExistsById(userId);
 
             var provider = ExternalLoginEnum.FACEBOOK.ToString();
 
@@ -190,69 +207,95 @@ namespace MyStore.Infrastructure.AuthenticationService
         {
             try
             {
-                var registerCache = AuthTypeEnum.Register.ToString() + request.Email;
-
-                var code = _cache.Get<string>(registerCache);
-                if (code != null && code.Equals(request.Token))
+                string username;
+                GoogleJsonWebSignature.Payload? payload = null;
+                if(request.Email != null)
                 {
-                    var user = new User
+                    var registerCache = AuthTypeEnum.Register.ToString() + request.Email;
+                    var code = _cache.Get<string>(registerCache);
+                    if (code == null || !code.Equals(request.Token))
                     {
-                        Email = request.Email,
-                        Fullname = request.Name,
-                        UserName = request.Email,
-                        NormalizedUserName = request.Email,
-                        EmailConfirmed = true,
-                        SecurityStamp = Guid.NewGuid().ToString(),
-                    };
-                    user.DeliveryAddress = new DeliveryAddress
-                    {
-                        UserId = user.Id,
-                        Name = user.Fullname,
-                    };
+                        throw new Exception(ErrorMessage.INVALID_OTP);
+                    }
+                    username = request.Email;
+                    _cache.Remove(registerCache);
+                }
+                else
+                {
+                    payload = await GoogleJsonWebSignature.ValidateAsync(request.Token);
+                    username = payload.Email;
+                }
 
-                    var result = await _userManager.CreateAsync(user, request.Password);
-                    if (!result.Succeeded)
+                var user = new User
+                {
+                    Email = username,
+                    Fullname = request.Name,
+                    UserName = username,
+                    PhoneNumber = request.PhoneNumber,
+                    NormalizedUserName = request.Email,
+                    EmailConfirmed = true,
+                    SecurityStamp = Guid.NewGuid().ToString(),
+                };
+                user.DeliveryAddress = new DeliveryAddress
+                {
+                    UserId = user.Id,
+                    Name = user.Fullname,
+                    PhoneNumber = user.PhoneNumber,
+                };
+
+                var result = await _userManager.CreateAsync(user, request.Password);
+                if (!result.Succeeded)
+                {
+                    throw new Exception(string.Join(";", result.Errors.Select(e => e.Description)));
+                }
+                if(request.Email == null && payload != null)
+                {
+                    var googleId = payload.Subject;
+                    var provider = ExternalLoginEnum.GOOGLE.ToString();
+                    var addLoginResult = await _userManager.AddLoginAsync(user, new UserLoginInfo(provider, googleId, provider));
+                    if (!addLoginResult.Succeeded)
                     {
                         throw new Exception(string.Join(";", result.Errors.Select(e => e.Description)));
                     }
-
-                    _cache.Remove(registerCache);
-                    return _mapper.Map<UserDTO>(user);
                 }
-                throw new Exception(ErrorMessage.INVALID_OTP);
+
+                return _mapper.Map<UserDTO>(user);
             }
-            catch(Exception ex)
+            catch(Exception)
             {
-                throw new Exception(ex.Message);
+                throw;
             }
         }
 
-        private string ConvertToVietnamPhoneNumber(string phoneNumber)
+        public async Task CheckGoogleRegister(string credentials)
         {
-            string cleaned = Regex.Replace(phoneNumber, @"\D", "");
-
-            if (cleaned.StartsWith("0"))
-            {
-                return "+84" + cleaned.Substring(1);
-            }
-            if (cleaned.StartsWith("84") && !cleaned.StartsWith("+84"))
-            {
-                return "+84" + cleaned.Substring(2);
-            }
-            if (cleaned.StartsWith("+84"))
-            {
-                return cleaned;
-            }
-            return phoneNumber;
+            var payload = await GoogleJsonWebSignature.ValidateAsync(credentials);
+            var email = payload.Email;
+            await ThrowIfUserExists(email);
         }
+
+        //private string ConvertToVietnamPhoneNumber(string phoneNumber)
+        //{
+        //    string cleaned = Regex.Replace(phoneNumber, @"\D", "");
+
+        //    if (cleaned.StartsWith("0"))
+        //    {
+        //        return "+84" + cleaned.Substring(1);
+        //    }
+        //    if (cleaned.StartsWith("84") && !cleaned.StartsWith("+84"))
+        //    {
+        //        return "+84" + cleaned.Substring(2);
+        //    }
+        //    if (cleaned.StartsWith("+84"))
+        //    {
+        //        return cleaned;
+        //    }
+        //    return phoneNumber;
+        //}
 
         public async Task SendCodeToEmail(AuthTypeEnum authType, string email)
         {
-            var user = await _userManager.FindByNameAsync(email);
-            if (user != null)
-            {
-                throw new InvalidOperationException(ErrorMessage.EMAIL_EXISTED);
-            }
+            await ThrowIfUserExists(email);
 
             var code = new Random().Next(100000, 999999);
             _cache.Set(authType.ToString() + email, code.ToString(), TimeSpan.FromMinutes(30));

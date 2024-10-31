@@ -10,7 +10,7 @@ namespace MyStore.Domain.Entities
         [MaxLength(150)]
         public string Name { get; set; }
 
-        [MaxLength(500)]
+        [MaxLength(5000)]
         public string? Description { get; set; }
 
         public bool Enable { get; set; }
@@ -36,6 +36,9 @@ namespace MyStore.Domain.Entities
         [Range(0, 5)]
         public float Rating { get; set; }
         public long RatingCount { get; set; }
+
+        public string? FlashSaleId { get; set; }
+        public FlashSale? FlashSale { get; set; }
 
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }

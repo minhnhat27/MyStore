@@ -17,17 +17,15 @@ namespace MyStore.Infrastructure.Repositories.Products
                         .Where(expression)
                         .Include(e => e.Images)
                         .Include(e => e.Materials)
+                            .ThenInclude(e => e.Material)
+                        .Include(e => e.Category)
+                        .Include(e => e.Brand)
                         .Include(e => e.ProductColors)
                             .ThenInclude(e => e.ProductSizes)
                                 .ThenInclude(e => e.Size)
-                        .Include(e => e.Category)
-                        .Include(e => e.Brand)
-                        .AsSplitQuery()
+                        .AsSingleQuery()
                         .SingleOrDefaultAsync();
         }
-
-        public async Task<IEnumerable<string>> GetName(Expression<Func<Product, bool>> expression)
-        => await _dbContext.Products.Where(expression).OrderBy(e => e.Name).Take(10).Select(x => x.Name).ToArrayAsync();
 
         public override async Task<IEnumerable<Product>> GetPagedAsync<TKey>(int page, int pageSize, Expression<Func<Product, bool>>? expression, Expression<Func<Product, TKey>> orderBy)
             => expression == null
