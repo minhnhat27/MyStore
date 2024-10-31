@@ -5,6 +5,7 @@ namespace MyStore.Domain.Entities
     public class Voucher
     {
         [Key]
+        [MaxLength(55)]
         public string Code { get; set; }
 
         public int? DiscountPercent { get; set; }

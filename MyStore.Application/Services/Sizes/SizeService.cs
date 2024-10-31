@@ -41,14 +41,7 @@ namespace MyStore.Application.Services.Sizes
 
         public async Task DeleteSizeAsync(int id)
         {
-            try
-            {
-                await _sizeRepository.DeleteAsync(id);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception(ex.Message);
-            }
+            await _sizeRepository.DeleteAsync(id);
         }
 
         public async Task<SizeDTO> UpdateSizeAsync(int id, string name)

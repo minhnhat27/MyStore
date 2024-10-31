@@ -53,7 +53,7 @@ namespace MyStore.Infrastructure.Mapping
 
 
             //Voucher
-            CreateMap<Voucher, VoucherDTO>();
+            CreateMap<Voucher, VoucherDTO>().ReverseMap();
 
             //Payment Method
             CreateMap<PaymentMethod, PaymentMethodDTO>().ReverseMap();

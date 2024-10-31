@@ -6,12 +6,11 @@ namespace MyStore.Application.Services
     {
         Task<GeneralStatistics> GeneralStatistics();
 
-        Task<StatisticsResponse> GetRevenue();
-        Task<StatisticsResponse> GetRevenue(DateTime start, DateTime end);
-        Task<StatisticsResponse> GetRevenue(int month, int year);
-        Task<StatisticsResponse> GetRevenue(int year);
-
-        Task<IEnumerable<MonthRevenue>> GetRevenueInYear(int? year = null);
+        Task<StatisticData> GetRevenue();
+        Task<StatisticData> GetRevenue(DateTime start, DateTime end);
+        Task<StatisticData> GetRevenue(int month, int year);
+        Task<StatisticData> GetRevenue(int year);
+        Task<StatisticsResponse> GetRevenueInYear(int? year = null);
 
         Task<int> OrderNumber();
         Task<int> OrderNumber(int month, int year);

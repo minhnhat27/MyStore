@@ -12,7 +12,6 @@ using MyStore.Domain.Entities;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using System.Text.RegularExpressions;
 using MyStore.Application.DTOs;
 using MyStore.Domain.Enumerations;
 using MyStore.Application.IRepositories;
@@ -28,6 +27,7 @@ namespace MyStore.Infrastructure.AuthenticationService
         private readonly IConfiguration _configuration;
         private readonly IMapper _mapper;
         private readonly ITransactionRepository _transaction;
+
         public AuthenticationService(UserManager<User> userManager,
             SignInManager<User> signInManager,
             ISendMailService sendMailService,
@@ -231,6 +231,7 @@ namespace MyStore.Infrastructure.AuthenticationService
                     Email = username,
                     Fullname = request.Name,
                     UserName = username,
+                    PhoneNumber = request.PhoneNumber,
                     NormalizedUserName = request.Email,
                     EmailConfirmed = true,
                     SecurityStamp = Guid.NewGuid().ToString(),
@@ -239,6 +240,7 @@ namespace MyStore.Infrastructure.AuthenticationService
                 {
                     UserId = user.Id,
                     Name = user.Fullname,
+                    PhoneNumber = user.PhoneNumber,
                 };
 
                 var result = await _userManager.CreateAsync(user, request.Password);

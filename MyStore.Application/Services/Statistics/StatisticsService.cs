@@ -37,7 +37,7 @@ namespace MyStore.Application.Services.Statistics
         }
 
 
-        public async Task<StatisticsResponse> GetRevenue()
+        public async Task<StatisticData> GetRevenue()
         {
             Expression<Func<Order, bool>>
                expression = e => e.OrderStatus == DeliveryStatusEnum.Received;
@@ -45,14 +45,14 @@ namespace MyStore.Application.Services.Statistics
             var revenue = await _orderRepository
                 .GetRevenue(expression);
             var total = await _orderRepository.CountAsync(expression);
-            return new StatisticsResponse
+            return new StatisticData
             {
                 Revenue = revenue,
                 TotalOrders = total
             };
         }
 
-        public async Task<StatisticsResponse> GetRevenue(DateTime start, DateTime end)
+        public async Task<StatisticData> GetRevenue(DateTime start, DateTime end)
         {
             Expression<Func<Order, bool>>
                 expression = e => e.ReceivedDate >= start && e.ReceivedDate <= end 
@@ -61,14 +61,14 @@ namespace MyStore.Application.Services.Statistics
             var revenue = await _orderRepository
                 .GetRevenue(expression);
             var total = await _orderRepository.CountAsync(expression);
-            return new StatisticsResponse
+            return new StatisticData
             {
                 Revenue = revenue,
-                TotalOrders = total
+                TotalOrders = total,
             };
         }
 
-        public async Task<StatisticsResponse> GetRevenue(int month, int year)
+        public async Task<StatisticData> GetRevenue(int month, int year)
         {
             Expression<Func<Order, bool>>
                 expression = e => e.OrderStatus == DeliveryStatusEnum.Received &&
@@ -78,14 +78,15 @@ namespace MyStore.Application.Services.Statistics
             var revenue = await _orderRepository
                 .GetRevenue(expression);
             var total = await _orderRepository.CountAsync(expression);
-            return new StatisticsResponse
+
+            return new StatisticData
             {
                 Revenue = revenue,
-                TotalOrders = total
+                TotalOrders = total,
             };
         }
 
-        public async Task<StatisticsResponse> GetRevenue(int year)
+        public async Task<StatisticData> GetRevenue(int year)
         {
             Expression<Func<Order, bool>>
                 expression = e => e.OrderStatus == DeliveryStatusEnum.Received &&
@@ -95,24 +96,24 @@ namespace MyStore.Application.Services.Statistics
             var revenue = await _orderRepository
                 .GetRevenue(expression);
             var total = await _orderRepository.CountAsync(expression);
-            return new StatisticsResponse
+
+            return new StatisticData
             {
                 Revenue = revenue,
-                TotalOrders = total
+                TotalOrders = total,
             };
         }
 
-        public async Task<IEnumerable<MonthRevenue>> GetRevenueInYear(int? year)
+        public async Task<StatisticsResponse> GetRevenueInYear(int? year)
         {
             var currentYear = year ?? DateTime.Now.Year;
-            var revenueList = new List<MonthRevenue>();
-
+            var revenueList = new List<StatisticData>();
             var revenues = await _orderRepository.GetRevenue12Month(currentYear);
 
             for (int month = 1; month <= 12; month++)
             {
                 var monthRevenue = revenues.FirstOrDefault(r => r.Month == month) 
-                    ?? new MonthRevenue
+                    ?? new StatisticData
                     {
                         TotalOrders = 0,
                         Month = month,
@@ -121,7 +122,11 @@ namespace MyStore.Application.Services.Statistics
                 revenueList.Add(monthRevenue);
             }
 
-            return revenueList;
+            return new StatisticsResponse
+            {
+                Statistics = revenueList,
+                Total = revenueList.Sum(e => e.Revenue)
+            };
         }
 
         public Task<int> OrderNumber()

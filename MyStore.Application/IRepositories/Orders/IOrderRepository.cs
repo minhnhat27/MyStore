@@ -9,6 +9,6 @@ namespace MyStore.Application.IRepositories.Orders
         Task<Order?> SingleOrDefaultAsyncInclude(Expression<Func<Order, bool>> expression);
         Task<IEnumerable<Order>> GetPagedOrderByDescendingAsyncInclude<TKey>(int page, int pageSize, Expression<Func<Order, bool>>? expression, Expression<Func<Order, TKey>> orderByDesc);
         Task<double> GetRevenue(Expression<Func<Order, bool>>? expression);
-        Task<IEnumerable<MonthRevenue>> GetRevenue12Month(int year);
+        Task<IEnumerable<StatisticData>> GetRevenue12Month(int year);
     }
 }
