@@ -15,6 +15,7 @@ using System.Text;
 using MyStore.Application.DTOs;
 using MyStore.Domain.Enumerations;
 using MyStore.Application.IRepositories;
+using Newtonsoft.Json.Linq;
 
 namespace MyStore.Infrastructure.AuthenticationService
 {
@@ -92,6 +93,28 @@ namespace MyStore.Infrastructure.AuthenticationService
             {
                 throw new InvalidDataException(ErrorMessage.EMAIL_HAS_BEEN_REGISTERED);
             };
+        }
+
+        private void ThrowIfInvalidCode(AuthTypeEnum type, string key, string token)
+        {
+            var cache = type.ToString() + key;
+            var code = _cache.Get<string>(cache);
+            if (code == null || !code.Equals(token))
+            {
+                throw new InvalidDataException(ErrorMessage.INVALID_OTP);
+            }
+        }
+
+        private void SetCache(AuthTypeEnum type, string key, string token, TimeSpan time)
+        {
+            var cache = type.ToString() + key;
+            _cache.Set(cache, token, time);
+        }
+
+        private void RemoveCache(AuthTypeEnum type, string key, string token)
+        {
+            var cache = type.ToString() + key;
+            _cache.Remove(cache);
         }
 
         public async Task<JwtResponse> Login(string username, string password)
@@ -189,7 +212,6 @@ namespace MyStore.Infrastructure.AuthenticationService
         public async Task UnlinkFacebook(string userId)
         {
             var user = await GetUserExistsById(userId);
-
             var provider = ExternalLoginEnum.FACEBOOK.ToString();
 
             var externalLogins = await _userManager.GetLoginsAsync(user);
@@ -211,14 +233,10 @@ namespace MyStore.Infrastructure.AuthenticationService
                 GoogleJsonWebSignature.Payload? payload = null;
                 if(request.Email != null)
                 {
-                    var registerCache = AuthTypeEnum.Register.ToString() + request.Email;
-                    var code = _cache.Get<string>(registerCache);
-                    if (code == null || !code.Equals(request.Token))
-                    {
-                        throw new Exception(ErrorMessage.INVALID_OTP);
-                    }
+                    ThrowIfInvalidCode(AuthTypeEnum.Register, request.Email, request.Token);
                     username = request.Email;
-                    _cache.Remove(registerCache);
+
+                    RemoveCache(AuthTypeEnum.Register, request.Email, request.Token);
                 }
                 else
                 {
@@ -295,15 +313,18 @@ namespace MyStore.Infrastructure.AuthenticationService
 
         public async Task SendCodeToEmail(AuthTypeEnum authType, string email)
         {
-            await ThrowIfUserExists(email);
-
-            var code = new Random().Next(100000, 999999);
-            _cache.Set(authType.ToString() + email, code.ToString(), TimeSpan.FromMinutes(30));
+            if(authType != AuthTypeEnum.ForgetPassword)
+            {
+                await ThrowIfUserExists(email);
+            }
+            var code = new Random().Next(100000, 999999).ToString();
+            int expire = 30;
+            SetCache(authType, email, code, TimeSpan.FromMinutes(expire));
 
             var subject = code + " is your verification code";
             var body = $"Hi!<br/><br/>" +
                 $"Your verification code is: {code}.<br/><br/>" +
-                "Please complete the account verification process in 30 minutes.<br/><br/>" +
+                $"Please complete the account verification process in {expire} minutes.<br/><br/>" +
                 "This is an automated email. Please do not reply to this email.";
 
             await _sendMailService.SendMailToOne(email, subject, body);
@@ -311,11 +332,7 @@ namespace MyStore.Infrastructure.AuthenticationService
 
         public void VerifyOTP(VerifyOTPRequest verifyOTPRequest)
         {
-            var codeCache = _cache.Get<string>(verifyOTPRequest.Type.ToString() + verifyOTPRequest.Email);
-            if(codeCache == null || !codeCache.Equals(verifyOTPRequest.Token))
-            {
-                throw new InvalidDataException(ErrorMessage.INVALID_OTP);
-            }
+            ThrowIfInvalidCode(verifyOTPRequest.Type, verifyOTPRequest.Email, verifyOTPRequest.Token);
         }
 
         //public async Task SendCodeToPhoneNumber(string phoneNumber)
@@ -349,8 +366,8 @@ namespace MyStore.Infrastructure.AuthenticationService
 
         public async Task ChangePassword(string userId, string currentPassword, string newPassword)
         {
-            var user = await _userManager.FindByIdAsync(userId) ?? throw new InvalidOperationException(ErrorMessage.USER_NOT_FOUND);
-            
+            var user = await GetUserExistsById(userId);
+
             if(currentPassword.Equals(newPassword))
             {
                 throw new InvalidOperationException(ErrorMessage.DUPLICATE_CURRENT_PASSWORD);
@@ -371,21 +388,15 @@ namespace MyStore.Infrastructure.AuthenticationService
 
         public async Task<bool> CheckPassword(string userId, string password)
         {
-            var user = await _userManager.FindByIdAsync(userId) ?? throw new InvalidOperationException(ErrorMessage.USER_NOT_FOUND);
+            var user = await GetUserExistsById(userId);
             var result = await _signInManager.CheckPasswordSignInAsync(user, password, false);
             return result.Succeeded;
         }
 
         public async Task ChangeEmail(string userId, string newEmail, string token)
         {
-            var user = await _userManager.FindByIdAsync(userId) ?? throw new InvalidOperationException(ErrorMessage.USER_NOT_FOUND);
-            var changeEmailCache = AuthTypeEnum.ChangeEmail.ToString() + newEmail;
-
-            var code = _cache.Get<string>(changeEmailCache);
-            if (code == null || !code.Equals(token))
-            {
-                throw new InvalidDataException(ErrorMessage.INVALID_OTP);
-            }
+            var user = await GetUserExistsById(userId);
+            ThrowIfInvalidCode(AuthTypeEnum.ChangeEmail, newEmail, token);
 
             using var transaction = await _transaction.BeginTransactionAsync();
             try
@@ -410,7 +421,32 @@ namespace MyStore.Infrastructure.AuthenticationService
                     }
                 }
 
-                _cache.Remove(changeEmailCache);
+                RemoveCache(AuthTypeEnum.ChangeEmail, newEmail, token);
+                await _transaction.CommitTransactionAsync();
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                throw new Exception(ex.Message);
+            }
+        }
+
+        public async Task ResetPassword(string email, string token, string password)
+        {
+            var user = await GetUserExistsByUserName(email);
+            ThrowIfInvalidCode(AuthTypeEnum.ForgetPassword, email, token);
+
+            using var transaction = await _transaction.BeginTransactionAsync();
+            try
+            {
+                var tempToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+                var result = await _userManager.ResetPasswordAsync(user, tempToken, password);
+                if (!result.Succeeded)
+                {
+                    throw new Exception(string.Join("; ", result.Errors));
+                }
+
+                RemoveCache(AuthTypeEnum.ForgetPassword, email, token);
                 await _transaction.CommitTransactionAsync();
             }
             catch (Exception ex)
