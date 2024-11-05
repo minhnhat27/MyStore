@@ -6,5 +6,6 @@ namespace MyStore.Application.DTOs
     {
         public string? Id { get; set; }
         public IEnumerable<Message> Messages { get; set; }
+        public int Unread { get; set; }
     }
 }

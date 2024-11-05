@@ -8,13 +8,20 @@ namespace MyStore.Domain.Entities
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
         public string? Id { get; set; }
-        public IEnumerable<Message> Messages { get; set; } = new List<Message>();
+        public List<Message> Messages { get; set; } = new();
+        public Unread Unread { get; set; } = new();
+        public bool Closed { get; set; }
     }
-
     public class Message
     {
         public string Content { get; set; }
         public bool IsUser { get; set; }
+        public string? Image { get; set; }
         public DateTime? CreateAt { get; set; } = DateTime.Now;
+    }
+    public class Unread
+    {
+        public int User { get; set; }
+        public int Admin { get; set; }
     }
 }
