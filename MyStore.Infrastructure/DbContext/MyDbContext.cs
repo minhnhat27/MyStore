@@ -2,7 +2,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using MyStore.Domain.Entities;
-using MyStore.Domain.Enumerations;
 
 namespace MyStore.Infrastructure.DbContext
 {
@@ -20,7 +19,6 @@ namespace MyStore.Infrastructure.DbContext
         public virtual DbSet<Material> Materials { get; set; }
         public virtual DbSet<Order> Orders { get; set; }
         public virtual DbSet<OrderDetail> OrderDetails { get; set; }
-        //public virtual DbSet<OrderStatus> OrderStatus { get; set; }
         public virtual DbSet<PaymentMethod> PaymentMethods { get; set; }
         public virtual DbSet<Product> Products { get; set; }
         public virtual DbSet<ProductReview> ProductReviews { get; set; }
@@ -31,8 +29,8 @@ namespace MyStore.Infrastructure.DbContext
         public virtual DbSet<ProductMaterial> ProductMaterials { get; set; }
         public virtual DbSet<Voucher> Vouchers { get; set; }
         public virtual DbSet<UserVoucher> UserVouchers { get; set; }
-        //public virtual DbSet<CommonVoucher> CommonVouchers { get; set; }
-
+        public virtual DbSet<Campaign> Campaigns { get; set; }
+        public virtual DbSet<ProductCampaign> ProductCampaigns { get; set; }
 
         private void UpdateTimestamps()
         {

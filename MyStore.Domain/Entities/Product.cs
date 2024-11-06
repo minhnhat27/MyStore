@@ -7,7 +7,7 @@ namespace MyStore.Domain.Entities
     {
         public long Id { get; set; }
 
-        [MaxLength(150)]
+        [MaxLength(155)]
         public string Name { get; set; }
 
         [MaxLength(5000)]
@@ -37,9 +37,6 @@ namespace MyStore.Domain.Entities
         public float Rating { get; set; }
         public long RatingCount { get; set; }
 
-        public string? FlashSaleId { get; set; }
-        public FlashSale? FlashSale { get; set; }
-
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
 
@@ -50,5 +47,6 @@ namespace MyStore.Domain.Entities
         public ICollection<Image> Images { get; } = new HashSet<Image>();
         public ICollection<ProductReview> ProductReviews { get; } = new HashSet<ProductReview>();
         public ICollection<ProductFavorite> ProductFavorites { get; } = new HashSet<ProductFavorite>();
+        public ICollection<ProductCampaign> ProductCampaigns { get; } = new HashSet<ProductCampaign>();
     }
 }

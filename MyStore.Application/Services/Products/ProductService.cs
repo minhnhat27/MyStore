@@ -179,7 +179,7 @@ namespace MyStore.Application.Services.Products
                 throw new Exception(ex.InnerException?.Message ?? ex.Message);
             }
         }
-
+        
         private Expression<Func<T, bool>> CombineExpressions<T>(Expression<Func<T, bool>> expr1, Expression<Func<T, bool>> expr2)
         {
             var parameter = expr1.Parameters[0];
@@ -584,14 +584,12 @@ namespace MyStore.Application.Services.Products
 
         public async Task<bool> UpdateProductEnableAsync(long id, UpdateEnableRequest request)
         {
-            var product = await _productRepository.FindAsync(id);
-            if (product != null)
-            {
-                product.Enable = request.Enable;
-                await _productRepository.UpdateAsync(product);
-                return product.Enable;
-            }
-            else throw new ArgumentException($"Id {id} " + ErrorMessage.NOT_FOUND);
+            var product = await _productRepository.FindAsync(id)
+                ?? throw new ArgumentException($"Id {id} " + ErrorMessage.NOT_FOUND);
+
+            product.Enable = request.Enable;
+            await _productRepository.UpdateAsync(product);
+            return product.Enable;
         }
 
         public async Task DeleteProductAsync(long id)
@@ -654,6 +652,33 @@ namespace MyStore.Application.Services.Products
                 Page = request.Page,
                 PageSize = request.PageSize,
             };
+        }
+        
+        public async Task DeleteReview(string id)
+        {
+            var rv = await _productReviewRepository.FindAsync(id)
+                 ?? throw new ArgumentException("Id " + ErrorMessage.NOT_FOUND);
+
+            using var transaction = await _transactionRepository.BeginTransactionAsync();
+            try
+            {
+                var product = await _productRepository.FindAsync(rv.ProductId);
+                if (product != null)
+                {
+                    var currentStar = product.Rating * product.RatingCount;
+                    product.Rating = (currentStar - rv.Star) / (product.RatingCount - 1);
+                    product.RatingCount -= 1;
+
+                    await _productRepository.UpdateAsync(product);
+                }
+                await _productReviewRepository.DeleteAsync(rv);
+                await transaction.CommitAsync();
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
     }
 }

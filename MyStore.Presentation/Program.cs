@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using MyStore.Application.ICaching;
 using MyStore.Application.ILibrary;
@@ -38,9 +37,8 @@ using MyStore.Infrastructure.Repositories.Products;
 using MyStore.Infrastructure.Repositories.Users;
 using MyStore.Infrastructure.Storage;
 using MyStore.Presentation.Hubs;
-using MyStore.Presentation.Hubs.Message;
+using MyStore.Presentation.Hubs.ConnectionManager;
 using Net.payOS;
-using System.Security.Claims;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -64,6 +62,7 @@ builder.Services.AddDbContext<MyDbContext>(opt =>
     opt.UseNpgsql(builder.Configuration.GetConnectionString("PostgreSqlConnection"),
         m => m.MigrationsAssembly("MyStore.Infrastructure"));
 });
+builder.Services.Configure<ConversationDbSettings>(builder.Configuration.GetSection("MongoDb"));
 
 builder.Services.AddIdentity<User, IdentityRole>(opt =>
 {
@@ -115,7 +114,8 @@ builder.Services.AddSignalR();
 builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<ISendMailService, SendMailService>();
 builder.Services.AddSingleton<ICache, Cache>();
-builder.Services.AddSingleton<IMessageManager, MessageManager>();
+builder.Services.AddSingleton<IConnectionManager, ConnectionManager>();
+builder.Services.AddSingleton<IConversationRepository, ConversationRepository>();
 
 PayOS payOS = new(builder.Configuration["PayOS:clientId"] ?? throw new Exception(ErrorMessage.ARGUMENT_NULL),
                         builder.Configuration["PayOS:apiKey"] ?? throw new Exception(ErrorMessage.ARGUMENT_NULL),

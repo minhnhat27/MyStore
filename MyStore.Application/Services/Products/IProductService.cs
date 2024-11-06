@@ -21,5 +21,6 @@ namespace MyStore.Application.Services.Products
         Task DeleteProductAsync(long id);
 
         Task<PagedResponse<ReviewDTO>> GetReviews(long id, ReviewFiltersRequest request);
+        Task DeleteReview(string id);
     }
 }

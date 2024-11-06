@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using MyStore.Application.IRepositories;
+using MyStore.Domain.Constants;
 using MyStore.Infrastructure.DbContext;
 using MyStore.Infrastructure.IQueryableExtensions;
 using System.Linq.Expressions;
@@ -26,11 +27,9 @@ namespace MyStore.Infrastructure.Repositories
         }
         public virtual async Task DeleteAsync(params object?[]? keyValues)
         {
-            var entity = await _dbContext.FindAsync<T>(keyValues);
-            if (entity == null)
-            {
-                throw new ArgumentException($"Entity with specified keys not found.");
-            }
+            var entity = await _dbContext.FindAsync<T>(keyValues) 
+                ?? throw new ArgumentException("Id " + ErrorMessage.NOT_FOUND);
+
             _dbContext.Remove(entity);
             await _dbContext.SaveChangesAsync();
         }
@@ -56,7 +55,8 @@ namespace MyStore.Infrastructure.Repositories
             await _dbContext.SaveChangesAsync();
         }
 
-        public virtual async Task<IEnumerable<T>> GetPagedAsync<TKey>(int page, int pageSize, Expression<Func<T, bool>>? expression, Expression<Func<T, TKey>> orderBy)
+        public virtual async Task<IEnumerable<T>> GetPagedAsync<TKey>(int page, int pageSize, 
+            Expression<Func<T, bool>>? expression, Expression<Func<T, TKey>> orderBy)
             => expression == null 
             ? await _dbContext.Set<T>()
                 .OrderBy(orderBy)
@@ -66,7 +66,19 @@ namespace MyStore.Infrastructure.Repositories
                 .OrderBy(orderBy)
                 .Paginate(page, pageSize).ToArrayAsync();
 
-        public virtual async Task<IEnumerable<T>> GetPagedOrderByDescendingAsync<TKey>(int page, int pageSize, Expression<Func<T, bool>>? expression, Expression<Func<T, TKey>> orderByDesc) 
+        //public virtual async Task<IEnumerable<T>> GetPagedNoTrackingAsync<TKey>(int page, int pageSize, 
+        //    Expression<Func<T, bool>>? expression, Expression<Func<T, TKey>> orderBy)
+        //=> expression == null
+        //    ? await _dbContext.Set<T>()
+        //        .OrderBy(orderBy)
+        //        .Paginate(page, pageSize).AsNoTracking().ToArrayAsync()
+        //    : await _dbContext.Set<T>()
+        //        .Where(expression)
+        //        .OrderBy(orderBy)
+        //        .Paginate(page, pageSize).AsNoTracking().ToArrayAsync();
+
+        public virtual async Task<IEnumerable<T>> GetPagedOrderByDescendingAsync<TKey>(int page, int pageSize, 
+            Expression<Func<T, bool>>? expression, Expression<Func<T, TKey>> orderByDesc) 
             => expression == null 
             ? await _dbContext.Set<T>()
                 .OrderByDescending(orderByDesc)
@@ -75,6 +87,20 @@ namespace MyStore.Infrastructure.Repositories
                 .Where(expression)
                 .OrderByDescending(orderByDesc)
                 .Paginate(page, pageSize).ToArrayAsync();
+
+        //public virtual async Task<IEnumerable<T>> GetPagedOrderByDescendingNoTrackingAsync<TKey>(int page, int pageSize, 
+        //    Expression<Func<T, bool>>? expression, Expression<Func<T, TKey>> orderByDesc)
+        //    => expression == null
+        //    ? await _dbContext.Set<T>()
+        //        .OrderByDescending(orderByDesc)
+        //        .Paginate(page, pageSize)
+        //        .AsNoTracking().ToArrayAsync()
+        //    : await _dbContext.Set<T>()
+        //        .Where(expression)
+        //        .OrderByDescending(orderByDesc)
+        //        .Paginate(page, pageSize)
+        //        .AsNoTracking().ToArrayAsync();
+
         public virtual async Task<int> CountAsync()
            => await _dbContext.Set<T>().CountAsync();
         public virtual async Task<int> CountAsync(Expression<Func<T, bool>> expression)

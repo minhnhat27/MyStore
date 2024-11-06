@@ -654,10 +654,16 @@ namespace MyStore.Application.Services.Orders
             }
         }
 
-        public async Task NextOrderStatus(long orderId)
+        public async Task NextOrderStatus(long orderId, DeliveryStatusEnum currentStatus)
         {
             var order = await _orderRepository.FindAsync(orderId) 
                 ?? throw new InvalidOperationException(ErrorMessage.ORDER_NOT_FOUND);
+
+            if(order.OrderStatus != currentStatus)
+            {
+                throw new InvalidOperationException("Trạng thái đơn hàng không hợp lệ.");
+            }
+            
             if (!order.OrderStatus.Equals(DeliveryStatusEnum.Received) 
                 || !order.OrderStatus.Equals(DeliveryStatusEnum.Canceled))
             {

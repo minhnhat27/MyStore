@@ -192,5 +192,24 @@ namespace MyStore.Presentation.Controllers
                 return StatusCode(500, ex.Message);
             }
         }
+
+        [HttpDelete("reviews/{id}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> DeleteReviews(string id)
+        {
+            try
+            {
+                await _productService.DeleteReview(id);
+                return NoContent();
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
     }
 }

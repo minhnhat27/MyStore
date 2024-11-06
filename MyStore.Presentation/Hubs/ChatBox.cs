@@ -1,72 +1,127 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
-using MyStore.Presentation.Hubs.Message;
-using System.Collections.Concurrent;
+using MongoDB.Bson;
+using MongoDB.Driver.Core.Connections;
+using MyStore.Application.DTOs;
+using MyStore.Application.IRepositories;
+using MyStore.Presentation.Hubs.ConnectionManager;
 using System.Security.Claims;
-using static MyStore.Presentation.Hubs.Message.MessageManager;
 
 namespace MyStore.Presentation.Hubs
 {
-    public class MessageResponse
+    public class ConversationIdResponse
     {
-        public string ConnectionId { get; set; }
-        public IEnumerable<MessageStruct> Messages { get; set; }
+        public string? Id { get; set; }
+        public int Unread { get; set; }
+        public bool Closed { get; set; }
     }
 
-    public class ChatBox(IMessageManager messageManager) : Hub
+    public class ChatBox(IConversationRepository conversationRepository, IConnectionManager connectionManager) : Hub
     {
-        private readonly IMessageManager _messageManager = messageManager;
-
-        public async Task SendToAdmin(string message) {
-            _messageManager.TryAddMessage(Context.ConnectionId, message);
-            await Clients.Group("AdminGroup").SendAsync("onAdmin", Context.ConnectionId, message);
-        }
+        private readonly IConversationRepository _conversationRepository = conversationRepository;
+        private readonly IConnectionManager _connectionManager = connectionManager;
+       
         public bool GetAdminOnline()
-            => _messageManager.AdminCount > 0;
+                    => _connectionManager.AdminCount > 0;
 
-        [Authorize(Roles = "Admin")]
-        public async Task SendToUser(string connectionId, string message) {
-            _messageManager.TryAddMessage(connectionId, message, false);
-            await Clients.Client(connectionId).SendAsync("onUser", message);
+        public async Task SendToAdmin(string session, string message, string? image) {
+            await Clients.Group("AdminGroup").SendAsync("onAdmin", session, message, image);
+            await _conversationRepository.AddMessageAsync(session, message, true, image);
+            await _conversationRepository.UpdateUnread(session, false, 1);
         }
 
         [Authorize(Roles = "Admin")]
-        public IEnumerable<string> GetUserConnections()
-            => _messageManager.TryGetAllConnection();
+        public async Task SendToUser(string session, string message, string? image) {
+            if(_connectionManager.TryGetConnectionIdByConversationId(session, out string connectionId))
+            {
+                await Clients.Client(connectionId).SendAsync("onUser", message, image);
+            }
+            await _conversationRepository.AddMessageAsync(session, message, false, image);
+            await _conversationRepository.UpdateUnread(session, true, 1);
+
+        }
 
         [Authorize(Roles = "Admin")]
-        public IEnumerable<MessageResponse> GetMessages()
-            => _messageManager.GetMessages().Select(item => new MessageResponse
+        public async Task<IEnumerable<ConversationIdResponse>> GetConversations()
+            => (await _conversationRepository.GetConversationIdsAsync())
+            .Select(e => new ConversationIdResponse
             {
-                ConnectionId = item.Key,
-                Messages = item.Value,
+                Id = e.Id,
+                Closed = e.Closed,
+                Unread = e.Unread.Admin,
             });
 
-        [Authorize(Roles = "Admin")]
-        public async Task CloseChat(string connectionId)
+        public async Task<string> StartChat()
         {
-            _messageManager.StopChatting(connectionId);
-            await Clients.Client(connectionId).SendAsync("CloseChat", "CLOSE_CHAT");
+            string session = ObjectId.GenerateNewId().ToString();
+            UpdateConnectionId(session);
+            await _conversationRepository.CreateConversationAsync(session);
+            return session;
         }
+        
+        public async Task<ConversationDTO?> GetConversation(string session)
+        {
+            var conversation = await _conversationRepository.FindConversationAsync(session);
+            if (conversation == null)
+            {
+                return null;
+            }
+            var isUser = !Context.User?.FindAll(ClaimTypes.Role).Select(e => e.Value).Contains("Admin") ?? true;
+            await _conversationRepository.UpdateUnread(session, isUser);
+            return new ConversationDTO
+            {
+                Id = conversation.Id,
+                Unread = conversation.Unread.User,
+                Messages = conversation.Messages
+            };
+        }
+
+        [Authorize(Roles = "Admin")]
+        public async Task RemoveChat(string session)
+        {
+            await _conversationRepository.RemoveConversationAsync(session);
+            if (_connectionManager.TryGetConnectionIdByConversationId(session, out string connectionId))
+            {
+                await Clients.Client(connectionId).SendAsync("CLOSE_CHAT", "CLOSE_CHAT");
+                _connectionManager.TryRemoveUserConnection(session);
+            }
+        }
+
+        [Authorize(Roles = "Admin")]
+        public async Task<int> TotalUnread()
+            => await _conversationRepository.GetAdminUnreadAsync();
+
+        public async Task CloseChat(string session)
+        {
+            await Clients.Group("AdminGroup").SendAsync("CLOSE_CHAT", session);
+            await _conversationRepository.CloseChat(session);
+            _connectionManager.TryRemoveUserConnection(session);
+        }
+
+        public void UpdateConnectionId(string session)
+            => _connectionManager.TryAddOrUpdateUserConnection(session, Context.ConnectionId);
+
+        public async Task<int> GetUnread(string session)
+            => await _conversationRepository.GetUnreadAsync(session);
+
+        public async Task ReadMessage(string session)
+            => await _conversationRepository.UpdateUnread(session, true);
 
         public override async Task OnConnectedAsync()
         {
             var roles = Context.User?.FindAll(ClaimTypes.Role).Select(e => e.Value);
             string adminGroup = "AdminGroup";
-
             if (roles != null && roles.Contains("Admin"))
             {
-                _messageManager.TryAddAdmin(Context.ConnectionId);
-                Console.WriteLine("Connected: " + Context.ConnectionId + " " + _messageManager.AdminCount);
+                _connectionManager.TryAddAdmin(Context.ConnectionId);
                 await Groups.AddToGroupAsync(Context.ConnectionId, adminGroup);
             }
-            else
-            {
-                _messageManager.StartChatting(Context.ConnectionId);
-                await Clients.Group(adminGroup).SendAsync("USER_CONNECT", Context.ConnectionId);
-            }
 
-
+            //else
+            //{
+            //    //await _conversationRepository.CreateConversationAsync(Context.ConnectionId);
+            //    //await Clients.Group(adminGroup).SendAsync("USER_CONNECT", Context.ConnectionId);
+            //}
             await base.OnConnectedAsync();
         }
 
@@ -74,18 +129,17 @@ namespace MyStore.Presentation.Hubs
         {
             var roles = Context.User?.FindAll(ClaimTypes.Role).Select(e => e.Value);
             string adminGroup = "AdminGroup";
-
             if (roles != null && roles.Contains("Admin"))
             {
-                _messageManager.TryRemoveAdmin(Context.ConnectionId);
-                Console.WriteLine("Disconnected: " + Context.ConnectionId + " " + _messageManager.AdminCount);
+                _connectionManager.TryRemoveAdmin(Context.ConnectionId);
                 await Groups.RemoveFromGroupAsync(Context.ConnectionId, adminGroup);
             }
-            else
-            {
-                _messageManager.StopChatting(Context.ConnectionId);
-                await Clients.Group(adminGroup).SendAsync("USER_DISCONNECT", Context.ConnectionId);
-            }
+
+            //else
+            //{
+            //    //_messageManager.StopChatting(Context.ConnectionId);
+            //    await Clients.Group(adminGroup).SendAsync("USER_DISCONNECT", Context.ConnectionId);
+            //}
 
             await base.OnDisconnectedAsync(exception);
         }

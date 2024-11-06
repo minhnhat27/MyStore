@@ -45,12 +45,12 @@ namespace MyStore.Presentation.Controllers
 
         [HttpPut("next-status/{orderId}")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> AcceptOrder(long orderId)
+        public async Task<IActionResult> AcceptOrder(long orderId, [FromBody] AcceptOrderRequest request)
         {
             try
             {
-                await _orderService.NextOrderStatus(orderId);
-                return Ok();
+                await _orderService.NextOrderStatus(orderId, request.CurrentStatus);
+                return NoContent();
             }
             catch (InvalidDataException ex)
             {
