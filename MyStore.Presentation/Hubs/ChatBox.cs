@@ -87,6 +87,10 @@ namespace MyStore.Presentation.Hubs
             }
         }
 
+        [Authorize(Roles = "Admin")]
+        public async Task<int> TotalUnread()
+            => await _conversationRepository.GetAdminUnreadAsync();
+
         public async Task CloseChat(string session)
         {
             await Clients.Group("AdminGroup").SendAsync("CLOSE_CHAT", session);
@@ -99,6 +103,9 @@ namespace MyStore.Presentation.Hubs
 
         public async Task<int> GetUnread(string session)
             => await _conversationRepository.GetUnreadAsync(session);
+
+        public async Task ReadMessage(string session)
+            => await _conversationRepository.UpdateUnread(session, true);
 
         public override async Task OnConnectedAsync()
         {

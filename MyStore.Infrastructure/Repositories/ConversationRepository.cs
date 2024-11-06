@@ -90,5 +90,21 @@ namespace MyStore.Infrastructure.Repositories
 
             return isUser ? conversation.Unread.User : conversation.Unread.Admin;
         }
+
+        public async Task<int> GetAdminUnreadAsync()
+        {
+            var totalUnreadAdmin = await _conversationCollection
+                .Aggregate()
+                .Group(
+                    key => true,
+                    g => new
+                    {
+                        TotalUnreadAdmin = g.Sum(conversation => conversation.Unread.Admin)
+                    }
+                )
+                .FirstOrDefaultAsync();
+
+            return totalUnreadAdmin?.TotalUnreadAdmin ?? 0;
+        }
     }
 }

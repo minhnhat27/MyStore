@@ -14,7 +14,7 @@ namespace MyStore.Application.Services.Orders
         Task CancelOrder(long orderId);
         Task<string?> CreateOrder(string userId, OrderRequest request);
 
-        Task NextOrderStatus(long orderId);
+        Task NextOrderStatus(long orderId, DeliveryStatusEnum currentStatus);
         Task OrderToShipping(long orderId, OrderToShippingRequest request);
 
         Task ConfirmDelivery(long orderId, string userId);

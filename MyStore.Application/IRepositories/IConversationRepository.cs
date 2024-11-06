@@ -7,6 +7,7 @@ namespace MyStore.Application.IRepositories
         Task<IEnumerable<Conversations>> GetConversationsAsync();
         Task<IEnumerable<Conversations>> GetConversationIdsAsync();
         Task<int> GetUnreadAsync(string id, bool isUser = true);
+        Task<int> GetAdminUnreadAsync();
         Task CreateConversationAsync(string id);
         Task AddMessageAsync(string id, string message, bool isUser = true, string? image = null);
         Task<Conversations?> FindConversationAsync(string id);

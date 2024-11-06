@@ -37,4 +37,8 @@ namespace MyStore.Application.Request
         public int Height { get; set; }
         public GHNRequiredNoteEnum RequiredNote { get; set; }
     }
+    public class AcceptOrderRequest
+    {
+        public DeliveryStatusEnum CurrentStatus { get; set; }
+    }
 }

@@ -80,8 +80,7 @@ namespace MyStore.Application.Services.Vouchers
             using var transaction = await _transactionRepository.BeginTransactionAsync();
             try
             {
-                var uVouchers = await _userVoucherRepository
-                    .GetAsync(x => x.VoucherCode == code && userIds.Contains(x.UserId));
+                var uVouchers = await _userVoucherRepository.GetAsync(e => e.VoucherCode == code);
 
                 var listDelete = uVouchers
                     .Where(x => x.VoucherCode == code && !userIds.Contains(x.UserId));
@@ -98,7 +97,7 @@ namespace MyStore.Application.Services.Vouchers
                 if (listAdd.Any())
                 {
                     await _userVoucherRepository.AddAsync(listAdd);
-                }
+                } 
                 await transaction.CommitAsync();
                 return userIds;
             }
