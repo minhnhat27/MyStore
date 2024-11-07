@@ -29,8 +29,8 @@ namespace MyStore.Infrastructure.DbContext
         public virtual DbSet<ProductMaterial> ProductMaterials { get; set; }
         public virtual DbSet<Voucher> Vouchers { get; set; }
         public virtual DbSet<UserVoucher> UserVouchers { get; set; }
-        public virtual DbSet<Campaign> Campaigns { get; set; }
-        public virtual DbSet<ProductCampaign> ProductCampaigns { get; set; }
+        public virtual DbSet<FlashSale> FlashSales { get; set; }
+        public virtual DbSet<ProductFlashSale> ProductFlashSales { get; set; }
 
         private void UpdateTimestamps()
         {

@@ -13,6 +13,7 @@ namespace MyStore.Application.DTOs
         public GenderEnum Gender { get; set; }
         public double Price { get; set; }
         public float DiscountPercent { get; set; }
+        public float FlashSaleDiscountPercent { get; set; }
         public string CategoryName { get; set; }
         public string BrandName { get; set; }
         public float Rating { get; set; }

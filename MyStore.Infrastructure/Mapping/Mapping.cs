@@ -58,9 +58,13 @@ namespace MyStore.Infrastructure.Mapping
             //Payment Method
             CreateMap<PaymentMethod, PaymentMethodDTO>().ReverseMap();
 
-            //review
+            //Review
             CreateMap<ProductReview, ReviewDTO>()
                 .ForMember(dest => dest.Username, opt => opt.MapFrom(src => src.User != null ? src.User.Fullname : null));
+
+            //Flash Sale
+            CreateMap<FlashSale, FlashSaleDTO>()
+                .ForMember(dest => dest.ProductQuantity, opt => opt.MapFrom(src => src.ProductFlashSales.Count));
         }
     }
 }

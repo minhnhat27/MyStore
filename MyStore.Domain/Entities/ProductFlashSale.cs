@@ -3,16 +3,15 @@ using System.ComponentModel.DataAnnotations;
 
 namespace MyStore.Domain.Entities
 {
-    [PrimaryKey(nameof(ProductId), nameof(CampaignId))]
-    public class ProductCampaign
+    [PrimaryKey(nameof(ProductId), nameof(FlashSaleId))]
+    public class ProductFlashSale
     {
         public long ProductId { get; set; }
         public Product Product { get; set; }
-        public string CampaignId { get; set; }
-        public Campaign Campaign { get; set; }
+        public string FlashSaleId { get; set; }
+        public FlashSale FlashSale { get; set; }
 
-        [Range(0, 100)]
+        [Range(0, 90)]
         public int DiscountPercent { get; set; }
-        public int Quantity { get; set; }
     }
 }

@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using MyStore.Application.Services;
+using MyStore.Application.Services.Statistics;
 
 namespace MyStore.Presentation.Controllers
 {

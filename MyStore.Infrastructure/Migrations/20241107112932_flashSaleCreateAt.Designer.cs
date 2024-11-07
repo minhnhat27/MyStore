@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MyStore.Infrastructure.DbContext;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MyStore.Infrastructure.Migrations
 {
     [DbContext(typeof(MyDbContext))]
-    partial class MyDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241107112932_flashSaleCreateAt")]
+    partial class flashSaleCreateAt
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -304,7 +307,7 @@ namespace MyStore.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("FlashSales");
+                    b.ToTable("Campaigns");
                 });
 
             modelBuilder.Entity("MyStore.Domain.Entities.Image", b =>
@@ -640,7 +643,7 @@ namespace MyStore.Infrastructure.Migrations
 
                     b.HasIndex("FlashSaleId");
 
-                    b.ToTable("ProductFlashSales");
+                    b.ToTable("ProductCampaigns");
                 });
 
             modelBuilder.Entity("MyStore.Domain.Entities.ProductMaterial", b =>
