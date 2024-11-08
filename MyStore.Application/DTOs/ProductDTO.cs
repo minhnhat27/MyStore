@@ -14,6 +14,7 @@ namespace MyStore.Application.DTOs
         public double Price { get; set; }
         public float DiscountPercent { get; set; }
         public float FlashSaleDiscountPercent { get; set; }
+        //public DateTime? FlashSaleEnd { get; set; }
         public string CategoryName { get; set; }
         public string BrandName { get; set; }
         public float Rating { get; set; }

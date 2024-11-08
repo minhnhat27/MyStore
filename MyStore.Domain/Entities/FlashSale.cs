@@ -10,6 +10,9 @@ namespace MyStore.Domain.Entities
         public DateTime Date { get; set; }
         public DiscountTimeFrame DiscountTimeFrame { get; set; }
 
+        public int TotalSold { get; set; }
+        public double TotalRevenue { get; set; }
+
         public ICollection<ProductFlashSale> ProductFlashSales { get; } = new HashSet<ProductFlashSale>();
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }

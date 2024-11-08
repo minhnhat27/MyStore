@@ -16,7 +16,7 @@
         public const string EXISTED_USER = "Tài khoản đã tồn tại.";
         public const string CANNOT_CANCEL = "Không thể hủy";
         public const string INVALID = "Giá trị không hợp lệ";
-        public const string SOLDOUT = "Sản phẩm đã hết hàng";
+        public const string SOLDOUT = "Đã hết hàng";
         public const string CART_MAXIMUM = "Đã đạt số lượng tối đa trong giỏ hàng";
         public const string BAD_REQUEST = "Yêu cầu không hợp lệ";
         public const string ERROR = "Có lỗi xảy ra, vui lòng thử lại sau.";

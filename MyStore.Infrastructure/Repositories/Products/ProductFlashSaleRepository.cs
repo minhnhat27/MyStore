@@ -17,5 +17,12 @@ namespace MyStore.Infrastructure.Repositories.Products
                     .ThenInclude(e => e.Images)
                 .ToArrayAsync();
         }
+
+        public override async Task<ProductFlashSale?> SingleOrDefaultAsync(Expression<Func<ProductFlashSale, bool>> expression)
+        {
+            return await _dbContext.ProductFlashSales
+                .Include(e => e.FlashSale)
+                .SingleOrDefaultAsync(expression);
+        }
     }
 }

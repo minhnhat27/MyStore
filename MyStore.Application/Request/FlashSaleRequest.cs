@@ -11,6 +11,11 @@ namespace MyStore.Application.Request
     public class ProductDiscountPercent
     {
         public long ProductId { get; set; }
-        public int DiscountPercent { get; set; }
+        public float DiscountPercent { get; set; }
+    }
+
+    public class ProductDiscountPercentWithId : ProductDiscountPercent
+    {
+        public string FlashSaleId { get; set; }
     }
 }

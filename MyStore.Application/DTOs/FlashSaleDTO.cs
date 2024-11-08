@@ -8,5 +8,8 @@ namespace MyStore.Application.DTOs
         public DateTime Date { get; set; }
         public DiscountTimeFrame DiscountTimeFrame { get; set; }
         public int ProductQuantity { get; set; }
+
+        public int TotalSold { get; set; }
+        public double TotalRevenue { get; set; }
     }
 }

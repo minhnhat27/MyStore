@@ -67,6 +67,10 @@ namespace MyStore.Presentation.Controllers
                 await _cartService.AddToCart(userId, request);
                 return Ok(request);
             }
+            catch (InvalidOperationException ex)
+            {
+                return NotFound(ex.Message);
+            }
             catch (Exception ex)
             {
                 return StatusCode(500, ex.Message);

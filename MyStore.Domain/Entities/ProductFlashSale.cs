@@ -11,7 +11,7 @@ namespace MyStore.Domain.Entities
         public string FlashSaleId { get; set; }
         public FlashSale FlashSale { get; set; }
 
-        [Range(0, 90)]
-        public int DiscountPercent { get; set; }
+        [Range(0, 100)]
+        public float DiscountPercent { get; set; }
     }
 }

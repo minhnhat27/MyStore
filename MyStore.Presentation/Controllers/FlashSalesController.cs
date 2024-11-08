@@ -49,7 +49,7 @@ namespace MyStore.Presentation.Controllers
         {
             try
             {
-                var result = await _flashSaleService.GetFlashSaleThisTime();
+                var result = await _flashSaleService.GetFlashSaleProductsThisTime();
                 return Ok(result);
             }
             catch (Exception ex)

@@ -172,6 +172,7 @@ namespace MyStore.Application.Services.Users
             var favorites = await _productFavoriteRepository.GetAsync(e => e.UserId == userId);
             return favorites.Select(e => e.ProductId);
         }
+        
         public async Task<PagedResponse<ProductDTO>> GetProductFavorites(string userId, PageRequest page)
         {
             var favorites = await _productFavoriteRepository

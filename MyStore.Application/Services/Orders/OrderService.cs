@@ -14,6 +14,7 @@ using MyStore.Application.IStorage;
 using MyStore.Application.ModelView;
 using MyStore.Application.Request;
 using MyStore.Application.Response;
+using MyStore.Application.Services.FlashSales;
 using MyStore.Application.Services.Payments;
 using MyStore.Domain.Constants;
 using MyStore.Domain.Entities;
@@ -50,6 +51,9 @@ namespace MyStore.Application.Services.Orders
         private readonly IVNPayLibrary _vnPayLibrary;
         private readonly IServiceScopeFactory _serviceScopeFactory;
 
+        private readonly IFlashSaleService _flashSaleService;
+        private readonly IFlashSaleRepository _flashSaleRepository;
+
         private readonly string reviewImagesPath = "assets/images/reviews";
 
         public OrderService(IOrderRepository orderRepository,
@@ -63,6 +67,8 @@ namespace MyStore.Application.Services.Orders
             IProductReviewRepository productReviewRepository,
             IVoucherRepository voucherRepository,
             IPaymentMethodRepository methodRepository,
+            IFlashSaleService flashSaleService,
+            IFlashSaleRepository flashSaleRepository,
             ICache cache, IVNPayLibrary vnPayLibrary, IFileStorage fileStorage,
             IConfiguration configuration, IServiceScopeFactory serviceScopeFactory,
             IUserVoucherRepository userVoucherRepository, IMapper mapper)
@@ -83,6 +89,8 @@ namespace MyStore.Application.Services.Orders
 
             _configuration = configuration;
             _serviceScopeFactory = serviceScopeFactory;
+            _flashSaleService = flashSaleService;
+            _flashSaleRepository = flashSaleRepository;
 
             _mapper = mapper;
             _cache = cache;
@@ -174,22 +182,19 @@ namespace MyStore.Application.Services.Orders
 
         public async Task<OrderDetailsResponse> GetOrderDetail(long orderId)
         {
-            var order = await _orderRepository.SingleOrDefaultAsyncInclude(e => e.Id == orderId);
-            if (order != null)
-            {
-                return _mapper.Map<OrderDetailsResponse>(order);
-            }
-            else throw new InvalidOperationException(ErrorMessage.ORDER_NOT_FOUND);
+            var order = await _orderRepository.SingleOrDefaultAsyncInclude(e => e.Id == orderId)
+                ?? throw new InvalidOperationException(ErrorMessage.ORDER_NOT_FOUND);
+
+            return _mapper.Map<OrderDetailsResponse>(order);
         }
 
         public async Task<OrderDetailsResponse> GetOrderDetail(long orderId, string userId)
         {
-            var order = await _orderRepository.SingleOrDefaultAsyncInclude(e => e.Id == orderId && e.UserId == userId);
-            if (order != null)
-            {
-                return _mapper.Map<OrderDetailsResponse>(order);
-            }
-            else throw new InvalidOperationException(ErrorMessage.ORDER_NOT_FOUND);
+            var order = await _orderRepository
+                .SingleOrDefaultAsyncInclude(e => e.Id == orderId && e.UserId == userId)
+                    ?? throw new InvalidOperationException(ErrorMessage.ORDER_NOT_FOUND);
+
+            return _mapper.Map<OrderDetailsResponse>(order);
         }
 
         public async Task<PagedResponse<OrderResponse>> GetOrdersByUserId(string userId, PageRequest page)
@@ -244,31 +249,56 @@ namespace MyStore.Application.Services.Orders
                 double total = 0;
                 double voucherDiscount = 0;
 
-                var cartItems = await _cartItemRepository.GetAsync(e => e.UserId == userId && request.CartIds.Contains(e.Id));
+                var cartItems = await _cartItemRepository
+                    .GetAsync(e => e.UserId == userId && request.CartIds.Contains(e.Id));
 
                 var lstpSizeUpdate = new List<ProductSize>();
                 var lstProductUpdate = new List<Product>();
                 var lstDetails = new List<OrderDetail>();
+                var lstFlashSaleUpdate = new List<FlashSale>();
+
+                var listFlashSaleDiscount = await _flashSaleService.GetFlashSaleProductsWithDiscountThisTime();
 
                 foreach (var cartItem in cartItems)
                 {
+                    if (!cartItem.Product.Enable)
+                    {
+                        throw new Exception($"{cartItem.Product.Name} không tồn tại hoặc đã bị ẩn.");
+                    }
+
                     var size = await _productSizeRepository
                         .SingleAsyncInclude(e => e.ProductColorId == cartItem.ColorId && e.SizeId == cartItem.SizeId);
 
                     if (size.InStock < cartItem.Quantity)
                     {
-                        throw new Exception(ErrorMessage.SOLDOUT);
+                        throw new Exception($"{cartItem.Product.Name} " + ErrorMessage.SOLDOUT);
+                    }
+                    var discount = cartItem.Product.DiscountPercent;
+
+                    var flashSaleDiscount = listFlashSaleDiscount.SingleOrDefault(e => e.ProductId == cartItem.ProductId);
+                    if(flashSaleDiscount != null)
+                    {
+                        discount = flashSaleDiscount.DiscountPercent;
                     }
 
-                    double price = cartItem.Product.Price - cartItem.Product.Price * (cartItem.Product.DiscountPercent / 100.0);
-                    price *= cartItem.Quantity;
-                    total += price;
+                    double price = cartItem.Product.Price - cartItem.Product.Price * (discount / 100.0);
+                    //price *= cartItem.Quantity;
+                    total += price * cartItem.Quantity;
 
                     cartItem.Product.Sold += cartItem.Quantity;
                     lstProductUpdate.Add(cartItem.Product);
 
                     size.InStock -= cartItem.Quantity;
                     lstpSizeUpdate.Add(size);
+
+                    if(flashSaleDiscount != null)
+                    {
+                        var flashSale = await _flashSaleRepository
+                            .SingleAsync(e => e.Id == flashSaleDiscount.FlashSaleId);
+                        flashSale.TotalSold += cartItem.Quantity;
+                        flashSale.TotalRevenue += price * cartItem.Quantity;
+                        lstFlashSaleUpdate.Add(flashSale);
+                    }
 
                     lstDetails.Add(new OrderDetail
                     {
@@ -323,6 +353,12 @@ namespace MyStore.Application.Services.Orders
                 await _productRepository.UpdateAsync(lstProductUpdate);
                 await _orderDetailRepository.AddAsync(lstDetails);
                 await _cartItemRepository.DeleteRangeAsync(cartItems);
+
+                if (lstFlashSaleUpdate.Any())
+                {
+                    await _flashSaleRepository.UpdateAsync(lstFlashSaleUpdate);
+                }
+
                 if (voucher != null)
                 {
                     voucher.Used = true;

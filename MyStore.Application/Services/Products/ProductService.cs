@@ -14,6 +14,7 @@ using System.Linq.Expressions;
 using System.Text.RegularExpressions;
 using System.Text;
 using OpenCvSharp;
+using MyStore.Application.Services.FlashSales;
 
 namespace MyStore.Application.Services.Products
 {
@@ -27,15 +28,23 @@ namespace MyStore.Application.Services.Products
         private readonly IImageRepository _imageRepository;
         private readonly ITransactionRepository _transactionRepository;
 
+        private readonly IFlashSaleService _flashSaleService;
+
         private readonly IFileStorage _fileStorage;
         private readonly IMapper _mapper;
 
         private readonly string path = "assets/images/products";
 
-        public ProductService(IProductRepository productRepository, IProductSizeRepository productSizeRepository,
-                              IProductColorRepository productColorRepository, IProductReviewRepository productReviewRepository,
-                              IProductMaterialRepository productMaterialRepository, IImageRepository imageRepository,
-                              IFileStorage fileStorage, ITransactionRepository transactionRepository, IMapper mapper)
+        public ProductService(IProductRepository productRepository,
+                              IProductSizeRepository productSizeRepository,
+                              IFlashSaleService flashSaleService,
+                              IProductColorRepository productColorRepository,
+                              IProductReviewRepository productReviewRepository,
+                              IProductMaterialRepository productMaterialRepository,
+                              IImageRepository imageRepository,
+                              IFileStorage fileStorage,
+                              ITransactionRepository transactionRepository,
+                              IMapper mapper)
         {
             _productRepository = productRepository;
             _productSizeRepository = productSizeRepository;
@@ -46,6 +55,8 @@ namespace MyStore.Application.Services.Products
             _fileStorage = fileStorage;
             _transactionRepository = transactionRepository;
             _mapper = mapper;
+
+            _flashSaleService = flashSaleService;
         }
 
         public async Task<ProductDTO> CreateProductAsync(ProductRequest request, IFormFileCollection images)
@@ -166,6 +177,20 @@ namespace MyStore.Application.Services.Products
 
                 var res = _mapper.Map<IEnumerable<ProductDTO>>(products);
 
+                var productFlashSale = await _flashSaleService.GetFlashSaleProductsThisTime();
+                if (productFlashSale.Any())
+                {
+                    res = res.Select(e =>
+                    {
+                        var saleProduct = productFlashSale.FirstOrDefault(s => s.Id == e.Id);
+                        if (saleProduct != null)
+                        {
+                            e.FlashSaleDiscountPercent = saleProduct.FlashSaleDiscountPercent;
+                        }
+                        return e;
+                    });
+                }
+
                 return new PagedResponse<ProductDTO>
                 {
                     Items = res,
@@ -226,6 +251,12 @@ namespace MyStore.Application.Services.Products
                 {
                     expression = CombineExpressions(expression, e => e.DiscountPercent > 0);
                 }
+
+                //if (filters.FlashSale != null && filters.FlashSale == true)
+                //{
+                //    expression = CombineExpressions(expression, e => e.ProductFlashSales.Any());
+                //}
+
                 if (filters.Rating != null)
                 {
                     expression = CombineExpressions(expression, e => e.Rating >= filters.Rating);
@@ -266,6 +297,21 @@ namespace MyStore.Application.Services.Products
                 };
                 var res = _mapper.Map<IEnumerable<ProductDTO>>(products);
 
+
+                var productFlashSale = await _flashSaleService.GetFlashSaleProductsThisTime();
+                if (productFlashSale.Any())
+                {
+                    res = res.Select(e =>
+                    {
+                        var saleProduct = productFlashSale.FirstOrDefault(s => s.Id == e.Id);
+                        if (saleProduct != null)
+                        {
+                            e.FlashSaleDiscountPercent = saleProduct.FlashSaleDiscountPercent;
+                        }
+                        return e;
+                    });
+                }
+
                 return new PagedResponse<ProductDTO>
                 {
                     Items = res,
@@ -274,9 +320,9 @@ namespace MyStore.Application.Services.Products
                     TotalItems = totalProduct
                 };
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                throw new Exception(ex.Message);
+                throw;
             }
         }
 
@@ -288,11 +334,25 @@ namespace MyStore.Application.Services.Products
                 x => x.ProductFavorites.Count);
             var total = await _productRepository.CountAsync(e => e.Enable);
 
-            var items = _mapper.Map<IEnumerable<ProductDTO>>(products);
+            var res = _mapper.Map<IEnumerable<ProductDTO>>(products);
+
+            var productFlashSale = await _flashSaleService.GetFlashSaleProductsThisTime();
+            if (productFlashSale.Any())
+            {
+                res = res.Select(e =>
+                {
+                    var saleProduct = productFlashSale.FirstOrDefault(s => s.Id == e.Id);
+                    if (saleProduct != null)
+                    {
+                        e.FlashSaleDiscountPercent = saleProduct.FlashSaleDiscountPercent;
+                    }
+                    return e;
+                });
+            }
 
             return new PagedResponse<ProductDTO>
             {
-                Items = items,
+                Items = res,
                 Page = page,
                 PageSize = pageSize,
                 TotalItems = total
@@ -332,7 +392,23 @@ namespace MyStore.Application.Services.Products
 
                 products = productList.Where(e => IsMatchingSearchCriteriaWithoutTones(e.Name, inputWords)).Take(5);
             }
-            return _mapper.Map<IEnumerable<ProductDTO>>(products);
+            var res = _mapper.Map<IEnumerable<ProductDTO>>(products);
+
+            var productFlashSale = await _flashSaleService.GetFlashSaleProductsThisTime();
+            if (productFlashSale.Any())
+            {
+                res = res.Select(e =>
+                {
+                    var saleProduct = productFlashSale.FirstOrDefault(s => s.Id == e.Id);
+                    if (saleProduct != null)
+                    {
+                        e.FlashSaleDiscountPercent = saleProduct.FlashSaleDiscountPercent;
+                    }
+                    return e;
+                });
+            }
+
+            return res;
         }
 
         private bool CompareImages(Mat grayInputImage, Mat compareImage, double threshold = 1000.0)
@@ -422,6 +498,12 @@ namespace MyStore.Application.Services.Products
                 res.ImageUrls = product.Images.Select(e => e.ImageUrl);
                 res.MaterialNames = product.Materials.Select(e => e.Material.Name);
 
+                var newDiscount = await _flashSaleService.GetDiscountByProductIdThisTime(id);
+                if (newDiscount != null)
+                {
+                    res.FlashSaleDiscountPercent = newDiscount.Value;
+                }
+
                 return res;
             }
             else throw new ArgumentException($"Id {id} " + ErrorMessage.NOT_FOUND);
@@ -429,157 +511,187 @@ namespace MyStore.Application.Services.Products
 
         public async Task<ProductDTO> UpdateProductAsync(long id, ProductRequest request, IFormFileCollection images)
         {
-            var product = await _productRepository.SingleOrDefaultAsyncInclude(e => e.Id == id);
-            if (product != null)
+            var product = await _productRepository.SingleOrDefaultAsyncInclude(e => e.Id == id)
+                ?? throw new ArgumentException($"Id {id} " + ErrorMessage.NOT_FOUND);
+            using var transaction = await _transactionRepository.BeginTransactionAsync();
+            try
             {
-                using var transaction = await _transactionRepository.BeginTransactionAsync();
-                try
+                product.Name = request.Name;
+                product.Description = request.Description;
+                product.Price = request.Price;
+                product.Gender = request.Gender;
+                product.CategoryId = request.CategoryId;
+                product.BrandId = request.BrandId;
+                product.Enable = request.Enable;
+                product.DiscountPercent = request.DiscountPercent;
+
+                var productPath = Path.Combine(path, product.Id.ToString());
+
+                List<string> colorFileNames = new();
+                List<IFormFile> colorImages = new();
+
+                List<string> listImageDelete = new();
+
+                List<ProductSize> productSizes = new();
+                List<ProductColor> pColorDelete = new();
+                var oldProductColors = await _productColorRepository.GetAsync(e => e.ProductId == product.Id);
+
+                var oldColor = request.ColorSizes.Select(e => e.Id);
+                if (oldColor == null || !oldColor.Any())
                 {
-                    product.Name = request.Name;
-                    product.Description = request.Description;
-                    product.Price = request.Price;
-                    product.Gender = request.Gender;
-                    product.CategoryId = request.CategoryId;
-                    product.BrandId = request.BrandId;
-                    product.Enable = request.Enable;
-                    product.DiscountPercent = request.DiscountPercent;
+                    pColorDelete.AddRange(oldProductColors);
+                }
+                else
+                {
+                    var colorDel = oldProductColors.Where(old => !request.ColorSizes.Select(e => e.Id).Contains(old.Id));
+                    pColorDelete.AddRange(colorDel);
 
-                    var productPath = path + "/" + product.Id;
+                    //cập nhật số lượng size cũ
+                    var oldIds = request.ColorSizes.Where(e => e.Id != null).Select(e => e.Id);
+                    var colorUpdate = oldProductColors.Where(old => oldIds.Contains(old.Id));
 
-                    List<string> colorFileNames = new();
-                    List<IFormFile> colorImages = new();
-                    List<ProductSize> productSizes = new();
-
-                    List<ProductColor> pColorDelete = new();
-                    var oldProductColors = await _productColorRepository.GetAsync(e => e.ProductId == product.Id);
-
-                    var oldColor = request.ColorSizes.Select(e => e.Id);
-                    if (oldColor == null || !oldColor.Any())
+                    foreach (var color in colorUpdate)
                     {
-                        pColorDelete.AddRange(oldProductColors);
-                    }
-                    else
-                    {
-                        var colorDel = oldProductColors.Where(old => !request.ColorSizes.Select(e => e.Id).Contains(old.Id));
-                        pColorDelete.AddRange(colorDel);
-
-                        //cập nhật số lượng size cũ
-                        var oldIds = request.ColorSizes.Where(e => e.Id != null).Select(e => e.Id);
-                        var colorUpdate = oldProductColors.Where(old => oldIds.Contains(old.Id));
-
-                        foreach (var color in colorUpdate)
+                        var matchingColor = request.ColorSizes.Single(e => e.Id == color.Id);
+                        var newImage = request.ColorSizes.SingleOrDefault(e => e.Id == color.Id);
+                        if (newImage != null)
                         {
-                            var matchingColor = request.ColorSizes.Single(e => e.Id == color.Id);
-                            foreach (var size in color.ProductSizes)
+                            color.ColorName = newImage.ColorName;
+                            if (newImage.Image != null)
                             {
-                                var matchingSize = matchingColor.SizeInStocks.SingleOrDefault(s => s.SizeId == size.SizeId);
-                                if(matchingSize == null)
-                                {
-                                    await _productSizeRepository.DeleteAsync(matchingColor.Id, size.SizeId);
-                                }
-                                else
-                                {
-                                    size.InStock = matchingSize.InStock;
-                                }
-                            }
-                        }
-
-                    }
-                    //xóa màu
-                    _fileStorage.Delete(pColorDelete.Select(e => e.ImageUrl));
-                    await _productColorRepository.DeleteRangeAsync(pColorDelete);
-
-                    //thêm màu
-                    var newColorImage = request.ColorSizes.Where(e => e.Image != null && e.Id == null);
-                    if (newColorImage.Any())
-                    {
-                        foreach (var color in newColorImage)
-                        {
-                            var name = "";
-                            if (color.Image != null)
-                            {
-                                name = Guid.NewGuid().ToString() + Path.GetExtension(color.Image.FileName);
+                                var name = "";
+                                name = Guid.NewGuid().ToString() + Path.GetExtension(newImage.Image.FileName);
                                 colorFileNames.Add(name);
-                                colorImages.Add(color.Image);
+                                colorImages.Add(newImage.Image);
+                                listImageDelete.Add(color.ImageUrl);
+
+                                color.ImageUrl = Path.Combine(productPath, name);
                             }
-
-                            var productColor = new ProductColor
-                            {
-                                ColorName = color.ColorName,
-                                ProductId = product.Id,
-                                ImageUrl = Path.Combine(productPath, name)
-                            };
-
-                            await _productColorRepository.AddAsync(productColor);
-
-                            var sizes = color.SizeInStocks.Select(size =>
-                            {
-                                return new ProductSize
-                                {
-                                    ProductColorId = productColor.Id,
-                                    SizeId = size.SizeId,
-                                    InStock = size.InStock,
-                                };
-                            });
-                            productSizes.AddRange(sizes);
                         }
-                        await _productSizeRepository.AddAsync(productSizes);
-                        await _fileStorage.SaveAsync(productPath, colorImages, colorFileNames);
-                    }
 
-                    var pMaterials = await _productMaterialRepository.GetAsync(e => e.ProductId == product.Id);
-                    await _productMaterialRepository.DeleteRangeAsync(pMaterials);
-
-                    var productMaterials = request.MaterialIds.Select(e => new ProductMaterial
-                    {
-                        ProductId = id,
-                        MaterialId = e
-                    });
-                    await _productMaterialRepository.AddAsync(productMaterials);
-
-                    List<Image> imageDelete = new();
-                    var oldImgs = await _imageRepository.GetImageByProductIdAsync(id);
-                    if (request.ImageUrls == null || !request.ImageUrls.Any())
-                    {
-                        imageDelete.AddRange(oldImgs);
-                    }
-                    else
-                    {
-                        var imgsToDelete = oldImgs.Where(old => !request.ImageUrls.Contains(old.ImageUrl));
-                        imageDelete.AddRange(imgsToDelete);
-                    }
-                    _fileStorage.Delete(imageDelete.Select(e => e.ImageUrl));
-                    await _imageRepository.DeleteRangeAsync(imageDelete);
-
-                    if (images.Count > 0)
-                    {
-                        List<string> fileNames = new();
-                        var imgs = images.Select(file =>
+                        foreach (var size in color.ProductSizes)
                         {
-                            var name = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
-                            fileNames.Add(name);
-                            var image = new Image()
+                            var matchingSize = matchingColor.SizeInStocks.SingleOrDefault(s => s.SizeId == size.SizeId);
+                            if (matchingSize == null)
                             {
-                                ProductId = id,
-                                ImageUrl = Path.Combine(productPath, name),
-                            };
-                            return image;
-                        });
-                        await _imageRepository.AddAsync(imgs);
-                        await _fileStorage.SaveAsync(productPath, images, fileNames);
+                                await _productSizeRepository.DeleteAsync(matchingColor.Id, size.SizeId);
+                            }
+                            else
+                            {
+                                size.InStock = matchingSize.InStock;
+                            }
+                        }
                     }
+                    if (colorUpdate.Any())
+                    {
+                        await _productColorRepository.UpdateAsync(colorUpdate);
+                    }
+                }
+                //xóa màu
+                _fileStorage.Delete(pColorDelete.Select(e => e.ImageUrl));
+                await _productColorRepository.DeleteRangeAsync(pColorDelete);
 
-                    await _productRepository.UpdateAsync(product);
-                    await transaction.CommitAsync();
-                    return _mapper.Map<ProductDTO>(product);
-                }
-                catch (Exception ex)
+                //thêm màu
+                var newColorImage = request.ColorSizes.Where(e => e.Image != null && e.Id == null);
+                if (newColorImage.Any())
                 {
-                    await transaction.RollbackAsync();
-                    throw new Exception(ex.InnerException?.Message ?? ex.Message);
+                    foreach (var color in newColorImage)
+                    {
+                        var name = "";
+                        if (color.Image != null)
+                        {
+                            name = Guid.NewGuid().ToString() + Path.GetExtension(color.Image.FileName);
+                            colorFileNames.Add(name);
+                            colorImages.Add(color.Image);
+                        }
+
+                        var productColor = new ProductColor
+                        {
+                            ColorName = color.ColorName,
+                            ProductId = product.Id,
+                            ImageUrl = Path.Combine(productPath, name)
+                        };
+
+                        await _productColorRepository.AddAsync(productColor);
+
+                        var sizes = color.SizeInStocks.Select(size =>
+                        {
+                            return new ProductSize
+                            {
+                                ProductColorId = productColor.Id,
+                                SizeId = size.SizeId,
+                                InStock = size.InStock,
+                            };
+                        });
+                        productSizes.AddRange(sizes);
+                    }
+                    await _productSizeRepository.AddAsync(productSizes);
                 }
+
+                var pMaterials = await _productMaterialRepository.GetAsync(e => e.ProductId == product.Id);
+                await _productMaterialRepository.DeleteRangeAsync(pMaterials);
+
+                var productMaterials = request.MaterialIds.Select(e => new ProductMaterial
+                {
+                    ProductId = id,
+                    MaterialId = e
+                });
+                await _productMaterialRepository.AddAsync(productMaterials);
+
+                List<Image> imageDelete = new();
+                var oldImgs = await _imageRepository.GetImageByProductIdAsync(id);
+                if (request.ImageUrls == null || !request.ImageUrls.Any())
+                {
+                    imageDelete.AddRange(oldImgs);
+                }
+                else
+                {
+                    var imgsToDelete = oldImgs.Where(old => !request.ImageUrls.Contains(old.ImageUrl));
+                    imageDelete.AddRange(imgsToDelete);
+                }
+                if(imageDelete.Any())
+                {
+                    listImageDelete.AddRange(imageDelete.Select(e => e.ImageUrl));
+                    await _imageRepository.DeleteRangeAsync(imageDelete);
+                }
+
+                if (images.Count > 0)
+                {
+                    List<string> fileNames = new();
+                    var imgs = images.Select(file =>
+                    {
+                        var name = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
+                        fileNames.Add(name);
+                        var image = new Image()
+                        {
+                            ProductId = id,
+                            ImageUrl = Path.Combine(productPath, name),
+                        };
+                        return image;
+                    });
+                    await _imageRepository.AddAsync(imgs);
+                    await _fileStorage.SaveAsync(productPath, images, fileNames);
+                }
+
+                if (listImageDelete.Any())
+                {
+                    _fileStorage.Delete(listImageDelete);
+                }
+
+                if (colorImages.Any())
+                {
+                    await _fileStorage.SaveAsync(productPath, colorImages, colorFileNames);
+                }
+
+                await _productRepository.UpdateAsync(product);
+                await transaction.CommitAsync();
+                return _mapper.Map<ProductDTO>(product);
             }
-            else throw new ArgumentException($"Id {id} " + ErrorMessage.NOT_FOUND);
+            catch (Exception)
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         public async Task<bool> UpdateProductEnableAsync(long id, UpdateEnableRequest request)
