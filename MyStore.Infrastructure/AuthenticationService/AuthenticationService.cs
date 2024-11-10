@@ -15,7 +15,6 @@ using System.Text;
 using MyStore.Application.DTOs;
 using MyStore.Domain.Enumerations;
 using MyStore.Application.IRepositories;
-using Newtonsoft.Json.Linq;
 
 namespace MyStore.Infrastructure.AuthenticationService
 {
@@ -44,9 +43,13 @@ namespace MyStore.Infrastructure.AuthenticationService
             _transaction = transactionRepository;
         }
 
-        private async Task<string> CreateJwtToken(User user, DateTime exp, bool isRefreshToken = false)
+        private async Task<JwtResponse> CreateJwtToken(User user)
         {
             var roles = await _userManager.GetRolesAsync(user);
+            var exps = DateTime.Now.AddHours(24);
+
+            var isAdmin = roles.Contains("Admin");
+
             var claims = new List<Claim>
                 {
                     new(JwtRegisteredClaimNames.Jti, user.Id),
@@ -57,19 +60,27 @@ namespace MyStore.Infrastructure.AuthenticationService
             {
                 claims.Add(new Claim(ClaimTypes.Role, role));
             }
-            if (isRefreshToken)
-            {
-                claims.Add(new Claim(ClaimTypes.Version, "Refresh Token"));
-            }
+            //if (isRefreshToken)
+            //{
+            //    claims.Add(new Claim(ClaimTypes.Version, "Refresh Token"));
+            //}
 
             var securityKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_configuration["JWT:SecretKey"] ?? ""));
             var jwtToken = new JwtSecurityToken(
                     issuer: _configuration["JWT:Issuer"],
                     audience: _configuration["JWT:Audience"],
                     claims,
-                    expires: exp,
+                    expires: exps,
                     signingCredentials: new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256));
-            return new JwtSecurityTokenHandler().WriteToken(jwtToken);
+
+            var accessToken = new JwtSecurityTokenHandler().WriteToken(jwtToken);
+
+            return new JwtResponse
+            {
+                AccessToken = accessToken,
+                Expires = exps,
+                IsAdmin = isAdmin
+            };
         }
 
         private async Task<User> GetUserExistsByUserName(string username)
@@ -117,22 +128,19 @@ namespace MyStore.Infrastructure.AuthenticationService
             _cache.Remove(cache);
         }
 
-        public async Task<JwtResponse> Login(string username, string password)
+        public async Task<LoginResponse> Login(string username, string password)
         {
             var result = await _signInManager.PasswordSignInAsync(username, password, false, false);
             if (result.Succeeded)
             {
                 var user = await GetUserExistsByUserName(username);
+                var accessToken = await CreateJwtToken(user);
 
-                var expires = DateTime.Now.AddHours(24);
-                var accessToken = await CreateJwtToken(user, expires);
-                //var refreshToken = await CreateJwtToken(user, true);
-
-                return new JwtResponse
+                return new LoginResponse
                 {
-                    AccessToken = accessToken,
-                    //RefreshToken = refreshToken,
-                    Expires = expires,
+                    AccessToken = accessToken.AccessToken,
+                    IsAdmin = accessToken.IsAdmin,
+                    Expires = accessToken.Expires,
                     Fullname = user.Fullname,
                     Session = user.ConcurrencyStamp ?? user.Id,
                 };
@@ -140,7 +148,7 @@ namespace MyStore.Infrastructure.AuthenticationService
             throw new InvalidDataException(ErrorMessage.INCORRECT_PASSWORD);
         }
 
-        public async Task<JwtResponse> LoginGoogle(string credentials)
+        public async Task<LoginResponse> LoginGoogle(string credentials)
         {
             var payload = await GoogleJsonWebSignature.ValidateAsync(credentials);
 
@@ -157,21 +165,20 @@ namespace MyStore.Infrastructure.AuthenticationService
                 await _userManager.AddLoginAsync(user, userInfo);
             }
 
-            var expires = DateTime.Now.AddHours(24);
-            var myAccessToken = await CreateJwtToken(user, expires);
-            //var refreshToken = await CreateJwtToken(user, true);
+            var myAccessToken = await CreateJwtToken(user);
 
-            return new JwtResponse
+            return new LoginResponse
             {
-                AccessToken = myAccessToken,
-                Expires = expires,
+                AccessToken = myAccessToken.AccessToken,
+                Expires = myAccessToken.Expires,
+                IsAdmin = myAccessToken.IsAdmin,
                 //RefreshToken = refreshToken,
                 Fullname = user.Fullname,
                 Session = user.ConcurrencyStamp ?? user.Id
             };
         }
 
-        public async Task<JwtResponse> LoginFacebook(string providerId)
+        public async Task<LoginResponse> LoginFacebook(string providerId)
         {
             var provider = ExternalLoginEnum.FACEBOOK.ToString();
 
@@ -184,13 +191,13 @@ namespace MyStore.Infrastructure.AuthenticationService
                 throw new InvalidDataException(ErrorMessage.LOGIN_FAILD);
             }
 
-            var expires = DateTime.Now.AddHours(24);
-            var myAccessToken = await CreateJwtToken(user, expires);
+            var myAccessToken = await CreateJwtToken(user);
 
-            return new JwtResponse
+            return new LoginResponse
             {
-                AccessToken = myAccessToken,
-                Expires = expires,
+                AccessToken = myAccessToken.AccessToken,
+                Expires = myAccessToken.Expires,
+                IsAdmin = myAccessToken.IsAdmin,
                 Fullname = user.Fullname,
                 Session = user.ConcurrencyStamp ?? user.Id
             };

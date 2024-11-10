@@ -177,7 +177,7 @@ namespace MyStore.Application.Services.Products
 
                 var res = _mapper.Map<IEnumerable<ProductDTO>>(products);
 
-                var productFlashSale = await _flashSaleService.GetFlashSaleProductsThisTime();
+                var productFlashSale = (await _flashSaleService.GetFlashSaleProductsThisTime()).Products;
                 if (productFlashSale.Any())
                 {
                     res = res.Select(e =>
@@ -298,7 +298,7 @@ namespace MyStore.Application.Services.Products
                 var res = _mapper.Map<IEnumerable<ProductDTO>>(products);
 
 
-                var productFlashSale = await _flashSaleService.GetFlashSaleProductsThisTime();
+                var productFlashSale = (await _flashSaleService.GetFlashSaleProductsThisTime()).Products;
                 if (productFlashSale.Any())
                 {
                     res = res.Select(e =>
@@ -336,7 +336,7 @@ namespace MyStore.Application.Services.Products
 
             var res = _mapper.Map<IEnumerable<ProductDTO>>(products);
 
-            var productFlashSale = await _flashSaleService.GetFlashSaleProductsThisTime();
+            var productFlashSale = (await _flashSaleService.GetFlashSaleProductsThisTime()).Products;
             if (productFlashSale.Any())
             {
                 res = res.Select(e =>
@@ -394,7 +394,7 @@ namespace MyStore.Application.Services.Products
             }
             var res = _mapper.Map<IEnumerable<ProductDTO>>(products);
 
-            var productFlashSale = await _flashSaleService.GetFlashSaleProductsThisTime();
+            var productFlashSale = (await _flashSaleService.GetFlashSaleProductsThisTime()).Products;
             if (productFlashSale.Any())
             {
                 res = res.Select(e =>
@@ -502,6 +502,7 @@ namespace MyStore.Application.Services.Products
                 if (newDiscount != null)
                 {
                     res.FlashSaleDiscountPercent = newDiscount.Value;
+                    res.EndFlashSale = _flashSaleService.GetEndFlashSale();
                 }
 
                 return res;

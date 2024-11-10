@@ -16,7 +16,7 @@ namespace MyStore.Application.Response
         public int BrandId { get; set; }
         public IEnumerable<int> MaterialIds { get; set; }
         public IEnumerable<string> MaterialNames { get; set; }
-
+        public DateTime? EndFlashSale { get; set; }
         public string? Description { get; set; }
         public IEnumerable<ColorSizeResponse> ColorSizes { get; set; }
         public IEnumerable<string> ImageUrls { get; set; }

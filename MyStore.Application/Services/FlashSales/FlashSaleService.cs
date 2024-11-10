@@ -44,7 +44,8 @@ namespace MyStore.Application.Services.FlashSales
         }
         public async Task<IEnumerable<ProductDTO>> GetProductsByFlashSale(string id)
         {
-            var productFlashSales = await _productFlashSaleRepository.GetAsync(e => e.FlashSaleId == id);
+            var productFlashSales = await _productFlashSaleRepository
+                .GetAsync(e => e.FlashSaleId == id && e.Product.Enable);
             var products = productFlashSales.Select(e => e.Product);
 
             var res = _mapper.Map<IEnumerable<ProductDTO>>(products).
@@ -66,7 +67,8 @@ namespace MyStore.Application.Services.FlashSales
                      .SingleOrDefaultAsync(e => e.Date == date && e.DiscountTimeFrame == timeFrame);
             if (flashSale != null)
             {
-                var productFlashSales = await _productFlashSaleRepository.GetAsync(e => e.FlashSaleId == flashSale.Id);
+                var productFlashSales = await _productFlashSaleRepository
+                    .GetAsync(e => e.FlashSaleId == flashSale.Id && e.Product.Enable);
                 var products = productFlashSales.Select(e => e.Product);
 
                 var res = _mapper.Map<IEnumerable<ProductDTO>>(products).
@@ -82,10 +84,11 @@ namespace MyStore.Application.Services.FlashSales
             }
             return [];
         }
-        public async Task<IEnumerable<ProductDTO>> GetFlashSaleProductsThisTime()
+        public async Task<FlashSaleResponse> GetFlashSaleProductsThisTime()
         {
             var date = DateTime.Now.Date;
             DiscountTimeFrame? timeFrame = IsFlashSaleActive();
+            IEnumerable<ProductDTO> productDTOs = new List<ProductDTO>();
 
             if (timeFrame != null)
             {
@@ -93,22 +96,28 @@ namespace MyStore.Application.Services.FlashSales
                     .SingleOrDefaultAsync(e => e.Date == date && e.DiscountTimeFrame == timeFrame);
                 if (flashSale != null)
                 {
-                    var productFlashSales = await _productFlashSaleRepository.GetAsync(e => e.FlashSaleId == flashSale.Id);
-                    var products = productFlashSales.Select(e => e.Product);
+                    var productFlashSales = await _productFlashSaleRepository
+                        .GetAsync(e => e.FlashSaleId == flashSale.Id && e.Product.Enable);
+                    var p = productFlashSales.Select(e => e.Product);
 
-                    var res = _mapper.Map<IEnumerable<ProductDTO>>(products).
-                        Select(e =>
-                        {
-                            var productFlashSale = productFlashSales
-                                .SingleOrDefault(p => p.ProductId == e.Id && p.FlashSaleId == flashSale.Id);
+                    productDTOs = _mapper.Map<IEnumerable<ProductDTO>>(p)
+                    .Select(e =>
+                    {
+                        var productFlashSale = productFlashSales
+                            .SingleOrDefault(p => p.ProductId == e.Id && p.FlashSaleId == flashSale.Id);
 
-                            e.FlashSaleDiscountPercent = productFlashSale?.DiscountPercent ?? 0;
-                            return e;
-                        });
-                    return res;
+                        e.FlashSaleDiscountPercent = productFlashSale?.DiscountPercent ?? 0;
+                        return e;
+                    });
                 }
             }
-            return [];
+            var endFlashSale = GetEndFlashSale();
+
+            return new FlashSaleResponse
+            {
+                Products = productDTOs,
+                EndFlashSale = endFlashSale,
+            };
         }
 
         public async Task<IEnumerable<ProductDiscountPercentWithId>> GetFlashSaleProductsWithDiscountThisTime()
@@ -145,13 +154,31 @@ namespace MyStore.Application.Services.FlashSales
             var hours = DateTime.Now.Hour;
 
             //test
-            return DiscountTimeFrame.TO19FROM22;
+            //return DiscountTimeFrame.TO19FROM22;
 
             return hours switch
             {
                 >= 0 and < 2 => DiscountTimeFrame.TO00FROM2,
                 >= 10 and < 12 => DiscountTimeFrame.TO10FROM12,
                 >= 19 and < 22 => DiscountTimeFrame.TO19FROM22,
+                _ => null
+            };
+        }
+
+        public DateTime? GetEndFlashSale()
+        {
+            var date = DateTime.Now.Date.AddMinutes(59).AddSeconds(59).AddMilliseconds(999);
+            var hours = DateTime.Now.Hour;
+
+            //test
+            //return date.AddHours(23);
+            //return null;
+
+            return hours switch
+            {
+                >= 0 and < 2 => date.AddHours(1),
+                >= 10 and < 12 => date.AddHours(11),
+                >= 19 and < 22 => date.AddHours(21),
                 _ => null
             };
         }

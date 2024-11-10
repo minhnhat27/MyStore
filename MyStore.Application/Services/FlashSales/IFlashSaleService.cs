@@ -7,8 +7,10 @@ namespace MyStore.Application.Services.FlashSales
 {
     public interface IFlashSaleService
     {
-        Task<IEnumerable<ProductDTO>> GetFlashSaleProductsThisTime();
+        Task<FlashSaleResponse> GetFlashSaleProductsThisTime();
         DiscountTimeFrame? IsFlashSaleActive();
+        DateTime? GetEndFlashSale();
+
         Task<float?> GetDiscountByProductIdThisTime(long productId);
         Task<IEnumerable<ProductDiscountPercentWithId>> GetFlashSaleProductsWithDiscountThisTime();
         Task<IEnumerable<ProductDTO>> GetProductsByFlashSale(string id);

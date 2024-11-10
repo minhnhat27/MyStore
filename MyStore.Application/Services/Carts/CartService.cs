@@ -42,11 +42,18 @@ namespace MyStore.Application.Services.Carts
         public async Task<IEnumerable<CartItemsResponse>> GetAllByUserId(string userId)
         {
             var items = await _cartItemsRepository.GetAsync(e => e.UserId == userId);
+            var cartUpdate = new List<CartItem>();
 
             var res = items.Select(cartItem =>
             {
                 var color = cartItem.Product.ProductColors.SingleOrDefault(x => x.Id == cartItem.ColorId);
                 var size = color?.ProductSizes.SingleOrDefault(x => x.SizeId == cartItem.SizeId);
+
+                if(size != null && cartItem.Quantity > size.InStock)
+                {
+                    cartItem.Quantity = size.InStock;
+                    cartUpdate.Add(cartItem);
+                }
 
                 return new CartItemsResponse
                 {
@@ -65,6 +72,11 @@ namespace MyStore.Application.Services.Carts
                     SizeInStocks = _mapper.Map<IEnumerable<SizeInStock>>(color?.ProductSizes ?? [])
                 };
             });
+
+            if(cartUpdate.Any())
+            {
+                await _cartItemsRepository.UpdateAsync(cartUpdate);
+            }
 
             var productFlashSales = await _flashSaleService.GetFlashSaleProductsWithDiscountThisTime();
             if (productFlashSales.Any())
