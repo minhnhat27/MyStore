@@ -14,6 +14,7 @@ using MyStore.Application.IStorage;
 using MyStore.Application.ModelView;
 using MyStore.Application.Request;
 using MyStore.Application.Response;
+using MyStore.Application.Services.FlashSales;
 using MyStore.Application.Services.Payments;
 using MyStore.Domain.Constants;
 using MyStore.Domain.Entities;
@@ -50,6 +51,9 @@ namespace MyStore.Application.Services.Orders
         private readonly IVNPayLibrary _vnPayLibrary;
         private readonly IServiceScopeFactory _serviceScopeFactory;
 
+        private readonly IFlashSaleService _flashSaleService;
+        private readonly IFlashSaleRepository _flashSaleRepository;
+
         private readonly string reviewImagesPath = "assets/images/reviews";
 
         public OrderService(IOrderRepository orderRepository,
@@ -63,6 +67,8 @@ namespace MyStore.Application.Services.Orders
             IProductReviewRepository productReviewRepository,
             IVoucherRepository voucherRepository,
             IPaymentMethodRepository methodRepository,
+            IFlashSaleService flashSaleService,
+            IFlashSaleRepository flashSaleRepository,
             ICache cache, IVNPayLibrary vnPayLibrary, IFileStorage fileStorage,
             IConfiguration configuration, IServiceScopeFactory serviceScopeFactory,
             IUserVoucherRepository userVoucherRepository, IMapper mapper)
@@ -83,6 +89,8 @@ namespace MyStore.Application.Services.Orders
 
             _configuration = configuration;
             _serviceScopeFactory = serviceScopeFactory;
+            _flashSaleService = flashSaleService;
+            _flashSaleRepository = flashSaleRepository;
 
             _mapper = mapper;
             _cache = cache;
@@ -128,35 +136,34 @@ namespace MyStore.Application.Services.Orders
                 TotalItems = totalOrder
             };
         }
-        public async Task<PagedResponse<OrderDTO>> GetWithOrderStatus(DeliveryStatusEnum statusEnum, PageRequest request)
+
+        public async Task<PagedResponse<OrderDTO>> GetAll(int page, int pageSize, string? keySearch, DeliveryStatusEnum statusEnum)
         {
             int totalOrder;
             IEnumerable<Order> orders;
 
-            int page = request.Page, pageSize = request.PageSize;
-            string? key = request.Key?.ToLower();
-
-
             Expression<Func<Order, DateTime?>> sortExpression = e => e.UpdatedAt;
 
-            if(statusEnum == DeliveryStatusEnum.Processing)
+            if (statusEnum == DeliveryStatusEnum.Processing)
             {
                 sortExpression = e => e.CreatedAt;
             }
 
-            if (string.IsNullOrEmpty(key))
+
+            if (string.IsNullOrEmpty(keySearch))
             {
                 totalOrder = await _orderRepository.CountAsync(e => e.OrderStatus == statusEnum);
-                orders = await _orderRepository.GetPagedOrderByDescendingAsync(page, pageSize, e => e.OrderStatus == statusEnum, sortExpression);
+                orders = await _orderRepository
+                    .GetPagedOrderByDescendingAsync(page, pageSize, e => e.OrderStatus == statusEnum, sortExpression);
             }
             else
             {
-                bool isLong = long.TryParse(key, out long idSearch);
+                bool isLong = long.TryParse(keySearch, out long idSearch);
+                keySearch = keySearch.ToLower();
 
                 Expression<Func<Order, bool>> expression =
-                    e => e.OrderStatus == statusEnum && 
-                    (isLong && e.Id.Equals(idSearch)
-                    || e.PaymentMethodName.ToLower().Contains(key));
+                    e => (e.Id.Equals(idSearch) && e.OrderStatus == statusEnum)
+                        || e.PaymentMethodName.ToLower().Contains(keySearch);
 
                 totalOrder = await _orderRepository.CountAsync(expression);
                 orders = await _orderRepository.GetPagedOrderByDescendingAsync(page, pageSize, expression, sortExpression);
@@ -174,22 +181,19 @@ namespace MyStore.Application.Services.Orders
 
         public async Task<OrderDetailsResponse> GetOrderDetail(long orderId)
         {
-            var order = await _orderRepository.SingleOrDefaultAsyncInclude(e => e.Id == orderId);
-            if (order != null)
-            {
-                return _mapper.Map<OrderDetailsResponse>(order);
-            }
-            else throw new InvalidOperationException(ErrorMessage.ORDER_NOT_FOUND);
+            var order = await _orderRepository.SingleOrDefaultAsyncInclude(e => e.Id == orderId)
+                ?? throw new InvalidOperationException(ErrorMessage.ORDER_NOT_FOUND);
+
+            return _mapper.Map<OrderDetailsResponse>(order);
         }
 
         public async Task<OrderDetailsResponse> GetOrderDetail(long orderId, string userId)
         {
-            var order = await _orderRepository.SingleOrDefaultAsyncInclude(e => e.Id == orderId && e.UserId == userId);
-            if (order != null)
-            {
-                return _mapper.Map<OrderDetailsResponse>(order);
-            }
-            else throw new InvalidOperationException(ErrorMessage.ORDER_NOT_FOUND);
+            var order = await _orderRepository
+                .SingleOrDefaultAsyncInclude(e => e.Id == orderId && e.UserId == userId)
+                    ?? throw new InvalidOperationException(ErrorMessage.ORDER_NOT_FOUND);
+
+            return _mapper.Map<OrderDetailsResponse>(order);
         }
 
         public async Task<PagedResponse<OrderResponse>> GetOrdersByUserId(string userId, PageRequest page)
@@ -213,6 +217,37 @@ namespace MyStore.Application.Services.Orders
                 PageSize = page.PageSize
             };
         }
+
+        public async Task<PagedResponse<OrderResponse>> GetOrdersByUserId(string userId, PageRequest page, DeliveryStatusEnum statusEnum)
+        {
+            Expression<Func<Order, DateTime?>> sortExpression = e => e.UpdatedAt;
+
+            if (statusEnum == DeliveryStatusEnum.Processing)
+            {
+                sortExpression = e => e.CreatedAt;
+            }
+
+            var orders = await _orderRepository
+                .GetPagedOrderByDescendingAsyncInclude(page.Page, page.PageSize, 
+                    e => e.UserId == userId && e.OrderStatus == statusEnum, sortExpression);
+
+            var total = await _orderRepository.CountAsync(e => e.UserId == userId && e.OrderStatus == statusEnum);
+
+            var items = _mapper.Map<IEnumerable<OrderResponse>>(orders).Select(x =>
+            {
+                x.PayBackUrl = _cache.Get<OrderCache?>("Order " + x.Id)?.Url;
+                return x;
+            });
+
+            return new PagedResponse<OrderResponse>
+            {
+                Items = items,
+                TotalItems = total,
+                Page = page.Page,
+                PageSize = page.PageSize
+            };
+        }
+
 
         private double CalcShip(double price) => price >= 400000 ? 0 : price >= 200000 ? 10000 : 30000;
 
@@ -244,31 +279,56 @@ namespace MyStore.Application.Services.Orders
                 double total = 0;
                 double voucherDiscount = 0;
 
-                var cartItems = await _cartItemRepository.GetAsync(e => e.UserId == userId && request.CartIds.Contains(e.Id));
+                var cartItems = await _cartItemRepository
+                    .GetAsync(e => e.UserId == userId && request.CartIds.Contains(e.Id));
 
                 var lstpSizeUpdate = new List<ProductSize>();
                 var lstProductUpdate = new List<Product>();
                 var lstDetails = new List<OrderDetail>();
+                var lstFlashSaleUpdate = new List<FlashSale>();
+
+                var listFlashSaleDiscount = await _flashSaleService.GetFlashSaleProductsWithDiscountThisTime();
 
                 foreach (var cartItem in cartItems)
                 {
+                    if (!cartItem.Product.Enable)
+                    {
+                        throw new Exception($"{cartItem.Product.Name} không tồn tại hoặc đã bị ẩn.");
+                    }
+
                     var size = await _productSizeRepository
                         .SingleAsyncInclude(e => e.ProductColorId == cartItem.ColorId && e.SizeId == cartItem.SizeId);
 
                     if (size.InStock < cartItem.Quantity)
                     {
-                        throw new Exception(ErrorMessage.SOLDOUT);
+                        throw new Exception($"{cartItem.Product.Name} " + ErrorMessage.SOLDOUT);
+                    }
+                    var discount = cartItem.Product.DiscountPercent;
+
+                    var flashSaleDiscount = listFlashSaleDiscount.SingleOrDefault(e => e.ProductId == cartItem.ProductId);
+                    if(flashSaleDiscount != null)
+                    {
+                        discount = flashSaleDiscount.DiscountPercent;
                     }
 
-                    double price = cartItem.Product.Price - cartItem.Product.Price * (cartItem.Product.DiscountPercent / 100.0);
-                    price *= cartItem.Quantity;
-                    total += price;
+                    double price = cartItem.Product.Price - cartItem.Product.Price * (discount / 100.0);
+                    //price *= cartItem.Quantity;
+                    total += price * cartItem.Quantity;
 
                     cartItem.Product.Sold += cartItem.Quantity;
                     lstProductUpdate.Add(cartItem.Product);
 
                     size.InStock -= cartItem.Quantity;
                     lstpSizeUpdate.Add(size);
+
+                    if(flashSaleDiscount != null)
+                    {
+                        var flashSale = await _flashSaleRepository
+                            .SingleAsync(e => e.Id == flashSaleDiscount.FlashSaleId);
+                        flashSale.TotalSold += cartItem.Quantity;
+                        flashSale.TotalRevenue += price * cartItem.Quantity;
+                        lstFlashSaleUpdate.Add(flashSale);
+                    }
 
                     lstDetails.Add(new OrderDetail
                     {
@@ -323,6 +383,12 @@ namespace MyStore.Application.Services.Orders
                 await _productRepository.UpdateAsync(lstProductUpdate);
                 await _orderDetailRepository.AddAsync(lstDetails);
                 await _cartItemRepository.DeleteRangeAsync(cartItems);
+
+                if (lstFlashSaleUpdate.Any())
+                {
+                    await _flashSaleRepository.UpdateAsync(lstFlashSaleUpdate);
+                }
+
                 if (voucher != null)
                 {
                     voucher.Used = true;
@@ -341,7 +407,7 @@ namespace MyStore.Application.Services.Orders
                         OrderDesc = "Thanh toan don hang: " + order.Id,
                     };
 
-                    var userIP = "127.0.0.1";
+                    var userIP = request.UserIP ?? "127.0.0.1";
                     paymentUrl = _paymentService.GetVNPayURL(orderInfo, userIP);
 
                     var orderCache = new OrderCache()
@@ -542,45 +608,84 @@ namespace MyStore.Application.Services.Orders
 
         public async Task CancelOrder(long orderId, string userId)
         {
-            var order = await _orderRepository.SingleOrDefaultAsync(e => e.Id == orderId && e.UserId == userId);
-            if (order != null)
+            var order = await _orderRepository.SingleOrDefaultAsyncInclude(e => e.Id == orderId && e.UserId == userId)
+                ?? throw new InvalidOperationException(ErrorMessage.ORDER_NOT_FOUND);
+            
+            if (order.OrderStatus.Equals(DeliveryStatusEnum.Processing) || order.OrderStatus.Equals(DeliveryStatusEnum.Confirmed))
             {
-                if (order.OrderStatus.Equals(DeliveryStatusEnum.Processing)
-                    || order.OrderStatus.Equals(DeliveryStatusEnum.Confirmed))
-                {
-                    order.OrderStatus = DeliveryStatusEnum.Canceled;
-                    //var updateProduct = order.OrderDetails.Select(dt =>
-                    //{
-                    //    if(dt.Product != null)
-                    //    {
-                    //        dt.Product.Sold += dt.Quantity;
-                    //    }
-                    //    return dt.Product;
-                    //});
+                order.OrderStatus = DeliveryStatusEnum.Canceled;
+                List<Product> lstProductUpdate = new();
+                List<ProductSize> lstSizeUpdate = new();
 
-                    _cache.Remove("Order " + orderId);
-                    await _orderRepository.UpdateAsync(order);
+                foreach (var orderDetails in order.OrderDetails)
+                {
+                    var product = await _productRepository.FindAsync(orderDetails.ProductId);
+                    if (product != null)
+                    {
+                        product.Sold -= orderDetails.Quantity;
+                        lstProductUpdate.Add(product);
+                    }
+                    var updateInStock = await _productSizeRepository.FindAsync(orderDetails.ColorId, orderDetails.SizeId);
+                    if(updateInStock != null)
+                    {
+                        updateInStock.InStock += orderDetails.Quantity;
+                        lstSizeUpdate.Add(updateInStock);
+                    }
                 }
-                else throw new InvalidDataException(ErrorMessage.CANNOT_CANCEL);
+                if(lstProductUpdate.Any())
+                {
+                    await _productRepository.UpdateAsync(lstProductUpdate);
+                }
+                if (lstSizeUpdate.Any())
+                {
+                    await _productSizeRepository.UpdateAsync(lstSizeUpdate);
+                }
+
+                _cache.Remove("Order " + orderId);
+                await _orderRepository.UpdateAsync(order);
             }
-            else throw new InvalidOperationException(ErrorMessage.ORDER_NOT_FOUND);
+            else throw new InvalidDataException(ErrorMessage.CANNOT_CANCEL);
         }
 
         public async Task CancelOrder(long orderId)
         {
-            var order = await _orderRepository.SingleOrDefaultAsync(e => e.Id == orderId);
-            if (order != null)
+            var order = await _orderRepository.SingleOrDefaultAsyncInclude(e => e.Id == orderId)
+                ?? throw new InvalidOperationException(ErrorMessage.ORDER_NOT_FOUND);
+
+            if (order.OrderStatus.Equals(DeliveryStatusEnum.Processing) || order.OrderStatus.Equals(DeliveryStatusEnum.Confirmed))
             {
-                if (order.OrderStatus.Equals(DeliveryStatusEnum.Processing)
-                    || order.OrderStatus.Equals(DeliveryStatusEnum.Confirmed))
+                order.OrderStatus = DeliveryStatusEnum.Canceled;
+                List<Product> lstProductUpdate = new();
+                List<ProductSize> lstSizeUpdate = new();
+
+                foreach (var orderDetails in order.OrderDetails)
                 {
-                    order.OrderStatus = DeliveryStatusEnum.Canceled;
-                    _cache.Remove("Order " + orderId);
-                    await _orderRepository.UpdateAsync(order);
+                    var product = await _productRepository.FindAsync(orderDetails.ProductId);
+                    if (product != null)
+                    {
+                        product.Sold -= orderDetails.Quantity;
+                        lstProductUpdate.Add(product);
+                    }
+                    var updateInStock = await _productSizeRepository.FindAsync(orderDetails.ColorId, orderDetails.SizeId);
+                    if (updateInStock != null)
+                    {
+                        updateInStock.InStock += orderDetails.Quantity;
+                        lstSizeUpdate.Add(updateInStock);
+                    }
                 }
-                else throw new InvalidDataException(ErrorMessage.CANNOT_CANCEL);
+                if (lstProductUpdate.Any())
+                {
+                    await _productRepository.UpdateAsync(lstProductUpdate);
+                }
+                if (lstSizeUpdate.Any())
+                {
+                    await _productSizeRepository.UpdateAsync(lstSizeUpdate);
+                }
+
+                _cache.Remove("Order " + orderId);
+                await _orderRepository.UpdateAsync(order);
             }
-            else throw new InvalidOperationException(ErrorMessage.ORDER_NOT_FOUND);
+            else throw new InvalidDataException(ErrorMessage.CANNOT_CANCEL);
         }
 
         public async Task Review(long orderId, string userId, IEnumerable<ReviewRequest> reviews)

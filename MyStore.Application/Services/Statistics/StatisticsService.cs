@@ -27,12 +27,14 @@ namespace MyStore.Application.Services.Statistics
             var orders = await _orderRepository.CountAsync();
             var products = await _productRepository.CountAsync();
             var users = await _userRepository.CountAsync();
+            var canceledOrders = await _orderRepository.CountAsync(e => e.OrderStatus == DeliveryStatusEnum.Canceled);
 
             return new GeneralStatistics
             {
                 TotalOrders = orders,
                 TotalProducts = products,
                 TotalUsers = users,
+                TotalCanceledOrders = canceledOrders
             };
         }
 
@@ -71,9 +73,10 @@ namespace MyStore.Application.Services.Statistics
         public async Task<StatisticData> GetRevenue(int month, int year)
         {
             Expression<Func<Order, bool>>
-                expression = e => e.OrderStatus == DeliveryStatusEnum.Received &&
-                e.ReceivedDate.HasValue && e.ReceivedDate.Value.Month.Equals(month) && 
-                e.ReceivedDate.Value.Year.Equals(year); 
+                expression = e => 
+                //e.OrderStatus == DeliveryStatusEnum.Received &&
+                e.OrderDate.Month.Equals(month) && 
+                e.OrderDate.Year.Equals(year);
 
             var revenue = await _orderRepository
                 .GetRevenue(expression);
@@ -83,6 +86,7 @@ namespace MyStore.Application.Services.Statistics
             {
                 Revenue = revenue,
                 TotalOrders = total,
+                Month = month,
             };
         }
 
@@ -108,7 +112,13 @@ namespace MyStore.Application.Services.Statistics
         {
             var currentYear = year ?? DateTime.Now.Year;
             var revenueList = new List<StatisticData>();
-            var revenues = await _orderRepository.GetRevenue12Month(currentYear);
+
+            Expression<Func<Order, bool>>
+                expression = e =>
+                //e.OrderStatus == DeliveryStatusEnum.Received &&
+                e.OrderDate.Year.Equals(year);
+
+            var revenues = await _orderRepository.GetRevenue12Month(expression);
 
             for (int month = 1; month <= 12; month++)
             {

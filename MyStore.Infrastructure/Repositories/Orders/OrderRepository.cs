@@ -51,9 +51,9 @@ namespace MyStore.Infrastructure.Repositories.Orders
         //                TotalOrders = x.Count()
         //            }).ToArrayAsync();
 
-        public async Task<IEnumerable<StatisticData>> GetRevenue12Month(int year)
+        public async Task<IEnumerable<StatisticData>> GetRevenue12Month(Expression<Func<Order, bool>> expression)
             => await _dbContext.Orders
-                    .Where(e => e.OrderDate.Year.Equals(year))
+                    .Where(expression)
                     .GroupBy(g => new { g.OrderDate.Year, g.OrderDate.Month })
                     .Select(x => new StatisticData
                     {

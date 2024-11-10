@@ -1,6 +1,6 @@
 ﻿using MyStore.Application.Response;
 
-namespace MyStore.Application.Services
+namespace MyStore.Application.Services.Statistics
 {
     public interface IStatisticsService
     {

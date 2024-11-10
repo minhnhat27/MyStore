@@ -47,6 +47,6 @@ namespace MyStore.Domain.Entities
         public ICollection<Image> Images { get; } = new HashSet<Image>();
         public ICollection<ProductReview> ProductReviews { get; } = new HashSet<ProductReview>();
         public ICollection<ProductFavorite> ProductFavorites { get; } = new HashSet<ProductFavorite>();
-        public ICollection<ProductCampaign> ProductCampaigns { get; } = new HashSet<ProductCampaign>();
+        public ICollection<ProductFlashSale> ProductFlashSales { get; } = new HashSet<ProductFlashSale>();
     }
 }

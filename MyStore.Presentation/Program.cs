@@ -10,10 +10,10 @@ using MyStore.Application.IRepositories.Products;
 using MyStore.Application.IRepositories.Users;
 using MyStore.Application.ISendMail;
 using MyStore.Application.IStorage;
-using MyStore.Application.Services;
 using MyStore.Application.Services.Brands;
 using MyStore.Application.Services.Carts;
 using MyStore.Application.Services.Categories;
+using MyStore.Application.Services.FlashSales;
 using MyStore.Application.Services.Materials;
 using MyStore.Application.Services.Orders;
 using MyStore.Application.Services.Payments;
@@ -146,6 +146,8 @@ builder.Services.AddScoped<IOrderDetailRepository, OrderDetailRepository>();
 builder.Services.AddScoped<IVoucherRepository, VoucherRepository>();
 builder.Services.AddScoped<IUserVoucherRepository, UserVoucherRepository>();
 builder.Services.AddScoped<IDeliveryAddressRepository, DeliveryAddressRepository>();
+builder.Services.AddScoped<IFlashSaleRepository, FlashSaleRepository>();
+builder.Services.AddScoped<IProductFlashSaleRepository, ProductFlashSaleRepository>();
 
 builder.Services.AddScoped<IBrandService, BrandService>();
 builder.Services.AddScoped<ISizeService, SizeService>();
@@ -158,6 +160,7 @@ builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IVoucherService, VoucherService>();
 builder.Services.AddScoped<IStatisticsService, StatisticsService>();
+builder.Services.AddScoped<IFlashSaleService, FlashSaleService>();
 builder.Services.AddScoped<IVNPayLibrary, VNPayLibrary>();
 
 var app = builder.Build();

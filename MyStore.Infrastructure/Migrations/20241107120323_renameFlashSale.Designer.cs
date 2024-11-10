@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MyStore.Infrastructure.DbContext;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MyStore.Infrastructure.Migrations
 {
     [DbContext(typeof(MyDbContext))]
-    partial class MyDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241107120323_renameFlashSale")]
+    partial class renameFlashSale
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -297,12 +300,6 @@ namespace MyStore.Infrastructure.Migrations
                         .HasColumnType("timestamp without time zone");
 
                     b.Property<int>("DiscountTimeFrame")
-                        .HasColumnType("integer");
-
-                    b.Property<double>("TotalRevenue")
-                        .HasColumnType("double precision");
-
-                    b.Property<int>("TotalSold")
                         .HasColumnType("integer");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -639,8 +636,8 @@ namespace MyStore.Infrastructure.Migrations
                     b.Property<string>("FlashSaleId")
                         .HasColumnType("text");
 
-                    b.Property<float>("DiscountPercent")
-                        .HasColumnType("real");
+                    b.Property<int>("DiscountPercent")
+                        .HasColumnType("integer");
 
                     b.HasKey("ProductId", "FlashSaleId");
 

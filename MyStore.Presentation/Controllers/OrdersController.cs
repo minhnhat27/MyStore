@@ -16,25 +16,14 @@ namespace MyStore.Presentation.Controllers
 
         [HttpGet("all")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> GetAll([FromQuery] PageRequest request)
+        public async Task<IActionResult> GetAll([FromQuery] PageRequest request, [FromQuery] DeliveryStatusEnum? orderStatus)
         {
             try
             {
-                return Ok(await _orderService.GetAll(request.Page, request.PageSize, request.Key));
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, ex.Message);
-            }
-        }
+                var result = orderStatus.HasValue
+                    ? await _orderService.GetAll(request.Page, request.PageSize, request.Key, orderStatus.Value)
+                    : await _orderService.GetAll(request.Page, request.PageSize, request.Key);
 
-        [HttpGet("status/{status}")]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> GetOrderWithStatus(DeliveryStatusEnum status, [FromQuery] PageRequest request)
-        {
-            try
-            {
-                var result = await _orderService.GetWithOrderStatus(status, request);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -90,7 +79,7 @@ namespace MyStore.Presentation.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Orders([FromQuery] PageRequest request)
+        public async Task<IActionResult> Orders([FromQuery] PageRequest request, [FromQuery] DeliveryStatusEnum? orderStatus)
         {
             try
             {
@@ -99,7 +88,10 @@ namespace MyStore.Presentation.Controllers
                 {
                     return Unauthorized();
                 }
-                var orders = await _orderService.GetOrdersByUserId(userId, request);
+                var orders = orderStatus.HasValue
+                    ? await _orderService.GetOrdersByUserId(userId, request, orderStatus.Value)
+                    : await _orderService.GetOrdersByUserId(userId, request);
+
                 return Ok(orders);
             }
             catch(ArgumentException ex)

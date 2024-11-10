@@ -15,6 +15,8 @@ namespace MyStore.Application.Response
         public float DiscountPercent { get; set; }
         public double Price => OriginPrice - OriginPrice * (DiscountPercent / 100.0);
 
+        public bool HasFlashSale { get; set; }
+
         public long SizeId { get; set; }
         public string? SizeName { get; set; }
 

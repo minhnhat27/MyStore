@@ -7,7 +7,7 @@ namespace MyStore.Infrastructure.AuthenticationService
 {
     public interface IAuthenticationService
     {
-        Task<JwtResponse> Login(string username, string password);
+        Task<LoginResponse> Login(string username, string password);
         Task<UserDTO> Register(RegisterRequest request);
 
         Task SendCodeToEmail(AuthTypeEnum authType, string email);
@@ -20,8 +20,8 @@ namespace MyStore.Infrastructure.AuthenticationService
 
         Task ResetPassword(string email, string token, string password);
 
-        Task<JwtResponse> LoginGoogle(string credentials);
-        Task<JwtResponse> LoginFacebook(string token);
+        Task<LoginResponse> LoginGoogle(string credentials);
+        Task<LoginResponse> LoginFacebook(string token);
         Task LinkToFacebook(string userId, string providerId, string? name);
         Task UnlinkFacebook(string userId);
 
