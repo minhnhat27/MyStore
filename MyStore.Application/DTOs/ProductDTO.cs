@@ -6,7 +6,7 @@ namespace MyStore.Application.DTOs
 {
     public class ProductDTO
     {
-        public int Id { get; set; }
+        public long Id { get; set; }
         public string Name { get; set; }
         public bool Enable { get; set; }
         public int Sold { get; set; }

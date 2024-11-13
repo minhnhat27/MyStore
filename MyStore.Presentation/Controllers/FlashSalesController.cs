@@ -45,7 +45,7 @@ namespace MyStore.Presentation.Controllers
         }
 
         [HttpGet("time")]
-        public async Task<IActionResult> GetProductsThisTime(int timeFrame)
+        public async Task<IActionResult> GetProductsThisTime()
         {
             try
             {

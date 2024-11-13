@@ -4,7 +4,7 @@ namespace MyStore.Application.DTOs
 {
     public class OrderDTO
     {
-        public int Id { get; set; }
+        public long Id { get; set; }
         public double ShippingCost { get; set; }
         public double Total { get; set; }
         public double AmountPaid { get; set; }

@@ -147,7 +147,7 @@ namespace MyStore.Application.Services.Products
                 throw new Exception(ex.InnerException?.Message ?? ex.Message);
             }
         }
-        
+
         public async Task<PagedResponse<ProductDTO>> GetProductsAsync(int page, int pageSize, string? keySearch)
         {
             try
@@ -165,7 +165,7 @@ namespace MyStore.Application.Services.Products
                     keySearch = keySearch.ToLower();
 
                     Expression<Func<Product, bool>> expression = e =>
-                        isLong && e.Id.Equals(longSearch) 
+                        isLong && e.Id.Equals(longSearch)
                         || e.Name.Contains(keySearch)
                         || e.Brand.Name.ToLower().Contains(keySearch)
                         || e.Category.Name.ToLower().Contains(keySearch)
@@ -199,12 +199,12 @@ namespace MyStore.Application.Services.Products
                     TotalItems = totalProduct
                 };
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 throw new Exception(ex.InnerException?.Message ?? ex.Message);
             }
         }
-        
+
         private Expression<Func<T, bool>> CombineExpressions<T>(Expression<Func<T, bool>> expr1, Expression<Func<T, bool>> expr2)
         {
             var parameter = expr1.Parameters[0];
@@ -219,14 +219,58 @@ namespace MyStore.Application.Services.Products
                 int totalProduct = 0;
                 IEnumerable<Product> products = [];
                 Expression<Func<Product, bool>> expression = e => e.Enable;
-                
-                if(filters.MinPrice != null && filters.MaxPrice != null)
+                var productFlashSale = (await _flashSaleService.GetFlashSaleProductsThisTime()).Products;
+
+                var date = DateTime.Now.Date;
+
+                if (filters.MinPrice != null && filters.MaxPrice != null)
                 {
-                    expression = CombineExpressions(expression, e =>
-                        (e.Price - (e.Price * (e.DiscountPercent / 100.0))) >= filters.MinPrice
-                        &&
-                        (e.Price - (e.Price * (e.DiscountPercent / 100.0))) <= filters.MaxPrice
-                    );
+                    var flashsale = _flashSaleService.IsFlashSaleActive();
+                    if (productFlashSale != null)
+                    {
+                        expression = CombineExpressions(expression, e =>
+                            (e.Price - (e.Price *
+                                (e.ProductFlashSales
+                                    .Where(x => x.FlashSale.Date.Date == date 
+                                        && x.FlashSale.DiscountTimeFrame == flashsale
+                                        && x.ProductId == e.Id)
+                                    .FirstOrDefault() != null ?
+
+                                    e.ProductFlashSales
+                                    .Where(x => x.FlashSale.Date.Date == date
+                                        && x.FlashSale.DiscountTimeFrame == flashsale
+                                        && x.ProductId == e.Id)
+                                    .First().DiscountPercent
+
+                                    : e.DiscountPercent) / 100.0
+                            )) >= filters.MinPrice
+                            &&
+                            (e.Price - (e.Price *
+                                (e.ProductFlashSales
+                                    .Where(x => x.FlashSale.Date.Date == date
+                                        && x.FlashSale.DiscountTimeFrame == flashsale
+                                        && x.ProductId == e.Id)
+                                    .FirstOrDefault() != null ?
+
+                                    e.ProductFlashSales
+                                    .Where(x => x.FlashSale.Date.Date == date
+                                        && x.FlashSale.DiscountTimeFrame == flashsale
+                                        && x.ProductId == e.Id)
+                                    .First().DiscountPercent
+
+                                    : e.DiscountPercent) / 100.0
+                            )) <= filters.MaxPrice
+                        );
+                    }
+                    else
+                    {
+                        expression = CombineExpressions(expression, e =>
+                            (e.Price - (e.Price * (e.DiscountPercent / 100.0))) >= filters.MinPrice
+                            &&
+                            (e.Price - (e.Price * (e.DiscountPercent / 100.0))) <= filters.MaxPrice
+                        );
+                    }
+
                 }
                 else
                 {
@@ -247,15 +291,28 @@ namespace MyStore.Application.Services.Products
                     expression = CombineExpressions(expression, e => inputWords.All(word => e.Name.ToLower().Contains(word)));
                 }
 
-                if (filters.Discount != null && filters.Discount == true)
+                if (filters.Discount != null && filters.Discount.Value 
+                    && filters.FlashSale != null && filters.FlashSale.Value)
                 {
-                    expression = CombineExpressions(expression, e => e.DiscountPercent > 0);
+                    expression = CombineExpressions(expression, e => e.DiscountPercent > 0
+                        || productFlashSale.Select(e => e.Id).Any(x => x == e.Id));
+
+                }
+                else
+                {
+                    if (filters.Discount != null && filters.Discount.Value)
+                    {
+                        expression = CombineExpressions(expression, e => e.DiscountPercent > 0 ||
+                        productFlashSale.Select(e => e.Id).Any(x => x == e.Id));
+
+                    }
+                    else if (filters.FlashSale != null && filters.FlashSale.Value && productFlashSale.Any())
+                    {
+                        expression = CombineExpressions(expression, e => productFlashSale.Select(e => e.Id).Any(x => x == e.Id));
+                    }
                 }
 
-                //if (filters.FlashSale != null && filters.FlashSale == true)
-                //{
-                //    expression = CombineExpressions(expression, e => e.ProductFlashSales.Any());
-                //}
+                
 
                 if (filters.Rating != null)
                 {
@@ -297,8 +354,6 @@ namespace MyStore.Application.Services.Products
                 };
                 var res = _mapper.Map<IEnumerable<ProductDTO>>(products);
 
-
-                var productFlashSale = (await _flashSaleService.GetFlashSaleProductsThisTime()).Products;
                 if (productFlashSale.Any())
                 {
                     res = res.Select(e =>
@@ -382,14 +437,12 @@ namespace MyStore.Application.Services.Products
             //áo thun co tron
             var inputWords = key.Trim().Split(' ').Select(word => word.ToLower());
 
-            var products = await _productRepository.GetPagedAsync(1, 5,
-                e => inputWords.All(word => e.Name.ToLower().Contains(word)), e => e.Name);
-            
+            var products = await _productRepository.GetPagedOrderByDescendingAsync(1, 5,
+                e => inputWords.All(word => e.Name.ToLower().Contains(word)), e => e.Sold);
+
             if (!products.Any())
             {
-                var productList = await _productRepository.GetPagedAsync(1, 20,
-                    e => inputWords.Any(word => e.Name.ToLower().Contains(word)), e => e.Name);
-
+                var productList = await _productRepository.GetPagedOrderByDescendingAsync(1, 20, null, e => e.Sold);
                 products = productList.Where(e => IsMatchingSearchCriteriaWithoutTones(e.Name, inputWords)).Take(5);
             }
             var res = _mapper.Map<IEnumerable<ProductDTO>>(products);
@@ -547,7 +600,7 @@ namespace MyStore.Application.Services.Products
                     var colorDel = oldProductColors.Where(old => !request.ColorSizes.Select(e => e.Id).Contains(old.Id));
                     pColorDelete.AddRange(colorDel);
 
-                    //cập nhật số lượng size cũ
+                    //cập nhật số lượng size cũ, màu cũ
                     var oldIds = request.ColorSizes.Where(e => e.Id != null).Select(e => e.Id);
                     var colorUpdate = oldProductColors.Where(old => oldIds.Contains(old.Id));
 
@@ -650,7 +703,7 @@ namespace MyStore.Application.Services.Products
                     var imgsToDelete = oldImgs.Where(old => !request.ImageUrls.Contains(old.ImageUrl));
                     imageDelete.AddRange(imgsToDelete);
                 }
-                if(imageDelete.Any())
+                if (imageDelete.Any())
                 {
                     listImageDelete.AddRange(imageDelete.Select(e => e.ImageUrl));
                     await _imageRepository.DeleteRangeAsync(imageDelete);
@@ -739,16 +792,16 @@ namespace MyStore.Application.Services.Products
         public async Task<PagedResponse<ReviewDTO>> GetReviews(long id, ReviewFiltersRequest request)
         {
             Expression<Func<ProductReview, bool>> expression = e => e.ProductId == id;
-            
+
             expression = request.Rate switch
             {
                 ReviewFiltersEnum.ALL => expression,
-                ReviewFiltersEnum.HAVEPICTURE 
+                ReviewFiltersEnum.HAVEPICTURE
                     => CombineExpressions(expression, e => e.ImagesUrlsJson != null),
                 ReviewFiltersEnum.HAVECOMMENT
                     => CombineExpressions(expression, e => e.Description != null && e.Description.Length > 0),
 
-                _ => CombineExpressions(expression, e => e.Star == (int) request.Rate)
+                _ => CombineExpressions(expression, e => e.Star == (int)request.Rate)
             };
 
             var reviews = await _productReviewRepository
@@ -766,7 +819,7 @@ namespace MyStore.Application.Services.Products
                 PageSize = request.PageSize,
             };
         }
-        
+
         public async Task DeleteReview(string id)
         {
             var rv = await _productReviewRepository.FindAsync(id)

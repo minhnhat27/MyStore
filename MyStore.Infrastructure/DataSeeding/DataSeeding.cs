@@ -38,8 +38,7 @@ namespace MyStore.Infrastructure.DataSeeding
         {
             var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
-            string[] roles = { "Admin", "User", "Owner", "Employee" };
-
+            string[] roles = Enum.GetNames(typeof(RolesEnum));
             foreach (string role in roles)
             {
                 if (!context.Roles.Any(r => r.Name == role))
@@ -93,10 +92,21 @@ namespace MyStore.Infrastructure.DataSeeding
                 await context.Sizes.AddRangeAsync(lstSize);
             };
 
-            if(!context.PaymentMethods.Any() || !context.Sizes.Any())
+            if (!context.Brands.Any())
+            {
+                await context.Brands.AddAsync(new Brand
+                {
+                    Name = NoBrandEnum.NO_BRAND.ToString(),
+                    ImageUrl = ""
+                });
+            }
+
+            if (!context.PaymentMethods.Any() || !context.Sizes.Any() || !context.Brands.Any())
             {
                 await context.SaveChangesAsync();
             }
+
+            
         }
     }
 }

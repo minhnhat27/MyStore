@@ -5,6 +5,7 @@ using MyStore.Application.IRepositories;
 using MyStore.Application.IStorage;
 using MyStore.Domain.Constants;
 using MyStore.Domain.Entities;
+using MyStore.Domain.Enumerations;
 
 namespace MyStore.Application.Services.Brands
 {
@@ -28,6 +29,14 @@ namespace MyStore.Application.Services.Brands
             var brands = await _brandRepository.GetAllAsync();
             return _mapper.Map<IEnumerable<BrandDTO>>(brands);
         }
+        public async Task<IEnumerable<BrandDTO>> GetTop5PopularBrandsAsync()
+        {
+            var brands = await _brandRepository.GetPagedOrderByDescendingAsync(1, 5, 
+                e => e.Name != NoBrandEnum.NO_BRAND.ToString(), e => e.Products.Sum(e => e.Sold));
+
+            return _mapper.Map<IEnumerable<BrandDTO>>(brands);
+        }
+
 
         public async Task<BrandDTO> AddBrandAsync(string name, IFormFile image)
         {

@@ -24,6 +24,19 @@ namespace MyStore.Presentation.Controllers
             }
         }
 
+        [HttpGet("popular")]
+        public async Task<IActionResult> GetPopularBrands()
+        {
+            try
+            {
+                return Ok(await _brandService.GetTop5PopularBrandsAsync());
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
         [HttpPost]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Create([FromForm] NameRequest request, [FromForm] IFormCollection files)

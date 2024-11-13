@@ -103,8 +103,7 @@ namespace MyStore.Application.Services.Carts
         {
             try
             {
-                var product = await _productRepository
-                    .SingleOrDefaultAsync(e => e.Id == request.ProductId && e.Enable)
+                var product = await _productRepository.SingleOrDefaultAsync(e => e.Id == request.ProductId && e.Enable)
                     ?? throw new InvalidOperationException("Sản phẩm không tồn tại hoặc đã bị ẩn.");
 
                 var size = await _productSizeRepository

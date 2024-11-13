@@ -30,7 +30,7 @@ namespace MyStore.Application.Services.FlashSales
         public async Task<PagedResponse<FlashSaleDTO>> GetFlashSales(PageRequest request)
         {
             var flashsales = await _flashSaleRepository
-                .GetPagedAsync(request.Page, request.PageSize, null, e => e.CreatedAt);
+                .GetPagedOrderByDescendingAsync(request.Page, request.PageSize, null, e => e.CreatedAt);
             var total = await _flashSaleRepository.CountAsync();
 
             var items = _mapper.Map<IEnumerable<FlashSaleDTO>>(flashsales);
@@ -48,8 +48,8 @@ namespace MyStore.Application.Services.FlashSales
                 .GetAsync(e => e.FlashSaleId == id && e.Product.Enable);
             var products = productFlashSales.Select(e => e.Product);
 
-            var res = _mapper.Map<IEnumerable<ProductDTO>>(products).
-                Select(e =>
+            var res = _mapper.Map<IEnumerable<ProductDTO>>(products)
+                .Select(e =>
                 {
                     var productFlashSale = productFlashSales
                         .SingleOrDefault(p => p.ProductId == e.Id && p.FlashSaleId == id);

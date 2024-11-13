@@ -35,6 +35,8 @@ namespace MyStore.Infrastructure.Repositories.Products
                         .Include(e => e.Category)
                         .Include(e => e.Brand)
                         .Include(e => e.ProductReviews)
+                        .Include(e => e.ProductFlashSales)
+                            .ThenInclude(e => e.FlashSale)
                         .AsSingleQuery()
                         .OrderBy(orderBy).ToArrayAsync()
                 : await _dbContext.Products
@@ -44,6 +46,8 @@ namespace MyStore.Infrastructure.Repositories.Products
                         .Include(e => e.Category)
                         .Include(e => e.Brand)
                         .Include(e => e.ProductReviews)
+                        .Include(e => e.ProductFlashSales)
+                            .ThenInclude(e => e.FlashSale)
                         .AsSingleQuery()
                         .OrderBy(orderBy).ToArrayAsync();
         public override async Task<IEnumerable<Product>> GetPagedOrderByDescendingAsync<TKey>(int page, int pageSize, Expression<Func<Product, bool>>? expression, Expression<Func<Product, TKey>> orderByDesc)
@@ -55,6 +59,8 @@ namespace MyStore.Infrastructure.Repositories.Products
                         .Include(e => e.Category)
                         .Include(e => e.Brand)
                         .Include(e => e.ProductReviews)
+                        .Include(e => e.ProductFlashSales)
+                            .ThenInclude(e => e.FlashSale)
                         .AsSingleQuery()
                         .ToArrayAsync()
                 : await _dbContext.Products
@@ -66,6 +72,8 @@ namespace MyStore.Infrastructure.Repositories.Products
                         .Include(e => e.Brand)
                         .Include(e => e.ProductReviews)
                         .Include(e => e.ProductFavorites)
+                        .Include(e => e.ProductFlashSales)
+                            .ThenInclude(e => e.FlashSale)
                         .AsSingleQuery()
                         .ToArrayAsync();
     }
