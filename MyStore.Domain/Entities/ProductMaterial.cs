@@ -9,6 +9,7 @@ namespace MyStore.Domain.Entities
         public Product Product { get; set; }
         public int MaterialId { get; set; }
         public Material Material { get; set; }
+
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
     }

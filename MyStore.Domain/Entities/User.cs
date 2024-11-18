@@ -17,5 +17,7 @@ namespace MyStore.Domain.Entities
         public ICollection<UserVoucher> UserVouchers { get; } = new HashSet<UserVoucher>();
         public ICollection<ProductFavorite> ProductFavorites { get; } = new HashSet<ProductFavorite>();
         public ICollection<ProductReview> ProductReviews { get; } = new HashSet<ProductReview>();
+
+        public virtual ICollection<UserRole> UserRoles { get; }
     }
 }

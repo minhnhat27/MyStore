@@ -1,8 +1,11 @@
-﻿namespace MyStore.Domain.Entities
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace MyStore.Domain.Entities
 {
     public class ProductColor : IBaseEntity
     {
         public long Id { get; set; }
+        [MaxLength(20)]
         public string ColorName { get; set; }
         
         public long ProductId { get; set; }

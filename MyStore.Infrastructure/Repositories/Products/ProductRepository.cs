@@ -30,6 +30,7 @@ namespace MyStore.Infrastructure.Repositories.Products
         public override async Task<IEnumerable<Product>> GetPagedAsync<TKey>(int page, int pageSize, Expression<Func<Product, bool>>? expression, Expression<Func<Product, TKey>> orderBy)
             => expression == null
                 ? await _dbContext.Products
+                        .OrderBy(orderBy)
                         .Paginate(page, pageSize)
                         .Include(e => e.Images)
                         .Include(e => e.Category)
@@ -37,10 +38,10 @@ namespace MyStore.Infrastructure.Repositories.Products
                         .Include(e => e.ProductReviews)
                         .Include(e => e.ProductFlashSales)
                             .ThenInclude(e => e.FlashSale)
-                        .AsSingleQuery()
-                        .OrderBy(orderBy).ToArrayAsync()
+                        .AsSingleQuery().ToArrayAsync()
                 : await _dbContext.Products
                         .Where(expression)
+                        .OrderBy(orderBy)
                         .Paginate(page, pageSize)
                         .Include(e => e.Images)
                         .Include(e => e.Category)
@@ -49,7 +50,7 @@ namespace MyStore.Infrastructure.Repositories.Products
                         .Include(e => e.ProductFlashSales)
                             .ThenInclude(e => e.FlashSale)
                         .AsSingleQuery()
-                        .OrderBy(orderBy).ToArrayAsync();
+                        .ToArrayAsync();
         public override async Task<IEnumerable<Product>> GetPagedOrderByDescendingAsync<TKey>(int page, int pageSize, Expression<Func<Product, bool>>? expression, Expression<Func<Product, TKey>> orderByDesc)
             => expression == null
                 ? await _dbContext.Products

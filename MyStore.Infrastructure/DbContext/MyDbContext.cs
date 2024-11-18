@@ -1,11 +1,13 @@
-﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using MyStore.Domain.Entities;
 
 namespace MyStore.Infrastructure.DbContext
 {
-    public class MyDbContext : IdentityDbContext<User>
+    public class MyDbContext : IdentityDbContext<User, Role, string, IdentityUserClaim<string>, 
+        UserRole, IdentityUserLogin<string>, IdentityRoleClaim<string>, IdentityUserToken<string>>
     {
         public MyDbContext(DbContextOptions<MyDbContext> options) : base(options)
         {
@@ -31,6 +33,25 @@ namespace MyStore.Infrastructure.DbContext
         public virtual DbSet<UserVoucher> UserVouchers { get; set; }
         public virtual DbSet<FlashSale> FlashSales { get; set; }
         public virtual DbSet<ProductFlashSale> ProductFlashSales { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder builder)
+        {
+            base.OnModelCreating(builder);
+            builder.Entity<User>(e =>
+            {
+                e.HasMany(x => x.UserRoles)
+                .WithOne(x => x.User)
+                .HasForeignKey(x => x.UserId)
+                .IsRequired();
+            });
+            builder.Entity<Role>(e =>
+            {
+                e.HasMany(x => x.UserRoles)
+                .WithOne(x => x.Role)
+                .HasForeignKey(x => x.RoleId)
+                .IsRequired();
+            });
+        }
 
         private void UpdateTimestamps()
         {

@@ -13,5 +13,6 @@ namespace MyStore.Application.IStorage
 
         void Delete(string path);
         void Delete(IEnumerable<string> paths);
+        void DeleteDirectory(string path, bool recursive = true);
     }
 }

@@ -15,8 +15,9 @@ using System.Text;
 using MyStore.Application.DTOs;
 using MyStore.Domain.Enumerations;
 using MyStore.Application.IRepositories;
+using MyStore.Application.Services;
 
-namespace MyStore.Infrastructure.AuthenticationService
+namespace MyStore.Infrastructure.Authentication
 {
     public class AuthenticationService : IAuthenticationService
     {
@@ -47,7 +48,6 @@ namespace MyStore.Infrastructure.AuthenticationService
         {
             var roles = await _userManager.GetRolesAsync(user);
             var exps = DateTime.Now.AddHours(24);
-
             var isAdmin = roles.Contains("Admin");
 
             var claims = new List<Claim>
@@ -100,7 +100,7 @@ namespace MyStore.Infrastructure.AuthenticationService
         private async Task ThrowIfUserExists(string username)
         {
             var user = await _userManager.FindByNameAsync(username);
-            if(user != null)
+            if (user != null)
             {
                 throw new InvalidDataException(ErrorMessage.EMAIL_HAS_BEEN_REGISTERED);
             };
@@ -209,13 +209,13 @@ namespace MyStore.Infrastructure.AuthenticationService
 
             var provider = ExternalLoginEnum.FACEBOOK.ToString();
             var result = await _userManager.FindByLoginAsync(provider, providerId);
-            if(result != null)
+            if (result != null)
             {
                 throw new ArgumentException("Tài khoản Facebook đã được liên kết với người dùng khác.");
             }
             await _userManager.AddLoginAsync(user, new UserLoginInfo(provider, providerId, name));
         }
-        
+
         public async Task UnlinkFacebook(string userId)
         {
             var user = await GetUserExistsById(userId);
@@ -232,35 +232,76 @@ namespace MyStore.Infrastructure.AuthenticationService
             }
         }
 
+        public async Task<User> CreateUserAsync(string email, string password, string? name, string? phoneNumber)
+        {
+            var user = new User
+            {
+                Email = email,
+                NormalizedEmail = email.ToUpper(),
+                Fullname = name,
+                PhoneNumber = phoneNumber,
+                UserName = email,
+                NormalizedUserName = email.ToUpper(),
+                EmailConfirmed = true,
+                SecurityStamp = Guid.NewGuid().ToString(),
+            };
+
+            var result = await _userManager.CreateAsync(user, password);
+            if (!result.Succeeded)
+            {
+                throw new Exception(string.Join(";", result.Errors.Select(e => e.Description)));
+            }
+            return user;
+        }
+        private async Task AddToRolesAsync(User user, IEnumerable<string> roles)
+        {
+            var result = await _userManager.AddToRolesAsync(user, roles);
+            if (!result.Succeeded)
+            {
+                throw new Exception(string.Join(";", result.Errors.Select(e => e.Description)));
+            }
+        }
+        private async Task AddToRoleAsync(User user, string role)
+        {
+            var result = await _userManager.AddToRoleAsync(user, role);
+            if (!result.Succeeded)
+            {
+                throw new Exception(string.Join(";", result.Errors.Select(e => e.Description)));
+            }
+        }
+
         public async Task<UserDTO> Register(RegisterRequest request)
         {
             try
             {
-                string username;
+                string email;
                 GoogleJsonWebSignature.Payload? payload = null;
-                if(request.Email != null)
+                if (request.Email != null)
                 {
                     ThrowIfInvalidCode(AuthTypeEnum.Register, request.Email, request.Token);
-                    username = request.Email;
+                    email = request.Email;
 
                     RemoveCache(AuthTypeEnum.Register, request.Email, request.Token);
                 }
                 else
                 {
                     payload = await GoogleJsonWebSignature.ValidateAsync(request.Token);
-                    username = payload.Email;
+                    email = payload.Email;
                 }
 
-                var user = new User
-                {
-                    Email = username,
-                    Fullname = request.Name,
-                    UserName = username,
-                    PhoneNumber = request.PhoneNumber,
-                    NormalizedUserName = request.Email,
-                    EmailConfirmed = true,
-                    SecurityStamp = Guid.NewGuid().ToString(),
-                };
+                //var user = new User
+                //{
+                //    Email = username,
+                //    Fullname = request.Name,
+                //    UserName = username,
+                //    PhoneNumber = request.PhoneNumber,
+                //    NormalizedUserName = username.ToUpper(),
+                //    EmailConfirmed = true,
+                //    SecurityStamp = Guid.NewGuid().ToString(),
+                //};
+
+                var user = await CreateUserAsync(email, request.Password, request.Name, request.PhoneNumber);
+                await AddToRoleAsync(user, RolesEnum.User.ToString());
                 user.DeliveryAddress = new DeliveryAddress
                 {
                     UserId = user.Id,
@@ -268,25 +309,19 @@ namespace MyStore.Infrastructure.AuthenticationService
                     PhoneNumber = user.PhoneNumber,
                 };
 
-                var result = await _userManager.CreateAsync(user, request.Password);
-                if (!result.Succeeded)
-                {
-                    throw new Exception(string.Join(";", result.Errors.Select(e => e.Description)));
-                }
-                if(request.Email == null && payload != null)
+                if (request.Email == null && payload != null)
                 {
                     var googleId = payload.Subject;
                     var provider = ExternalLoginEnum.GOOGLE.ToString();
                     var addLoginResult = await _userManager.AddLoginAsync(user, new UserLoginInfo(provider, googleId, provider));
                     if (!addLoginResult.Succeeded)
                     {
-                        throw new Exception(string.Join(";", result.Errors.Select(e => e.Description)));
+                        throw new Exception(string.Join(";", addLoginResult.Errors.Select(e => e.Description)));
                     }
                 }
-
                 return _mapper.Map<UserDTO>(user);
             }
-            catch(Exception)
+            catch (Exception)
             {
                 throw;
             }
@@ -320,7 +355,7 @@ namespace MyStore.Infrastructure.AuthenticationService
 
         public async Task SendCodeToEmail(AuthTypeEnum authType, string email)
         {
-            if(authType != AuthTypeEnum.ForgetPassword)
+            if (authType != AuthTypeEnum.ForgetPassword)
             {
                 await ThrowIfUserExists(email);
             }
@@ -375,7 +410,7 @@ namespace MyStore.Infrastructure.AuthenticationService
         {
             var user = await GetUserExistsById(userId);
 
-            if(currentPassword.Equals(newPassword))
+            if (currentPassword.Equals(newPassword))
             {
                 throw new InvalidOperationException(ErrorMessage.DUPLICATE_CURRENT_PASSWORD);
             }
@@ -400,41 +435,58 @@ namespace MyStore.Infrastructure.AuthenticationService
             return result.Succeeded;
         }
 
-        public async Task ChangeEmail(string userId, string newEmail, string token)
+        private async Task ChangeEmail(User user, string newEmail)
         {
-            var user = await GetUserExistsById(userId);
-            ThrowIfInvalidCode(AuthTypeEnum.ChangeEmail, newEmail, token);
+            await ThrowIfUserExists(newEmail);
 
-            using var transaction = await _transaction.BeginTransactionAsync();
-            try
+            var result = await _userManager.SetEmailAsync(user, newEmail);
+            var resultUserName = await _userManager.SetUserNameAsync(user, newEmail);
+
+            if (!result.Succeeded || !resultUserName.Succeeded)
             {
-                var result = await _userManager.SetEmailAsync(user, newEmail);
-                var resultUserName = await _userManager.SetUserNameAsync(user, newEmail);
+                throw new Exception(ErrorMessage.ERROR);
+            }
+            var provider = ExternalLoginEnum.GOOGLE.ToString();
 
-                if (!result.Succeeded || !resultUserName.Succeeded)
+            var externalLogins = await _userManager.GetLoginsAsync(user);
+            var googleLogin = externalLogins.SingleOrDefault(e => e.LoginProvider == provider);
+            if (googleLogin != null)
+            {
+                var res = await _userManager.RemoveLoginAsync(user, provider, googleLogin.ProviderKey);
+                if (!res.Succeeded)
                 {
                     throw new Exception(ErrorMessage.ERROR);
                 }
-                var provider = ExternalLoginEnum.GOOGLE.ToString();
+            }
+        }
 
-                var externalLogins = await _userManager.GetLoginsAsync(user);
-                var googleLogin = externalLogins.SingleOrDefault(e => e.LoginProvider == provider);
-                if(googleLogin != null)
-                {
-                    var resl = await _userManager.RemoveLoginAsync(user, provider, googleLogin.ProviderKey);
-                    if (!resl.Succeeded)
-                    {
-                        throw new Exception(ErrorMessage.ERROR);
-                    }
-                }
+        public async Task ChangeEmail(string userId, string newEmail, string token)
+        {
+            using var transaction = await _transaction.BeginTransactionAsync();
+            try
+            {
+                var user = await GetUserExistsById(userId);
+                ThrowIfInvalidCode(AuthTypeEnum.ChangeEmail, newEmail, token);
+
+                await ChangeEmail(user, newEmail);
 
                 RemoveCache(AuthTypeEnum.ChangeEmail, newEmail, token);
-                await _transaction.CommitTransactionAsync();
+                await transaction.CommitAsync();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 await transaction.RollbackAsync();
-                throw new Exception(ex.Message);
+                throw;
+            }
+        }
+
+        private async Task ResetPassword(User user, string password)
+        {
+            var tempToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var result = await _userManager.ResetPasswordAsync(user, tempToken, password);
+            if (!result.Succeeded)
+            {
+                throw new Exception(string.Join("; ", result.Errors));
             }
         }
 
@@ -443,24 +495,78 @@ namespace MyStore.Infrastructure.AuthenticationService
             var user = await GetUserExistsByUserName(email);
             ThrowIfInvalidCode(AuthTypeEnum.ForgetPassword, email, token);
 
-            using var transaction = await _transaction.BeginTransactionAsync();
+            await ResetPassword(user, password);
+
+            RemoveCache(AuthTypeEnum.ForgetPassword, email, token);
+        }
+
+
+        public async Task<UserResponse> UpdateUserAccount(string userId, UpdateAccountRequest request)
+        {
+            var user = await GetUserExistsById(userId);
+
+            var transaction = await _transaction.BeginTransactionAsync();
             try
             {
-                var tempToken = await _userManager.GeneratePasswordResetTokenAsync(user);
-                var result = await _userManager.ResetPasswordAsync(user, tempToken, password);
-                if (!result.Succeeded)
+                if (!string.IsNullOrEmpty(request.Email) && request.Email != user.Email)
                 {
-                    throw new Exception(string.Join("; ", result.Errors));
+                    await ChangeEmail(user, request.Email);
                 }
+                if (!string.IsNullOrEmpty(request.Password))
+                {
+                    await ResetPassword(user, request.Password);
+                }
+                user.Fullname = request.Fullname;
+                user.PhoneNumber = request.PhoneNumber;
+                
+                var currentRoles = await _userManager.GetRolesAsync(user);
+                var removeRole = await _userManager
+                    .RemoveFromRolesAsync(user, currentRoles.Where(role => !request.Roles.Contains(role)));
+                if (!removeRole.Succeeded)
+                {
+                    throw new Exception(ErrorMessage.ERROR);
+                }
+                await AddToRolesAsync(user, request.Roles.Except(currentRoles));
 
-                RemoveCache(AuthTypeEnum.ForgetPassword, email, token);
-                await _transaction.CommitTransactionAsync();
+                await _userManager.UpdateAsync(user);
+                await transaction.CommitAsync();
+
+                var res = _mapper.Map<UserResponse>(user);
+                res.LockedOut = res.LockoutEnd > DateTime.Now;
+                res.LockoutEnd = res.LockoutEnd > DateTime.Now ? res.LockoutEnd : null;
+                res.Roles = request.Roles.Select(e => e.ToString());
+
+                return res;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 await transaction.RollbackAsync();
-                throw new Exception(ex.Message);
+                throw;
             }
         }
+        public async Task<UserResponse> CreateUserWithRoles(AccountRequest request)
+        {
+            var transaction = await _transaction.BeginTransactionAsync();
+            try
+            {
+                await ThrowIfUserExists(request.Email);
+                var user = await CreateUserAsync(request.Email, request.Password, request.Fullname, request.PhoneNumber);
+
+                await AddToRolesAsync(user, request.Roles.Select(e => e.ToString()));
+                await transaction.CommitAsync();
+
+                var res = _mapper.Map<UserResponse>(user);
+                res.LockedOut = res.LockoutEnd > DateTime.Now;
+                res.LockoutEnd = res.LockoutEnd > DateTime.Now ? res.LockoutEnd : null;
+                res.Roles = request.Roles.Select(e => e.ToString());
+                return res;
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
     }
 }

@@ -10,6 +10,7 @@
     {
         public string? Email { get; set; }
     }
+
     public class UserResponse : UserDTO
     {
         public string Id { get; set; }
@@ -18,6 +19,8 @@
         public DateTimeOffset? LockoutEnd { get; set; }
         public DateTime? CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
+
+        public IEnumerable<string> Roles { get; set; }
     }
 
     public class UserHaveVoucher

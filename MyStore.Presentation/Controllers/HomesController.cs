@@ -24,13 +24,12 @@ namespace MyStore.Presentation.Controllers
             {
                 var path = "assets/images/banner";
                 var bannerPath = Path.Combine(_environment.WebRootPath, path);
-                if (!Directory.Exists(bannerPath))
+                List<string> filePaths = new();
+                if (Directory.Exists(bannerPath))
                 {
-                    return NotFound(ErrorMessage.FOLDER_NOT_FOUND);
+                    var files = Directory.GetFiles(bannerPath);
+                    filePaths.AddRange(files.Select(file => Path.Combine(path, Path.GetFileName(file))));
                 }
-                var files = Directory.GetFiles(bannerPath);
-                var filePaths = files.Select(file => Path.Combine(path, Path.GetFileName(file)));
-
                 return Ok(filePaths);
             }
             catch (Exception ex)
@@ -49,19 +48,22 @@ namespace MyStore.Presentation.Controllers
                 var bannerPath = Path.Combine(_environment.WebRootPath, path);
 
                 var listDelete = new List<string>();
-                var files = Directory.GetFiles(bannerPath);
-                var filePaths = files.Select(file => Path.Combine(path, Path.GetFileName(file)));
 
-                if (imageUrls == null)
+                if (Directory.Exists(bannerPath))
                 {
-                    if (filePaths.Any())
+                    var files = Directory.GetFiles(bannerPath);
+                    var filePaths = files.Select(file => Path.Combine(path, Path.GetFileName(file)));
+                    if (imageUrls == null)
                     {
-                        listDelete.AddRange(filePaths);
+                        if (filePaths.Any())
+                        {
+                            listDelete.AddRange(filePaths);
+                        }
                     }
-                }
-                else
-                {
-                    listDelete.AddRange(filePaths.Where(e => !imageUrls.Contains(e)));
+                    else
+                    {
+                        listDelete.AddRange(filePaths.Where(e => !imageUrls.Contains(e)));
+                    }
                 }
 
                 if (listDelete.Any())

@@ -8,7 +8,9 @@ namespace MyStore.Domain.Entities
         public string UserId { get; set; }
         public User User { get; set; }
 
-        public string Name { get; set; }
+        [MaxLength(55)]
+        public string? Name { get; set; }
+        [MaxLength(15)]
         public string? PhoneNumber { get; set; }
 
         public int? ProvinceID { get; set; }

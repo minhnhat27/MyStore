@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using MyStore.Application.DTOs;
+using MyStore.Application.IRepositories;
 using MyStore.Application.IRepositories.Products;
 using MyStore.Application.IRepositories.Users;
 using MyStore.Application.Request;
@@ -19,19 +20,25 @@ namespace MyStore.Application.Services.Users
         private readonly IDeliveryAddressRepository _deliveryAddressRepository;
 
         private readonly IProductFavoriteRepository _productFavoriteRepository;
+        private readonly IAuthenticationService _authenticationService;
+        private readonly ITransactionRepository _transactionRepository;
 
         private readonly IMapper _mapper;
 
         public UserService(UserManager<User> userManager, 
-            IUserRepository userRepository, IMapper mapper, 
-            IDeliveryAddressRepository deliveryAddressRepository, 
-            IProductFavoriteRepository productFavoriteRepository)
+            IUserRepository userRepository, IMapper mapper,
+            IDeliveryAddressRepository deliveryAddressRepository,
+            IProductFavoriteRepository productFavoriteRepository,
+            ITransactionRepository transactionRepository,
+            IAuthenticationService authenticationService)
         {
             _userManager = userManager;
             _userRepository = userRepository;
             _mapper = mapper;
             _deliveryAddressRepository = deliveryAddressRepository;
             _productFavoriteRepository = productFavoriteRepository;
+            _authenticationService = authenticationService;
+            _transactionRepository = transactionRepository;
         }
 
         public async Task<PagedResponse<UserResponse>> GetAllUsersAsync(int page, int pageSize, string? keySearch)
@@ -57,6 +64,52 @@ namespace MyStore.Application.Services.Users
 
             var items = _mapper.Map<IEnumerable<UserResponse>>(users).Select(e =>
             {
+                e.LockedOut = e.LockoutEnd > DateTime.Now;
+                e.LockoutEnd = e.LockoutEnd > DateTime.Now ? e.LockoutEnd : null;
+                return e;
+            });
+
+            return new PagedResponse<UserResponse>
+            {
+                Items = items,
+                TotalItems = totalUsers,
+                Page = page,
+                PageSize = pageSize
+            };
+        }
+
+        public async Task<PagedResponse<UserResponse>> GetAllUsersAsync(int page, int pageSize, string? keySearch, RolesEnum role)
+        {
+            int totalUsers;
+            IEnumerable<User> users;
+            if (string.IsNullOrEmpty(keySearch))
+            {
+                Expression<Func<User, bool>> expression = e =>
+                    e.UserRoles.Any(e => !string.IsNullOrEmpty(e.Role.Name) && e.Role.Name.Equals(role.ToString()));
+
+                totalUsers = await _userRepository.CountAsync(expression);
+                users = await _userRepository.GetPagedOrderByDescendingAsync(page, pageSize, expression, e => e.CreatedAt);
+            }
+            else
+            {
+                Expression<Func<User, bool>> expression = e =>
+                    e.UserRoles.Any(e => !string.IsNullOrEmpty(e.Role.Name) && e.Role.Name.Equals(role.ToString()))
+                    && (e.Id.Equals(keySearch)
+                    || (e.Fullname != null && e.Fullname.Contains(keySearch))
+                    || (e.Email != null && e.Email.Contains(keySearch))
+                    || (e.PhoneNumber != null && e.PhoneNumber.Contains(keySearch)));
+
+                totalUsers = await _userRepository.CountAsync(expression);
+                users = await _userRepository.GetPagedOrderByDescendingAsync(page, pageSize, expression, e => e.CreatedAt);
+            }
+
+            var items = _mapper.Map<IEnumerable<UserResponse>>(users).Select(e =>
+            {
+                var user = users.FirstOrDefault(e => e.Id == e.Id);
+                if(user != null)
+                {
+                    e.Roles = user.UserRoles.Select(e => e.Role.Name ?? "");
+                }
                 e.LockedOut = e.LockoutEnd > DateTime.Now;
                 e.LockoutEnd = e.LockoutEnd > DateTime.Now ? e.LockoutEnd : null;
                 return e;

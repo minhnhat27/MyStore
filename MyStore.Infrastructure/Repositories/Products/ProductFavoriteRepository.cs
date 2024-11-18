@@ -17,17 +17,17 @@ namespace MyStore.Infrastructure.Repositories.Products
         public override async Task<IEnumerable<ProductFavorite>> GetPagedAsync<TKey>(int page, int pageSize, Expression<Func<ProductFavorite, bool>>? expression, Expression<Func<ProductFavorite, TKey>> orderBy)
         => expression == null 
             ? await _dbcontext.ProductFavorites
+                .OrderBy(orderBy)
                 .Paginate(page, pageSize)
                 .Include(e => e.Product)
                     .ThenInclude(e => e.Images)
-                .OrderBy(orderBy)
                 .ToArrayAsync()
             : await _dbcontext.ProductFavorites
                 .Where(expression)
+                .OrderBy(orderBy)
                 .Paginate(page, pageSize)
                 .Include(e => e.Product)
                     .ThenInclude(e => e.Images)
-                .OrderBy(orderBy)
                 .ToArrayAsync();
     }
 }

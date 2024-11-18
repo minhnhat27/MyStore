@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyStore.Application.Request;
+using MyStore.Application.Services;
 using MyStore.Domain.Constants;
-using MyStore.Infrastructure.AuthenticationService;
 using System.Security.Claims;
 
 namespace MyStore.Presentation.Controllers

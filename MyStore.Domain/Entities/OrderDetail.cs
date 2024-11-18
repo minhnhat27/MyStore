@@ -1,4 +1,7 @@
-﻿namespace MyStore.Domain.Entities
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
+
+namespace MyStore.Domain.Entities
 {
     public class OrderDetail
     {
@@ -8,14 +11,17 @@
         public Order Order { get; set; }
 
         public long? ProductId { get; set; }
-        public Product? Product { get; set; }
+        [DeleteBehavior(DeleteBehavior.SetNull)]
+        public Product Product { get; set; }
 
+        [MaxLength(155)]
         public string ProductName { get; set; }
 
         //public string SizeName { get; set; }
         //public string ColorName { get; set; }
         public long SizeId { get; set; }
         public long ColorId { get; set; }
+        [MaxLength(50)]
         public string Variant { get; set; }
 
         public double OriginPrice { get; set; }

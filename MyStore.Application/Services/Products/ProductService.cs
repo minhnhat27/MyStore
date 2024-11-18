@@ -34,6 +34,7 @@ namespace MyStore.Application.Services.Products
         private readonly IMapper _mapper;
 
         private readonly string path = "assets/images/products";
+        private readonly string reviewsPath = "assets/images/reviews";
 
         public ProductService(IProductRepository productRepository,
                               IProductSizeRepository productSizeRepository,
@@ -219,7 +220,8 @@ namespace MyStore.Application.Services.Products
                 int totalProduct = 0;
                 IEnumerable<Product> products = [];
                 Expression<Func<Product, bool>> expression = e => e.Enable;
-                var productFlashSale = (await _flashSaleService.GetFlashSaleProductsThisTime()).Products;
+                var fsThisTime = await _flashSaleService.GetFlashSaleProductsThisTime();
+                var productFlashSale = fsThisTime.Products ?? [];
 
                 var date = DateTime.Now.Date;
 
@@ -294,21 +296,33 @@ namespace MyStore.Application.Services.Products
                 if (filters.Discount != null && filters.Discount.Value 
                     && filters.FlashSale != null && filters.FlashSale.Value)
                 {
-                    expression = CombineExpressions(expression, e => e.DiscountPercent > 0
+                    if(productFlashSale != null)
+                    {
+                        expression = CombineExpressions(expression, e => e.DiscountPercent > 0
                         || productFlashSale.Select(e => e.Id).Any(x => x == e.Id));
+                    }
+                    else expression = CombineExpressions(expression, e => e.DiscountPercent > 0);
 
                 }
                 else
                 {
                     if (filters.Discount != null && filters.Discount.Value)
                     {
-                        expression = CombineExpressions(expression, e => e.DiscountPercent > 0 ||
-                        productFlashSale.Select(e => e.Id).Any(x => x == e.Id));
+                        if (productFlashSale != null)
+                        {
+                            expression = CombineExpressions(expression, e => e.DiscountPercent > 0
+                            || productFlashSale.Select(e => e.Id).Any(x => x == e.Id));
+                        }
+                        else expression = CombineExpressions(expression, e => e.DiscountPercent > 0);
 
                     }
-                    else if (filters.FlashSale != null && filters.FlashSale.Value && productFlashSale.Any())
+                    else if (filters.FlashSale != null && filters.FlashSale.Value)
                     {
-                        expression = CombineExpressions(expression, e => productFlashSale.Select(e => e.Id).Any(x => x == e.Id));
+                        if (productFlashSale != null && productFlashSale.Any())
+                        {
+                            expression = CombineExpressions(expression, e => productFlashSale.Select(e => e.Id).Any(x => x == e.Id));
+                        }
+                        else expression = CombineExpressions(expression, e => false);
                     }
                 }
 
@@ -354,7 +368,7 @@ namespace MyStore.Application.Services.Products
                 };
                 var res = _mapper.Map<IEnumerable<ProductDTO>>(products);
 
-                if (productFlashSale.Any())
+                if (productFlashSale != null && productFlashSale.Any())
                 {
                     res = res.Select(e =>
                     {
@@ -760,19 +774,27 @@ namespace MyStore.Application.Services.Products
 
         public async Task DeleteProductAsync(long id)
         {
-            var product = await _productRepository.FindAsync(id);
-            if (product != null)
-            {
-                var images = await _imageRepository.GetImageByProductIdAsync(id);
-                var colorImages = await _productColorRepository.GetAsync(e => e.ProductId == id);
+            var product = await _productRepository.FindAsync(id)
+                ?? throw new ArgumentException($"Id {id} " + ErrorMessage.NOT_FOUND);
 
-                var deleteList = colorImages.Select(e => e.ImageUrl).ToList();
-                deleteList.AddRange(images.Select(e => e.ImageUrl));
+            var images = await _imageRepository.GetImageByProductIdAsync(id);
+            List<string> imageDeletes = images.Select(e => e.ImageUrl).ToList();
 
-                _fileStorage.Delete(deleteList);
-                await _productRepository.DeleteAsync(product);
-            }
-            else throw new ArgumentException($"Id {id} " + ErrorMessage.NOT_FOUND);
+            var reviewImagesPath = Path.Combine(reviewsPath, product.Id.ToString());
+
+            //var reviewImages = await _productReviewRepository.GetAsync(e => e.ProductId == id);
+            //imageDeletes.AddRange(reviewImages
+            //    .Where(e => e.ImagesUrls != null && e.ImagesUrls.Any())
+            //    .SelectMany(e => e.ImagesUrls));
+
+            //ko xoa ảnh của màu do detail của khách hàng
+            //var colorImages = await _productColorRepository.GetAsync(e => e.ProductId == id);
+            //var deleteList = colorImages.Select(e => e.ImageUrl).ToList();
+            //deleteList.AddRange(images.Select(e => e.ImageUrl));
+
+            await _productRepository.DeleteAsync(product);
+            _fileStorage.Delete(imageDeletes);
+            _fileStorage.DeleteDirectory(reviewImagesPath);
         }
 
         private string MaskUsername(string username)
@@ -836,6 +858,10 @@ namespace MyStore.Application.Services.Products
                     product.RatingCount -= 1;
 
                     await _productRepository.UpdateAsync(product);
+                }
+                if(rv.ImagesUrls != null && rv.ImagesUrls.Any())
+                {
+                    _fileStorage.Delete(rv.ImagesUrls);
                 }
                 await _productReviewRepository.DeleteAsync(rv);
                 await transaction.CommitAsync();

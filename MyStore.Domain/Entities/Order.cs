@@ -37,8 +37,10 @@ namespace MyStore.Domain.Entities
         public string? PaymentTranId { get; set; }
 
         public int? PaymentMethodId { get; set; }
-        public string PaymentMethodName { get; set; }
         public PaymentMethod? PaymentMethod { get; set; }
+
+        [MaxLength(30)]
+        public string PaymentMethodName { get; set; }
 
         public DeliveryStatusEnum? OrderStatus { get; set; } = DeliveryStatusEnum.Processing;
 

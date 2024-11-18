@@ -1,13 +1,15 @@
 ﻿using MyStore.Application.DTOs;
 using MyStore.Application.Request;
 using MyStore.Application.Response;
+using MyStore.Domain.Entities;
 using MyStore.Domain.Enumerations;
 
-namespace MyStore.Infrastructure.AuthenticationService
+namespace MyStore.Application.Services
 {
     public interface IAuthenticationService
     {
         Task<LoginResponse> Login(string username, string password);
+        Task<User> CreateUserAsync(string email, string password, string? name, string? phoneNumber);
         Task<UserDTO> Register(RegisterRequest request);
 
         Task SendCodeToEmail(AuthTypeEnum authType, string email);
@@ -26,5 +28,8 @@ namespace MyStore.Infrastructure.AuthenticationService
         Task UnlinkFacebook(string userId);
 
         Task CheckGoogleRegister(string credentials);
+
+        Task<UserResponse> UpdateUserAccount(string userId, UpdateAccountRequest request);
+        Task<UserResponse> CreateUserWithRoles(AccountRequest request);
     }
 }

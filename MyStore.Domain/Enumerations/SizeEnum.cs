@@ -2,6 +2,7 @@
 {
     public enum SizeEnum
     {
+        FreeSize,
         XS,
         S,
         M,
@@ -11,6 +12,5 @@
         XXXL,
         XXXXL,
         XXXXXL,
-        FreeSize,
     }
 }

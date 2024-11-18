@@ -15,13 +15,14 @@ namespace MyStore.Domain.Entities
         [Range(1, 5)]
         public int Star { get; set; }
 
+        [MaxLength(50)]
         public string Variant { get; set; }
 
-        public long? ProductId { get; set; }
-        public Product? Product { get; set; }
+        public long ProductId { get; set; }
+        public Product Product { get; set; }
 
-        public string? UserId { get; set; }
-        public User? User { get; set; }
+        public string UserId { get; set; }
+        public User User { get; set; }
 
         [NotMapped]
         public List<string>? ImagesUrls { get; set; }

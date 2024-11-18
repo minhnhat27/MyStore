@@ -16,7 +16,6 @@ namespace MyStore.Infrastructure.DataSeeding
             var context = scope.ServiceProvider.GetRequiredService<MyDbContext>();
             if(context != null)
             {
-                using var transaction = await context.Database.BeginTransactionAsync();
                 try
                 {
                     if (context.Database.GetPendingMigrations().Any())
@@ -25,25 +24,27 @@ namespace MyStore.Infrastructure.DataSeeding
                     }
                     await InitializeProductAttributes(context);
                     await InitializeRoles(scope.ServiceProvider, context);
-                    await transaction.CommitAsync();
                 }
                 catch
                 {
-                    await transaction.RollbackAsync();
                     throw;
                 }
             }
         }
         private static async Task InitializeRoles(IServiceProvider serviceProvider, MyDbContext context)
         {
-            var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+            var roleManager = serviceProvider.GetRequiredService<RoleManager<Role>>();
 
             string[] roles = Enum.GetNames(typeof(RolesEnum));
             foreach (string role in roles)
             {
                 if (!context.Roles.Any(r => r.Name == role))
                 {
-                    await roleManager.CreateAsync(new IdentityRole(role));
+                    await roleManager.CreateAsync(new Role
+                    {
+                        Name = role,
+                        NormalizedName = role.ToUpper()
+                    });
                 }
             }
             await InitializeUsers(serviceProvider, context, roles);
@@ -52,13 +53,14 @@ namespace MyStore.Infrastructure.DataSeeding
         {
             var userManager = serviceProvider.GetRequiredService<UserManager<User>>();
 
+            var email = "minhnhat012340@gmail.com";
             var user = new User
             {
                 Fullname = "Minh Nhật",
-                Email = "minhnhat012340@gmail.com",
-                NormalizedEmail = "minhnhat012340@gmail.com",
-                UserName = "minhnhat012340@gmail.com",
-                NormalizedUserName = "minhnhat012340@gmail.com",
+                Email = email,
+                NormalizedEmail = email.ToUpper(),
+                UserName = email,
+                NormalizedUserName = email.ToUpper(),
                 PhoneNumber = "0358103707",
                 EmailConfirmed = true,
                 PhoneNumberConfirmed = true,
@@ -70,7 +72,7 @@ namespace MyStore.Infrastructure.DataSeeding
                 var result = await userManager.CreateAsync(user, "Minhnhat2702");
                 if (result.Succeeded)
                 {
-                    await userManager.AddToRolesAsync(user, roles);
+                    await userManager.AddToRoleAsync(user, RolesEnum.Admin.ToString());
                 }
             }
         }
@@ -105,8 +107,6 @@ namespace MyStore.Infrastructure.DataSeeding
             {
                 await context.SaveChangesAsync();
             }
-
-            
         }
     }
 }

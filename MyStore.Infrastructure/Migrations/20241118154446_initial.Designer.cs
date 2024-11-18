@@ -12,44 +12,18 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MyStore.Infrastructure.Migrations
 {
     [DbContext(typeof(MyDbContext))]
-    [Migration("20241023124637_add-flashSale")]
-    partial class addflashSale
+    [Migration("20241118154446_initial")]
+    partial class initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.8")
+                .HasAnnotation("ProductVersion", "8.0.10")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
-
-                    b.Property<string>("ConcurrencyStamp")
-                        .IsConcurrencyToken()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Name")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("NormalizedName")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("NormalizedName")
-                        .IsUnique()
-                        .HasDatabaseName("RoleNameIndex");
-
-                    b.ToTable("AspNetRoles", (string)null);
-                });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
@@ -123,21 +97,6 @@ namespace MyStore.Infrastructure.Migrations
                     b.ToTable("AspNetUserLogins", (string)null);
                 });
 
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<string>", b =>
-                {
-                    b.Property<string>("UserId")
-                        .HasColumnType("text");
-
-                    b.Property<string>("RoleId")
-                        .HasColumnType("text");
-
-                    b.HasKey("UserId", "RoleId");
-
-                    b.HasIndex("RoleId");
-
-                    b.ToTable("AspNetUserRoles", (string)null);
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
                 {
                     b.Property<string>("UserId")
@@ -170,11 +129,13 @@ namespace MyStore.Infrastructure.Migrations
 
                     b.Property<string>("ImageUrl")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp without time zone");
@@ -263,10 +224,12 @@ namespace MyStore.Infrastructure.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(55)
+                        .HasColumnType("character varying(55)");
 
                     b.Property<string>("PhoneNumber")
-                        .HasColumnType("text");
+                        .HasMaxLength(15)
+                        .HasColumnType("character varying(15)");
 
                     b.Property<int?>("ProvinceID")
                         .HasColumnType("integer");
@@ -293,9 +256,27 @@ namespace MyStore.Infrastructure.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("text");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int>("DiscountTimeFrame")
+                        .HasColumnType("integer");
+
+                    b.Property<double>("TotalRevenue")
+                        .HasColumnType("double precision");
+
+                    b.Property<int>("TotalSold")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
                     b.HasKey("Id");
 
-                    b.ToTable("FlashSale");
+                    b.ToTable("FlashSales");
                 });
 
             modelBuilder.Entity("MyStore.Domain.Entities.Image", b =>
@@ -311,7 +292,8 @@ namespace MyStore.Infrastructure.Migrations
 
                     b.Property<string>("ImageUrl")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
 
                     b.Property<long>("ProductId")
                         .HasColumnType("bigint");
@@ -339,7 +321,8 @@ namespace MyStore.Infrastructure.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp without time zone");
@@ -385,7 +368,8 @@ namespace MyStore.Infrastructure.Migrations
 
                     b.Property<string>("PaymentMethodName")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
 
                     b.Property<string>("PaymentTranId")
                         .HasColumnType("text");
@@ -397,6 +381,9 @@ namespace MyStore.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("ReviewDeadline")
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<bool>("Reviewed")
                         .HasColumnType("boolean");
@@ -443,10 +430,6 @@ namespace MyStore.Infrastructure.Migrations
                     b.Property<long>("ColorId")
                         .HasColumnType("bigint");
 
-                    b.Property<string>("ColorName")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<string>("ImageUrl")
                         .HasColumnType("text");
 
@@ -464,7 +447,8 @@ namespace MyStore.Infrastructure.Migrations
 
                     b.Property<string>("ProductName")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(155)
+                        .HasColumnType("character varying(155)");
 
                     b.Property<int>("Quantity")
                         .HasColumnType("integer");
@@ -472,9 +456,10 @@ namespace MyStore.Infrastructure.Migrations
                     b.Property<long>("SizeId")
                         .HasColumnType("bigint");
 
-                    b.Property<string>("SizeName")
+                    b.Property<string>("Variant")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.HasKey("Id");
 
@@ -498,7 +483,8 @@ namespace MyStore.Infrastructure.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
 
                     b.HasKey("Id");
 
@@ -523,8 +509,8 @@ namespace MyStore.Infrastructure.Migrations
                         .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+                        .HasMaxLength(5000)
+                        .HasColumnType("character varying(5000)");
 
                     b.Property<float>("DiscountPercent")
                         .HasColumnType("real");
@@ -532,16 +518,13 @@ namespace MyStore.Infrastructure.Migrations
                     b.Property<bool>("Enable")
                         .HasColumnType("boolean");
 
-                    b.Property<string>("FlashSaleId")
-                        .HasColumnType("text");
-
                     b.Property<int>("Gender")
                         .HasColumnType("integer");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)");
+                        .HasMaxLength(155)
+                        .HasColumnType("character varying(155)");
 
                     b.Property<double>("Price")
                         .HasColumnType("double precision");
@@ -564,8 +547,6 @@ namespace MyStore.Infrastructure.Migrations
 
                     b.HasIndex("CategoryId");
 
-                    b.HasIndex("FlashSaleId");
-
                     b.ToTable("Products");
                 });
 
@@ -579,7 +560,8 @@ namespace MyStore.Infrastructure.Migrations
 
                     b.Property<string>("ColorName")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
@@ -622,6 +604,24 @@ namespace MyStore.Infrastructure.Migrations
                     b.ToTable("ProductFavorites");
                 });
 
+            modelBuilder.Entity("MyStore.Domain.Entities.ProductFlashSale", b =>
+                {
+                    b.Property<long>("ProductId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("FlashSaleId")
+                        .HasColumnType("text");
+
+                    b.Property<float>("DiscountPercent")
+                        .HasColumnType("real");
+
+                    b.HasKey("ProductId", "FlashSaleId");
+
+                    b.HasIndex("FlashSaleId");
+
+                    b.ToTable("ProductFlashSales");
+                });
+
             modelBuilder.Entity("MyStore.Domain.Entities.ProductMaterial", b =>
                 {
                     b.Property<long>("ProductId")
@@ -658,7 +658,7 @@ namespace MyStore.Infrastructure.Migrations
                     b.Property<string>("ImagesUrlsJson")
                         .HasColumnType("jsonb");
 
-                    b.Property<long?>("ProductId")
+                    b.Property<long>("ProductId")
                         .HasColumnType("bigint");
 
                     b.Property<int>("Star")
@@ -668,7 +668,13 @@ namespace MyStore.Infrastructure.Migrations
                         .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("UserId")
+                        .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<string>("Variant")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.HasKey("Id");
 
@@ -701,6 +707,32 @@ namespace MyStore.Infrastructure.Migrations
                     b.HasIndex("SizeId");
 
                     b.ToTable("ProductSizes");
+                });
+
+            modelBuilder.Entity("MyStore.Domain.Entities.Role", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ConcurrencyStamp")
+                        .IsConcurrencyToken()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("NormalizedName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NormalizedName")
+                        .IsUnique()
+                        .HasDatabaseName("RoleNameIndex");
+
+                    b.ToTable("AspNetRoles", (string)null);
                 });
 
             modelBuilder.Entity("MyStore.Domain.Entities.Size", b =>
@@ -801,13 +833,28 @@ namespace MyStore.Infrastructure.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("MyStore.Domain.Entities.UserRole", b =>
+                {
+                    b.Property<string>("UserId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("RoleId")
+                        .HasColumnType("text");
+
+                    b.HasKey("UserId", "RoleId");
+
+                    b.HasIndex("RoleId");
+
+                    b.ToTable("AspNetUserRoles", (string)null);
+                });
+
             modelBuilder.Entity("MyStore.Domain.Entities.UserVoucher", b =>
                 {
                     b.Property<string>("UserId")
                         .HasColumnType("text");
 
                     b.Property<string>("VoucherCode")
-                        .HasColumnType("text");
+                        .HasColumnType("character varying(55)");
 
                     b.Property<bool>("Used")
                         .HasColumnType("boolean");
@@ -822,7 +869,8 @@ namespace MyStore.Infrastructure.Migrations
             modelBuilder.Entity("MyStore.Domain.Entities.Voucher", b =>
                 {
                     b.Property<string>("Code")
-                        .HasColumnType("text");
+                        .HasMaxLength(55)
+                        .HasColumnType("character varying(55)");
 
                     b.Property<double?>("DiscountAmount")
                         .HasColumnType("double precision");
@@ -852,7 +900,7 @@ namespace MyStore.Infrastructure.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
-                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
+                    b.HasOne("MyStore.Domain.Entities.Role", null)
                         .WithMany()
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -870,21 +918,6 @@ namespace MyStore.Infrastructure.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
                 {
-                    b.HasOne("MyStore.Domain.Entities.User", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<string>", b =>
-                {
-                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
-                        .WithMany()
-                        .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("MyStore.Domain.Entities.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
@@ -967,7 +1000,8 @@ namespace MyStore.Infrastructure.Migrations
 
                     b.HasOne("MyStore.Domain.Entities.Product", "Product")
                         .WithMany("OrderDetails")
-                        .HasForeignKey("ProductId");
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Order");
 
@@ -988,15 +1022,9 @@ namespace MyStore.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("MyStore.Domain.Entities.FlashSale", "FlashSale")
-                        .WithMany("Products")
-                        .HasForeignKey("FlashSaleId");
-
                     b.Navigation("Brand");
 
                     b.Navigation("Category");
-
-                    b.Navigation("FlashSale");
                 });
 
             modelBuilder.Entity("MyStore.Domain.Entities.ProductColor", b =>
@@ -1029,6 +1057,25 @@ namespace MyStore.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("MyStore.Domain.Entities.ProductFlashSale", b =>
+                {
+                    b.HasOne("MyStore.Domain.Entities.FlashSale", "FlashSale")
+                        .WithMany("ProductFlashSales")
+                        .HasForeignKey("FlashSaleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MyStore.Domain.Entities.Product", "Product")
+                        .WithMany("ProductFlashSales")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("FlashSale");
+
+                    b.Navigation("Product");
+                });
+
             modelBuilder.Entity("MyStore.Domain.Entities.ProductMaterial", b =>
                 {
                     b.HasOne("MyStore.Domain.Entities.Material", "Material")
@@ -1052,11 +1099,15 @@ namespace MyStore.Infrastructure.Migrations
                 {
                     b.HasOne("MyStore.Domain.Entities.Product", "Product")
                         .WithMany("ProductReviews")
-                        .HasForeignKey("ProductId");
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("MyStore.Domain.Entities.User", "User")
                         .WithMany("ProductReviews")
-                        .HasForeignKey("UserId");
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Product");
 
@@ -1080,6 +1131,25 @@ namespace MyStore.Infrastructure.Migrations
                     b.Navigation("ProductColor");
 
                     b.Navigation("Size");
+                });
+
+            modelBuilder.Entity("MyStore.Domain.Entities.UserRole", b =>
+                {
+                    b.HasOne("MyStore.Domain.Entities.Role", "Role")
+                        .WithMany("UserRoles")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MyStore.Domain.Entities.User", "User")
+                        .WithMany("UserRoles")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Role");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("MyStore.Domain.Entities.UserVoucher", b =>
@@ -1113,7 +1183,7 @@ namespace MyStore.Infrastructure.Migrations
 
             modelBuilder.Entity("MyStore.Domain.Entities.FlashSale", b =>
                 {
-                    b.Navigation("Products");
+                    b.Navigation("ProductFlashSales");
                 });
 
             modelBuilder.Entity("MyStore.Domain.Entities.Material", b =>
@@ -1143,12 +1213,19 @@ namespace MyStore.Infrastructure.Migrations
 
                     b.Navigation("ProductFavorites");
 
+                    b.Navigation("ProductFlashSales");
+
                     b.Navigation("ProductReviews");
                 });
 
             modelBuilder.Entity("MyStore.Domain.Entities.ProductColor", b =>
                 {
                     b.Navigation("ProductSizes");
+                });
+
+            modelBuilder.Entity("MyStore.Domain.Entities.Role", b =>
+                {
+                    b.Navigation("UserRoles");
                 });
 
             modelBuilder.Entity("MyStore.Domain.Entities.Size", b =>
@@ -1165,6 +1242,8 @@ namespace MyStore.Infrastructure.Migrations
                     b.Navigation("ProductFavorites");
 
                     b.Navigation("ProductReviews");
+
+                    b.Navigation("UserRoles");
 
                     b.Navigation("UserVouchers");
                 });

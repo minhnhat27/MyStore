@@ -10,6 +10,7 @@ using MyStore.Application.IRepositories.Products;
 using MyStore.Application.IRepositories.Users;
 using MyStore.Application.ISendMail;
 using MyStore.Application.IStorage;
+using MyStore.Application.Services;
 using MyStore.Application.Services.Brands;
 using MyStore.Application.Services.Carts;
 using MyStore.Application.Services.Categories;
@@ -24,7 +25,7 @@ using MyStore.Application.Services.Users;
 using MyStore.Application.Services.Vouchers;
 using MyStore.Domain.Constants;
 using MyStore.Domain.Entities;
-using MyStore.Infrastructure.AuthenticationService;
+using MyStore.Infrastructure.Authentication;
 using MyStore.Infrastructure.Caching;
 using MyStore.Infrastructure.DataSeeding;
 using MyStore.Infrastructure.DbContext;
@@ -64,7 +65,7 @@ builder.Services.AddDbContext<MyDbContext>(opt =>
 });
 builder.Services.Configure<ConversationDbSettings>(builder.Configuration.GetSection("MongoDb"));
 
-builder.Services.AddIdentity<User, IdentityRole>(opt =>
+builder.Services.AddIdentity<User, Role>(opt =>
 {
     opt.Password.RequireNonAlphanumeric = false;
     opt.Password.RequiredLength = 6;

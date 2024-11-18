@@ -2,7 +2,9 @@
 using Microsoft.AspNetCore.Mvc;
 using MyStore.Application.DTOs;
 using MyStore.Application.Request;
+using MyStore.Application.Services;
 using MyStore.Application.Services.Users;
+using MyStore.Domain.Enumerations;
 using System.Security.Claims;
 
 namespace MyStore.Presentation.Controllers
@@ -10,17 +12,18 @@ namespace MyStore.Presentation.Controllers
     [Route("api/account")]
     [ApiController]
     [Authorize]
-    public class AccountsController(IUserService userService) : ControllerBase
+    public class AccountsController(IUserService userService, IAuthenticationService authenticationService) : ControllerBase
     {
         private readonly IUserService _userService = userService;
+        private readonly IAuthenticationService _authenticationService = authenticationService;
 
         [HttpGet]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> GetAllUsers([FromQuery] PageRequest request)
+        public async Task<IActionResult> GetAllUsers([FromQuery] PageRequest request, [FromQuery] RolesEnum role)
         {
             try
             {
-                var users = await _userService.GetAllUsersAsync(request.Page, request.PageSize, request.Key);
+                var users = await _userService.GetAllUsersAsync(request.Page, request.PageSize, request.Key, role);
                 return Ok(users);
             }
             catch (Exception ex)
@@ -52,6 +55,37 @@ namespace MyStore.Presentation.Controllers
                 return StatusCode(500, ex.Message);
             }
         }
+
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> CreateAccount([FromBody] AccountRequest request)
+        {
+            try
+            {
+                var user = await _authenticationService.CreateUserWithRoles(request);
+                return Ok(user);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+        [HttpPut("{userId}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> UpdateAccount(string userId, [FromBody] UpdateAccountRequest request)
+        {
+            try
+            {
+                var user = await _authenticationService.UpdateUserAccount(userId, request);
+                return Ok(user);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
 
         [HttpPut("address")]
         public async Task<IActionResult> UpdateAddress([FromBody] AddressDTO address)

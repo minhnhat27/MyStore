@@ -90,6 +90,14 @@ namespace MyStore.Infrastructure.Storage
                 File.Delete(filePath);
             }
         }
+        public void DeleteDirectory(string path, bool recursive)
+        {
+            var directoryPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", path);
+            if (Directory.Exists(directoryPath))
+            {
+                Directory.Delete(directoryPath, recursive);
+            }
+        }
         public void Delete(IEnumerable<string> paths)
         {
             foreach (var path in paths)
