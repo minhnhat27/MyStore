@@ -1,0 +1,414 @@
+<!--
+* This email was built using Tabular.
+* For more information, visit https://tabular.email
+-->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="en">
+<head>
+<title></title>
+<meta charset="UTF-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<!--[if !mso]>-->
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<!--<![endif]-->
+<meta name="x-apple-disable-message-reformatting" content="" />
+<meta content="target-densitydpi=device-dpi" name="viewport" />
+<meta content="true" name="HandheldFriendly" />
+<meta content="width=device-width" name="viewport" />
+<meta name="format-detection" content="telephone=no, date=no, address=no, email=no, url=no" />
+<style type="text/css">
+table {
+border-collapse: separate;
+table-layout: fixed;
+mso-table-lspace: 0pt;
+mso-table-rspace: 0pt
+}
+table td {
+border-collapse: collapse
+}
+.ExternalClass {
+width: 100%
+}
+.ExternalClass,
+.ExternalClass p,
+.ExternalClass span,
+.ExternalClass font,
+.ExternalClass td,
+.ExternalClass div {
+line-height: 100%
+}
+body, a, li, p, h1, h2, h3 {
+-ms-text-size-adjust: 100%;
+-webkit-text-size-adjust: 100%;
+}
+html {
+-webkit-text-size-adjust: none !important
+}
+body, #innerTable {
+-webkit-font-smoothing: antialiased;
+-moz-osx-font-smoothing: grayscale
+}
+#innerTable img+div {
+display: none;
+display: none !important
+}
+img {
+Margin: 0;
+padding: 0;
+-ms-interpolation-mode: bicubic
+}
+h1, h2, h3, p, a {
+line-height: inherit;
+overflow-wrap: normal;
+white-space: normal;
+word-break: break-word
+}
+a {
+text-decoration: none
+}
+h1, h2, h3, p {
+min-width: 100%!important;
+width: 100%!important;
+max-width: 100%!important;
+display: inline-block!important;
+border: 0;
+padding: 0;
+margin: 0
+}
+a[x-apple-data-detectors] {
+color: inherit !important;
+text-decoration: none !important;
+font-size: inherit !important;
+font-family: inherit !important;
+font-weight: inherit !important;
+line-height: inherit !important
+}
+u + #body a {
+color: inherit;
+text-decoration: none;
+font-size: inherit;
+font-family: inherit;
+font-weight: inherit;
+line-height: inherit;
+}
+a[href^="mailto"],
+a[href^="tel"],
+a[href^="sms"] {
+color: inherit;
+text-decoration: none
+}
+</style>
+<style type="text/css">
+@media (min-width: 481px) {
+.hd { display: none!important }
+}
+</style>
+<style type="text/css">
+@media (max-width: 480px) {
+.hm { display: none!important }
+}
+</style>
+<style type="text/css">
+@media (max-width: 480px) {
+.t86{mso-line-height-alt:0px!important;line-height:0!important;display:none!important}.t87{padding-left:30px!important;padding-bottom:40px!important;padding-right:30px!important}.t149,.t89{width:480px!important}.t84{width:353px!important}.t6{padding-bottom:20px!important}.t13,.t132,.t137,.t145,.t19,.t24,.t30,.t35,.t40,.t45,.t50,.t72,.t78,.t8,.t94{width:420px!important}.t5{line-height:28px!important;font-size:26px!important;letter-spacing:-1.04px!important}.t147{padding:40px 30px!important}.t130{padding-bottom:36px!important}.t126{text-align:center!important}.t103,.t105,.t109,.t111,.t115,.t117,.t121,.t123,.t53,.t55,.t60,.t62,.t97,.t99{display:revert!important}.t101,.t107,.t113,.t119,.t125{vertical-align:top!important;width:44px!important}.t57,.t64{vertical-align:middle!important}.t1{padding-bottom:50px!important}.t3{width:80px!important}.t65{text-align:left!important}.t57{width:620px!important}.t54{padding-left:0!important}.t64{width:384px!important}
+}
+</style>
+<!--[if !mso]>-->
+<link href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;700;800&amp;display=swap" rel="stylesheet" type="text/css" />
+<!--<![endif]-->
+<!--[if mso]>
+<xml>
+<o:OfficeDocumentSettings>
+<o:AllowPNG/>
+<o:PixelsPerInch>96</o:PixelsPerInch>
+</o:OfficeDocumentSettings>
+</xml>
+<![endif]-->
+</head>
+<body id="body" class="t153" style="min-width:100%;Margin:0px;padding:0px;background-color:#242424;"><div class="t152" style="background-color:#242424;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td class="t151" style="font-size:0;line-height:0;mso-line-height-rule:exactly;background-color:#242424;" valign="top" align="center">
+<!--[if mso]>
+<v:background xmlns:v="urn:schemas-microsoft-com:vml" fill="true" stroke="false">
+<v:fill color="#242424"/>
+</v:background>
+<![endif]-->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" align="center" id="innerTable"><tr><td><div class="t86" style="mso-line-height-rule:exactly;mso-line-height-alt:45px;line-height:45px;font-size:1px;display:block;">&nbsp;&nbsp;</div></td></tr><tr><td align="center">
+<table class="t90" role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;">
+<tr>
+<!--[if mso]>
+<td width="600" class="t89" style="background-color:#F8F8F8;width:600px;">
+<![endif]-->
+<!--[if !mso]>-->
+<td class="t89" style="background-color:#F8F8F8;width:600px;">
+<!--<![endif]-->
+<table class="t88" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr>
+<td class="t87" style="padding:0 50px 60px 50px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100% !important;"><tr><td align="left">
+<table class="t4" role="presentation" cellpadding="0" cellspacing="0" style="Margin-right:auto;">
+<tr>
+<!--[if mso]>
+<td width="130" class="t3" style="width:130px;">
+<![endif]-->
+<!--[if !mso]>-->
+<td class="t3" style="width:130px;">
+<!--<![endif]-->
+<table class="t2" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr>
+<td class="t1" style="padding:0 0 60px 0;"><div style="font-size:0px;"><img class="t0" style="display:block;border:0;height:auto;width:100%;Margin:0;max-width:100%;" width="130" height="130" alt="" src="https://694963de-9ea6-42ff-9bdd-6fbe7170c61e.b-cdn.net/e/dfd77a9f-1246-43d2-b231-2596dcc5a72d/0a67659a-0163-40e8-923c-4093085942e0.png"/></div></td>
+</tr></table>
+</td>
+</tr></table>
+</td></tr><tr><td align="center">
+<table class="t9" role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;">
+<tr>
+<!--[if mso]>
+<td width="500" class="t8" style="width:500px;">
+<![endif]-->
+<!--[if !mso]>-->
+<td class="t8" style="width:500px;">
+<!--<![endif]-->
+<table class="t7" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr>
+<td class="t6" style="padding:0 0 15px 0;"><h1 class="t5" style="margin:0;Margin:0;font-family:Albert Sans,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:26px;font-weight:800;font-style:normal;font-size:24px;text-decoration:none;text-transform:none;letter-spacing:-1.56px;direction:ltr;color:#191919;text-align:left;mso-line-height-rule:exactly;mso-text-raise:1px;">{NAME}, cảm ơn bạn đã lựa chọn {SHOP_NAME}</h1></td>
+</tr></table>
+</td>
+</tr></table>
+</td></tr><tr><td align="center">
+<table class="t14" role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;">
+<tr>
+<!--[if mso]>
+<td width="500" class="t13" style="width:500px;">
+<![endif]-->
+<!--[if !mso]>-->
+<td class="t13" style="width:500px;">
+<!--<![endif]-->
+<table class="t12" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr>
+<td class="t11" style="padding:0 0 22px 0;"><p class="t10" style="margin:0;Margin:0;font-family:Albert Sans,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:22px;font-weight:500;font-style:normal;font-size:14px;text-decoration:none;text-transform:none;letter-spacing:-0.56px;direction:ltr;color:#333333;text-align:left;mso-line-height-rule:exactly;mso-text-raise:2px;">Đơn hàng của bạn {ORDER_STATUS}. Chúng tôi sẽ liên hệ bạn sớm nhất có thể, nếu bạn có bất kỳ thắc mắc nào hãy liên hệ với chúng tôi.</p></td>
+</tr></table>
+</td>
+</tr></table>
+</td></tr><tr><td align="center">
+<table class="t20" role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;">
+<tr>
+<!--[if mso]>
+<td width="500" class="t19" style="width:500px;">
+<![endif]-->
+<!--[if !mso]>-->
+<td class="t19" style="width:500px;">
+<!--<![endif]-->
+<table class="t18" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr>
+<td class="t17"><p class="t16" style="margin:0;Margin:0;font-family:Albert Sans,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:22px;font-weight:500;font-style:normal;font-size:14px;text-decoration:none;text-transform:none;letter-spacing:-0.56px;direction:ltr;color:#333333;text-align:left;mso-line-height-rule:exactly;mso-text-raise:2px;"><span class="t15" style="margin:0;Margin:0;font-weight:bold;mso-line-height-rule:exactly;">Mã đơn hàng</span></p></td>
+</tr></table>
+</td>
+</tr></table>
+</td></tr><tr><td align="center">
+<table class="t25" role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;">
+<tr>
+<!--[if mso]>
+<td width="500" class="t24" style="width:500px;">
+<![endif]-->
+<!--[if !mso]>-->
+<td class="t24" style="width:500px;">
+<!--<![endif]-->
+<table class="t23" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr>
+<td class="t22" style="padding:0 0 22px 0;"><p class="t21" style="margin:0;Margin:0;font-family:Albert Sans,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:22px;font-weight:500;font-style:normal;font-size:14px;text-decoration:none;text-transform:none;letter-spacing:-0.56px;direction:ltr;color:#333333;text-align:left;mso-line-height-rule:exactly;mso-text-raise:2px;">{ORDERID}</p></td>
+</tr></table>
+</td>
+</tr></table>
+</td></tr><tr><td align="center">
+<table class="t31" role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;">
+<tr>
+<!--[if mso]>
+<td width="500" class="t30" style="width:500px;">
+<![endif]-->
+<!--[if !mso]>-->
+<td class="t30" style="width:500px;">
+<!--<![endif]-->
+<table class="t29" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr>
+<td class="t28"><p class="t27" style="margin:0;Margin:0;font-family:Albert Sans,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:22px;font-weight:500;font-style:normal;font-size:14px;text-decoration:none;text-transform:none;letter-spacing:-0.56px;direction:ltr;color:#333333;text-align:left;mso-line-height-rule:exactly;mso-text-raise:2px;"><span class="t26" style="margin:0;Margin:0;font-weight:bold;mso-line-height-rule:exactly;">Tổng cộng</span></p></td>
+</tr></table>
+</td>
+</tr></table>
+</td></tr><tr><td align="center">
+<table class="t36" role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;">
+<tr>
+<!--[if mso]>
+<td width="500" class="t35" style="width:500px;">
+<![endif]-->
+<!--[if !mso]>-->
+<td class="t35" style="width:500px;">
+<!--<![endif]-->
+<table class="t34" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr>
+<td class="t33" style="padding:0 0 22px 0;"><p class="t32" style="margin:0;Margin:0;font-family:Albert Sans,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:22px;font-weight:500;font-style:normal;font-size:14px;text-decoration:none;text-transform:none;letter-spacing:-0.56px;direction:ltr;color:#333333;text-align:left;mso-line-height-rule:exactly;mso-text-raise:2px;">{TOTAL}</p></td>
+</tr></table>
+</td>
+</tr></table>
+</td></tr><tr><td align="center">
+<table class="t41" role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;">
+<tr>
+<!--[if mso]>
+<td width="500" class="t40" style="width:500px;">
+<![endif]-->
+<!--[if !mso]>-->
+<td class="t40" style="width:500px;">
+<!--<![endif]-->
+<table class="t39" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr>
+<td class="t38"><p class="t37" style="margin:0;Margin:0;font-weight:bold;font-family:Albert Sans,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:22px;font-style:normal;font-size:14px;text-decoration:none;text-transform:none;letter-spacing:-0.56px;direction:ltr;color:#333333;text-align:left;mso-line-height-rule:exactly;mso-text-raise:2px;">Thông tin nhận hàng</p></td>
+</tr></table>
+</td>
+</tr></table>
+</td></tr><tr><td align="center">
+<table class="t46" role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;">
+<tr>
+<!--[if mso]>
+<td width="500" class="t45" style="width:500px;">
+<![endif]-->
+<!--[if !mso]>-->
+<td class="t45" style="width:500px;">
+<!--<![endif]-->
+<table class="t44" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr>
+<td class="t43"><p class="t42" style="margin:0;Margin:0;font-family:Albert Sans,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:22px;font-weight:500;font-style:normal;font-size:14px;text-decoration:none;text-transform:none;letter-spacing:-0.56px;direction:ltr;color:#333333;text-align:left;mso-line-height-rule:exactly;mso-text-raise:2px;">Người nhận: {RECEIVER}</p></td>
+</tr></table>
+</td>
+</tr></table>
+</td></tr><tr><td align="center">
+<table class="t51" role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;">
+<tr>
+<!--[if mso]>
+<td width="500" class="t50" style="width:500px;">
+<![endif]-->
+<!--[if !mso]>-->
+<td class="t50" style="width:500px;">
+<!--<![endif]-->
+<table class="t49" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr>
+<td class="t48"><p class="t47" style="margin:0;Margin:0;font-family:Albert Sans,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:22px;font-weight:500;font-style:normal;font-size:14px;text-decoration:none;text-transform:none;letter-spacing:-0.56px;direction:ltr;color:#333333;text-align:left;mso-line-height-rule:exactly;mso-text-raise:2px;">Địa chỉ giao hàng: {DELIVERY_ADDRESS}</p></td>
+</tr></table>
+</td>
+</tr></table>
+</td></tr><tr><td><div class="t69" style="mso-line-height-rule:exactly;mso-line-height-alt:20px;line-height:20px;font-size:1px;display:block;">&nbsp;&nbsp;</div></td></tr><tr><td align="center">
+<table class="t73" role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;">
+{PRODUCT_LIST}
+</table>
+</td></tr><tr><td><div class="t74" style="mso-line-height-rule:exactly;mso-line-height-alt:30px;line-height:30px;font-size:1px;display:block;">&nbsp;&nbsp;</div></td></tr><tr><td align="center">
+<table class="t79" role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;">
+<tr>
+<!--[if mso]>
+<td width="500" class="t78" style="width:500px;">
+<![endif]-->
+<!--[if !mso]>-->
+<td class="t78" style="width:500px;">
+<!--<![endif]-->
+<table class="t77" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr>
+<td class="t76"><p class="t75" style="margin:0;Margin:0;font-family:Albert Sans,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:22px;font-weight:500;font-style:normal;font-size:14px;text-decoration:none;text-transform:none;letter-spacing:-0.56px;direction:ltr;color:#333333;text-align:left;mso-line-height-rule:exactly;mso-text-raise:2px;">Nhấn vào nút dưới đây để theo dõi và cập nhật trạng thái giao hàng.</p></td>
+</tr></table>
+</td>
+</tr></table>
+</td></tr><tr><td><div class="t80" style="mso-line-height-rule:exactly;mso-line-height-alt:40px;line-height:40px;font-size:1px;display:block;">&nbsp;&nbsp;</div></td></tr><tr><td align="left">
+<table class="t85" role="presentation" cellpadding="0" cellspacing="0" style="Margin-right:auto;">
+<tr>
+<!--[if mso]>
+<td width="250" class="t84" style="background-color:#181818;overflow:hidden;width:250px;border-radius:44px 44px 44px 44px;">
+<![endif]-->
+<!--[if !mso]>-->
+<td class="t84" style="background-color:#181818;overflow:hidden;width:250px;border-radius:44px 44px 44px 44px;">
+<!--<![endif]-->
+<table class="t83" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr>
+<td class="t82" style="text-align:center;line-height:44px;mso-line-height-rule:exactly;mso-text-raise:10px;"><a class="t81" href="http://localhost:3000/account/purchase" style="display:block;margin:0;Margin:0;font-family:Albert Sans,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:44px;font-weight:800;font-style:normal;font-size:12px;text-decoration:none;text-transform:uppercase;letter-spacing:2.4px;direction:ltr;color:#F8F8F8;text-align:center;mso-line-height-rule:exactly;mso-text-raise:10px;" target="_blank">Theo dõi đơn hàng</a></td>
+</tr></table>
+</td>
+</tr></table>
+</td></tr></table></td>
+</tr></table>
+</td>
+</tr></table>
+</td></tr><tr><td align="center">
+<table class="t150" role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;">
+<tr>
+<!--[if mso]>
+<td width="600" class="t149" style="background-color:#242424;width:600px;">
+<![endif]-->
+<!--[if !mso]>-->
+<td class="t149" style="background-color:#242424;width:600px;">
+<!--<![endif]-->
+<table class="t148" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr>
+<td class="t147" style="padding:48px 50px 48px 50px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100% !important;"><tr><td align="center">
+<table class="t95" role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;">
+<tr>
+<!--[if mso]>
+<td width="500" class="t94" style="width:500px;">
+<![endif]-->
+<!--[if !mso]>-->
+<td class="t94" style="width:500px;">
+<!--<![endif]-->
+<table class="t93" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr>
+<td class="t92"><p class="t91" style="margin:0;Margin:0;font-family:Albert Sans,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:22px;font-weight:800;font-style:normal;font-size:18px;text-decoration:none;text-transform:none;letter-spacing:-0.9px;direction:ltr;color:#757575;text-align:center;mso-line-height-rule:exactly;mso-text-raise:1px;">Want updates through more platforms?</p></td>
+</tr></table>
+</td>
+</tr></table>
+</td></tr><tr><td align="center">
+<table class="t133" role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;">
+<tr>
+<!--[if mso]>
+<td width="500" class="t132" style="width:500px;">
+<![endif]-->
+<!--[if !mso]>-->
+<td class="t132" style="width:500px;">
+<!--<![endif]-->
+<table class="t131" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr>
+<td class="t130" style="padding:10px 0 44px 0;"><div class="t129" style="width:100%;text-align:center;"><div class="t128" style="display:inline-block;"><table class="t127" role="presentation" cellpadding="0" cellspacing="0" align="center" valign="top">
+<tr class="t126"><td></td><td class="t101" width="44" valign="top">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="t100" style="width:100%;"><tr>
+<td class="t97" style="width:10px;" width="10"></td><td class="t98"><div style="font-size:0px;"><img class="t96" style="display:block;border:0;height:auto;width:100%;Margin:0;max-width:100%;" width="24" height="24" alt="" src="https://694963de-9ea6-42ff-9bdd-6fbe7170c61e.b-cdn.net/e/dfd77a9f-1246-43d2-b231-2596dcc5a72d/fe31294f-1afe-4c10-b75a-201b5cb3bc46.png"/></div></td><td class="t99" style="width:10px;" width="10"></td>
+</tr></table>
+</td><td class="t107" width="44" valign="top">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="t106" style="width:100%;"><tr>
+<td class="t103" style="width:10px;" width="10"></td><td class="t104"><div style="font-size:0px;"><img class="t102" style="display:block;border:0;height:auto;width:100%;Margin:0;max-width:100%;" width="24" height="24" alt="" src="https://694963de-9ea6-42ff-9bdd-6fbe7170c61e.b-cdn.net/e/dfd77a9f-1246-43d2-b231-2596dcc5a72d/8f0b57f0-b2ed-4693-8e08-0d8b83c77b03.png"/></div></td><td class="t105" style="width:10px;" width="10"></td>
+</tr></table>
+</td><td class="t113" width="44" valign="top">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="t112" style="width:100%;"><tr>
+<td class="t109" style="width:10px;" width="10"></td><td class="t110"><div style="font-size:0px;"><img class="t108" style="display:block;border:0;height:auto;width:100%;Margin:0;max-width:100%;" width="24" height="24" alt="" src="https://694963de-9ea6-42ff-9bdd-6fbe7170c61e.b-cdn.net/e/dfd77a9f-1246-43d2-b231-2596dcc5a72d/1956d8d2-d94f-40ee-9a0b-b9b8a2cc8b67.png"/></div></td><td class="t111" style="width:10px;" width="10"></td>
+</tr></table>
+</td><td class="t119" width="44" valign="top">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="t118" style="width:100%;"><tr>
+<td class="t115" style="width:10px;" width="10"></td><td class="t116"><div style="font-size:0px;"><img class="t114" style="display:block;border:0;height:auto;width:100%;Margin:0;max-width:100%;" width="24" height="24" alt="" src="https://694963de-9ea6-42ff-9bdd-6fbe7170c61e.b-cdn.net/e/dfd77a9f-1246-43d2-b231-2596dcc5a72d/1417d13c-7dba-44f5-ad44-f53923457ac8.png"/></div></td><td class="t117" style="width:10px;" width="10"></td>
+</tr></table>
+</td><td class="t125" width="44" valign="top">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="t124" style="width:100%;"><tr>
+<td class="t121" style="width:10px;" width="10"></td><td class="t122"><div style="font-size:0px;"><img class="t120" style="display:block;border:0;height:auto;width:100%;Margin:0;max-width:100%;" width="24" height="24" alt="" src="https://694963de-9ea6-42ff-9bdd-6fbe7170c61e.b-cdn.net/e/dfd77a9f-1246-43d2-b231-2596dcc5a72d/3893cd8c-cab1-44da-b030-11bd52e88a80.png"/></div></td><td class="t123" style="width:10px;" width="10"></td>
+</tr></table>
+</td>
+<td></td></tr>
+</table></div></div></td>
+</tr></table>
+</td>
+</tr></table>
+</td></tr><tr><td align="center">
+<table class="t138" role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;">
+<tr>
+<!--[if mso]>
+<td width="500" class="t137" style="width:500px;">
+<![endif]-->
+<!--[if !mso]>-->
+<td class="t137" style="width:500px;">
+<!--<![endif]-->
+<table class="t136" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr>
+<td class="t135"><p class="t134" style="margin:0;Margin:0;font-family:Albert Sans,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:22px;font-weight:500;font-style:normal;font-size:12px;text-decoration:none;text-transform:none;direction:ltr;color:#888888;text-align:center;mso-line-height-rule:exactly;mso-text-raise:3px;">4019 Waterview Lane, Santa Fe, NM, New Mexico 87500</p></td>
+</tr></table>
+</td>
+</tr></table>
+</td></tr><tr><td align="center">
+<table class="t146" role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;">
+<tr>
+<!--[if mso]>
+<td width="500" class="t145" style="width:500px;">
+<![endif]-->
+<!--[if !mso]>-->
+<td class="t145" style="width:500px;">
+<!--<![endif]-->
+<table class="t144" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr>
+<td class="t143"><p class="t142" style="margin:0;Margin:0;font-family:Albert Sans,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:22px;font-weight:500;font-style:normal;font-size:12px;text-decoration:none;text-transform:none;direction:ltr;color:#888888;text-align:center;mso-line-height-rule:exactly;mso-text-raise:3px;"><a class="t139" href="https://tabular.email" style="margin:0;Margin:0;font-weight:700;font-style:normal;text-decoration:none;direction:ltr;color:#888888;mso-line-height-rule:exactly;" target="_blank">Unsubscribe</a>&nbsp; •&nbsp; <a class="t140" href="https://tabular.email" style="margin:0;Margin:0;font-weight:700;font-style:normal;text-decoration:none;direction:ltr;color:#888888;mso-line-height-rule:exactly;" target="_blank">Privacy policy</a>&nbsp; •&nbsp; <a class="t141" href="https://tabular.email" style="margin:0;Margin:0;font-weight:700;font-style:normal;text-decoration:none;direction:ltr;color:#878787;mso-line-height-rule:exactly;" target="_blank">Contact us</a></p></td>
+</tr></table>
+</td>
+</tr></table>
+</td></tr></table></td>
+</tr></table>
+</td>
+</tr></table>
+</td></tr></table></td></tr></table></div><div class="gmail-fix" style="display: none; white-space: nowrap; font: 15px courier; line-height: 0;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;</div></body>
+</html>

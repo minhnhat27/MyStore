@@ -15,7 +15,7 @@ namespace MyStore.Presentation.Controllers
         private readonly IOrderService _orderService = orderService;
 
         [HttpGet("all")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Employee")]
         public async Task<IActionResult> GetAll([FromQuery] PageRequest request, [FromQuery] DeliveryStatusEnum? orderStatus)
         {
             try
@@ -33,7 +33,7 @@ namespace MyStore.Presentation.Controllers
         }
 
         [HttpPut("next-status/{orderId}")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Employee")]
         public async Task<IActionResult> AcceptOrder(long orderId, [FromBody] AcceptOrderRequest request)
         {
             try
@@ -56,7 +56,7 @@ namespace MyStore.Presentation.Controllers
         }
 
         [HttpPut("shipping/{orderId}")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Employee")]
         public async Task<IActionResult> Shipping(long orderId, [FromBody] OrderToShippingRequest request)
         {
             try
@@ -110,9 +110,9 @@ namespace MyStore.Presentation.Controllers
             try
             {
                 var roles = User.FindAll(ClaimTypes.Role).Select(e => e.Value);
-                var isAdmin = roles.Contains("Admin");
+                var isAdmin = roles.Any(role => role.Equals("Admin") || role.Equals("Employee"));
 
-                if(isAdmin)
+                if (isAdmin)
                 {
                     var orders = await _orderService.GetOrderDetail(id);
                     return Ok(orders);
@@ -190,7 +190,7 @@ namespace MyStore.Presentation.Controllers
             try
             {
                 var roles = User.FindAll(ClaimTypes.Role).Select(e => e.Value);
-                var isAdmin = roles.Contains("Admin");
+                var isAdmin = roles.Any(role => role.Equals("Admin") || role.Equals("Employee"));
 
                 if (isAdmin)
                 {
@@ -275,6 +275,33 @@ namespace MyStore.Presentation.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, ex.InnerException?.Message ?? ex.Message);
+            }
+        }
+
+        [HttpGet("repayment/{id}")]
+        public async Task<IActionResult> Repayment(long id)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (userId == null)
+                {
+                    return Unauthorized();
+                }
+                var url = await _orderService.Repayment(userId, id);
+                return Ok(url);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (InvalidDataException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
             }
         }
     }

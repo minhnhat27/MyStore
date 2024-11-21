@@ -15,7 +15,7 @@ namespace MyStore.Presentation.Controllers
         public readonly IFlashSaleService _flashSaleService = flashSaleService;
 
         [HttpGet]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Employee")]
         public async Task<IActionResult> Get([FromQuery] PageRequest request)
         {
             try
@@ -30,7 +30,7 @@ namespace MyStore.Presentation.Controllers
         }
 
         [HttpGet("products/{id}")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Employee")]
         public async Task<IActionResult> GetProductsByFlashSale(string id)
         {
             try
@@ -59,7 +59,7 @@ namespace MyStore.Presentation.Controllers
         }
 
         [HttpGet("time/{timeFrame}")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Employee")]
         public async Task<IActionResult> GetProductsByTimeFrame(DiscountTimeFrame timeFrame)
         {
             try
@@ -75,7 +75,7 @@ namespace MyStore.Presentation.Controllers
 
 
         [HttpPost]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Employee")]
         public async Task<IActionResult> CreateFlashSale([FromBody] FlashSaleRequest request)
         {
             try
@@ -91,8 +91,8 @@ namespace MyStore.Presentation.Controllers
 
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Delete(string id, [FromBody] FlashSaleRequest request)
+        [Authorize(Roles = "Admin,Employee")]
+        public async Task<IActionResult> Update(string id, [FromBody] FlashSaleRequest request)
         {
             try
             {

@@ -47,7 +47,7 @@ namespace MyStore.Presentation.Controllers
 
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Employee")]
         public async Task<IActionResult> Update(int id, [FromBody] UpdatePaymentMethodRequest request)
         {
             try

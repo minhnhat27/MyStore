@@ -10,7 +10,6 @@ using MyStore.Application.IRepositories.Products;
 using MyStore.Application.IRepositories.Users;
 using MyStore.Application.ISendMail;
 using MyStore.Application.IStorage;
-using MyStore.Application.Services;
 using MyStore.Application.Services.Brands;
 using MyStore.Application.Services.Carts;
 using MyStore.Application.Services.Categories;
@@ -63,7 +62,7 @@ builder.Services.AddDbContext<MyDbContext>(opt =>
     opt.UseNpgsql(builder.Configuration.GetConnectionString("PostgreSqlConnection"),
         m => m.MigrationsAssembly("MyStore.Infrastructure"));
 });
-builder.Services.Configure<ConversationDbSettings>(builder.Configuration.GetSection("MongoDb"));
+builder.Services.Configure<MongoDbSettings>(builder.Configuration.GetSection("MongoDb"));
 
 builder.Services.AddIdentity<User, Role>(opt =>
 {
@@ -117,6 +116,7 @@ builder.Services.AddSingleton<ISendMailService, SendMailService>();
 builder.Services.AddSingleton<ICache, Cache>();
 builder.Services.AddSingleton<IConnectionManager, ConnectionManager>();
 builder.Services.AddSingleton<IConversationRepository, ConversationRepository>();
+builder.Services.AddSingleton<INotificationRepository, NotificationRepository>();
 
 PayOS payOS = new(builder.Configuration["PayOS:clientId"] ?? throw new Exception(ErrorMessage.ARGUMENT_NULL),
                         builder.Configuration["PayOS:apiKey"] ?? throw new Exception(ErrorMessage.ARGUMENT_NULL),
@@ -163,6 +163,7 @@ builder.Services.AddScoped<IVoucherService, VoucherService>();
 builder.Services.AddScoped<IStatisticsService, StatisticsService>();
 builder.Services.AddScoped<IFlashSaleService, FlashSaleService>();
 builder.Services.AddScoped<IVNPayLibrary, VNPayLibrary>();
+builder.Services.AddScoped<IPaymentProcessor, PaymentProcessor>();
 
 var app = builder.Build();
 

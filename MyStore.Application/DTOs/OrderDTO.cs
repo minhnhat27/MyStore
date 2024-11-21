@@ -27,7 +27,8 @@ namespace MyStore.Application.DTOs
     public class OrderResponse : OrderDTO
     {
         public ProductOrderDetail ProductOrderDetail { get; set; }
-        public string? PayBackUrl { get; set; }
+        //public string? PayBackUrl { get; set; }
+        public DateTime? PaymentDeadline { get; set; }
     }
 
     public class OrderDetailsResponse : OrderDTO

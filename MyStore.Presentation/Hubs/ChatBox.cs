@@ -30,7 +30,7 @@ namespace MyStore.Presentation.Hubs
             await _conversationRepository.UpdateUnread(session, false, 1);
         }
 
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Employee")]
         public async Task SendToUser(string session, string message, string? image) {
             if(_connectionManager.TryGetConnectionIdByConversationId(session, out string connectionId))
             {
@@ -41,7 +41,7 @@ namespace MyStore.Presentation.Hubs
 
         }
 
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Employee")]
         public async Task<IEnumerable<ConversationIdResponse>> GetConversations()
             => (await _conversationRepository.GetConversationIdsAsync())
             .Select(e => new ConversationIdResponse
@@ -76,7 +76,7 @@ namespace MyStore.Presentation.Hubs
             };
         }
 
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Employee")]
         public async Task RemoveChat(string session)
         {
             await _conversationRepository.RemoveConversationAsync(session);
@@ -87,7 +87,7 @@ namespace MyStore.Presentation.Hubs
             }
         }
 
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Employee")]
         public async Task<int> TotalUnread()
             => await _conversationRepository.GetAdminUnreadAsync();
 
@@ -111,17 +111,11 @@ namespace MyStore.Presentation.Hubs
         {
             var roles = Context.User?.FindAll(ClaimTypes.Role).Select(e => e.Value);
             string adminGroup = "AdminGroup";
-            if (roles != null && roles.Contains("Admin"))
+            if (roles != null && !roles.Contains("User") && roles.Any(role => role.Equals("Admin") || role.Equals("Employee")))
             {
                 _connectionManager.TryAddAdmin(Context.ConnectionId);
                 await Groups.AddToGroupAsync(Context.ConnectionId, adminGroup);
             }
-
-            //else
-            //{
-            //    //await _conversationRepository.CreateConversationAsync(Context.ConnectionId);
-            //    //await Clients.Group(adminGroup).SendAsync("USER_CONNECT", Context.ConnectionId);
-            //}
             await base.OnConnectedAsync();
         }
 
@@ -129,7 +123,7 @@ namespace MyStore.Presentation.Hubs
         {
             var roles = Context.User?.FindAll(ClaimTypes.Role).Select(e => e.Value);
             string adminGroup = "AdminGroup";
-            if (roles != null && roles.Contains("Admin"))
+            if (roles != null && !roles.Contains("User") && roles.Any(role => role.Equals("Admin") || role.Equals("Employee")))
             {
                 _connectionManager.TryRemoveAdmin(Context.ConnectionId);
                 await Groups.RemoveFromGroupAsync(Context.ConnectionId, adminGroup);

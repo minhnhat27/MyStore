@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyStore.Application.DTOs;
+using MyStore.Application.IRepositories;
 using MyStore.Application.Request;
-using MyStore.Application.Services;
 using MyStore.Application.Services.Users;
 using MyStore.Domain.Enumerations;
 using System.Security.Claims;

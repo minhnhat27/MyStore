@@ -15,7 +15,7 @@ namespace MyStore.Presentation.Controllers
         private readonly IWebHostEnvironment _environment = environment;
 
         [HttpGet]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Employee")]
         public async Task<IActionResult> Get([FromQuery] PageRequest request)
         {
             try
@@ -108,7 +108,7 @@ namespace MyStore.Presentation.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Employee")]
         public async Task<IActionResult> Create([FromForm] ProductRequest request, [FromForm] IFormFileCollection images)
         {
             try
@@ -123,7 +123,7 @@ namespace MyStore.Presentation.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Employee")]
         public async Task<IActionResult> Update(long id, [FromForm] ProductRequest request, [FromForm] IFormFileCollection images)
         {
             try
@@ -142,7 +142,7 @@ namespace MyStore.Presentation.Controllers
         }
 
         [HttpPut("updateEnable/{id}")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Employee")]
         public async Task<IActionResult> UpdateProductEnable(long id, [FromBody] UpdateEnableRequest request)
         {
             try
@@ -194,7 +194,7 @@ namespace MyStore.Presentation.Controllers
         }
 
         [HttpDelete("reviews/{id}")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Employee")]
         public async Task<IActionResult> DeleteReviews(string id)
         {
             try

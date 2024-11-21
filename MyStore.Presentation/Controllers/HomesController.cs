@@ -39,7 +39,7 @@ namespace MyStore.Presentation.Controllers
         }
 
         [HttpPut("banner")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Employee")]
         public async Task<IActionResult> UpdateBanner([FromForm] IEnumerable<string>? imageUrls, [FromForm] IFormFileCollection? images)
         {
             try

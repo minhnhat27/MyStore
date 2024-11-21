@@ -1,6 +1,7 @@
 ﻿using MyStore.Application.DTOs;
 using MyStore.Application.Request;
 using MyStore.Application.Response;
+using MyStore.Domain.Entities;
 using MyStore.Domain.Enumerations;
 
 namespace MyStore.Application.Services.Orders
@@ -14,6 +15,7 @@ namespace MyStore.Application.Services.Orders
         Task CancelOrder(long orderId, string userId);
         Task CancelOrder(long orderId);
         Task<string?> CreateOrder(string userId, OrderRequest request);
+        Task<string> Repayment(string userId, long orderId);
 
         Task NextOrderStatus(long orderId, DeliveryStatusEnum currentStatus);
         Task OrderToShipping(long orderId, OrderToShippingRequest request);
@@ -25,5 +27,7 @@ namespace MyStore.Application.Services.Orders
         Task<PagedResponse<OrderDTO>> GetAll(int page, int pageSize, string? keySearch, DeliveryStatusEnum statusEnum);
         Task<OrderDetailsResponse> GetOrderDetail(long orderId);
         Task DeleteOrder(long orderId);
+
+        Task SendEmailConfirmOrder(Order order, IEnumerable<OrderDetail> orderDetails);
     }
 }

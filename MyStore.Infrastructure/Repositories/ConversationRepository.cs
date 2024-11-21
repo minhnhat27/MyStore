@@ -9,11 +9,11 @@ namespace MyStore.Infrastructure.Repositories
     public class ConversationRepository : IConversationRepository
     {
         private readonly IMongoCollection<Conversations> _conversationCollection;
-        public ConversationRepository(IOptions<ConversationDbSettings> options)
+        public ConversationRepository(IOptions<MongoDbSettings> options)
         {
             var mongoClient = new MongoClient(options.Value.ConnectionString);
             var mongoDatabase = mongoClient.GetDatabase(options.Value.DatabaseName);
-            _conversationCollection = mongoDatabase.GetCollection<Conversations>(options.Value.CollectionName);
+            _conversationCollection = mongoDatabase.GetCollection<Conversations>(options.Value.CollectionConversations);
         }
 
         public async Task<IEnumerable<Conversations>> GetConversationsAsync() => await _conversationCollection.Find(_ => true).ToListAsync();

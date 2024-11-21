@@ -562,7 +562,7 @@ namespace MyStore.Application.Services.Products
             if (product != null)
             {
                 var res = _mapper.Map<ProductDetailsResponse>(product);
-                res.ImageUrls = product.Images.Select(e => e.ImageUrl);
+                res.ImageUrls = product.Images.OrderBy(e => e.CreatedAt).Select(e => e.ImageUrl);
                 res.MaterialNames = product.Materials.Select(e => e.Material.Name);
 
                 var newDiscount = await _flashSaleService.GetDiscountByProductIdThisTime(id);
@@ -615,8 +615,8 @@ namespace MyStore.Application.Services.Products
                     pColorDelete.AddRange(colorDel);
 
                     //cập nhật số lượng size cũ, màu cũ
-                    var oldIds = request.ColorSizes.Where(e => e.Id != null).Select(e => e.Id);
-                    var colorUpdate = oldProductColors.Where(old => oldIds.Contains(old.Id));
+                    var oldColorIds = request.ColorSizes.Where(e => e.Id != null).Select(e => e.Id);
+                    var colorUpdate = oldProductColors.Where(old => oldColorIds.Contains(old.Id));
 
                     foreach (var color in colorUpdate)
                     {
@@ -637,17 +637,39 @@ namespace MyStore.Application.Services.Products
                             }
                         }
 
+
+                        var newSizes = matchingColor.SizeInStocks.Select(s => s.SizeId);
+                        var oldSizes = color.ProductSizes.Select(s => s.SizeId);
+
+                        var lstNewSize = newSizes.Except(oldSizes).Select(sizeId =>
+                        {
+                            var matchingSize = matchingColor.SizeInStocks.Single(s => s.SizeId == sizeId);
+                            return new ProductSize
+                            {
+                                ProductColorId = color.Id,
+                                SizeId = sizeId,
+                                InStock = matchingSize.InStock
+                            };
+                        });
+
                         foreach (var size in color.ProductSizes)
                         {
-                            var matchingSize = matchingColor.SizeInStocks.SingleOrDefault(s => s.SizeId == size.SizeId);
-                            if (matchingSize == null)
+                            if (!newSizes.Contains(size.SizeId))
                             {
                                 await _productSizeRepository.DeleteAsync(matchingColor.Id, size.SizeId);
                             }
                             else
                             {
-                                size.InStock = matchingSize.InStock;
+                                var matchingSize = matchingColor.SizeInStocks.SingleOrDefault(s => s.SizeId == size.SizeId);
+                                if (matchingSize != null)
+                                {
+                                    size.InStock = matchingSize.InStock;
+                                }
                             }
+                        }
+                        if (lstNewSize.Any())
+                        {
+                            await _productSizeRepository.AddAsync(lstNewSize);
                         }
                     }
                     if (colorUpdate.Any())
@@ -656,7 +678,7 @@ namespace MyStore.Application.Services.Products
                     }
                 }
                 //xóa màu
-                _fileStorage.Delete(pColorDelete.Select(e => e.ImageUrl));
+                //listImageDelete.AddRange(pColorDelete.Select(e => e.ImageUrl));
                 await _productColorRepository.DeleteRangeAsync(pColorDelete);
 
                 //thêm màu

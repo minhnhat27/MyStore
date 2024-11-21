@@ -1,0 +1,43 @@
+<tr>
+    <!--[if mso]>
+    <td width="500" class="t72" style="background-color:#FFFFFF;width:500px;">
+    <![endif]-->
+    <!--[if !mso]>-->
+    <td class="t72" style="background-color:#FFFFFF;width:500px;">
+        <!--<![endif]-->
+        <table class="t71" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+            <tr>
+                <td class="t70" style="padding:20px 20px 20px 20px;">
+                    <div class="t68" style="width:100%;text-align:left;">
+                        <div class="t67" style="display:inline-block;">
+                            <table class="t66" role="presentation" cellpadding="0" cellspacing="0" align="left" valign="middle">
+                                <tr class="t65">
+                                    <td></td>
+                                    <td class="t57" width="306.30705" valign="middle">
+                                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="t56" style="width:100%;">
+                                            <tr>
+                                                <td class="t53" style="width:10px;" width="10"></td>
+                                                <td class="t54" style="padding:0 0 0 24px;"><h1 class="t52" style="margin:0;Margin:0;font-family:Albert Sans,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:16px;font-weight:700;font-style:normal;font-size:14px;text-decoration:none;text-transform:uppercase;direction:ltr;color:#1A1A1A;text-align:left;mso-line-height-rule:exactly;mso-text-raise:1px;">{PRODUCT_NAME}</h1></td>
+                                                <td class="t55" style="width:10px;" width="10"></td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                    <td class="t64" width="193.69295" valign="middle">
+                                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="t63" style="width:100%;">
+                                            <tr>
+                                                <td class="t60" style="width:10px;" width="10"></td>
+                                                <td class="t61"><p class="t59" style="margin:0;Margin:0;font-family:Albert Sans,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:22px;font-weight:500;font-style:normal;font-size:14px;text-decoration:none;text-transform:none;letter-spacing:-0.56px;direction:ltr;color:#333333;text-align:right;mso-line-height-rule:exactly;mso-text-raise:2px;">{VARIANT} x <span class="t58" style="margin:0;Margin:0;font-weight:700;mso-line-height-rule:exactly;">{QUANTITY}</span></p></td>
+                                                <td class="t62" style="width:10px;" width="10"></td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                    <td></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </td>
+</tr>

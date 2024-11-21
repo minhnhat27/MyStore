@@ -1,10 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using MyStore.Application.Services.Statistics;
 
 namespace MyStore.Presentation.Controllers
 {
     [Route("api/statistics")]
     [ApiController]
+    [Authorize(Roles = "Admin,Employee")]
     public class StatisticsController(IStatisticsService statisticsService) : ControllerBase
     {
         private readonly IStatisticsService _statisticsService = statisticsService;

@@ -10,6 +10,7 @@ using MyStore.Application.IRepositories;
 using MyStore.Application.IRepositories.Orders;
 using MyStore.Application.IRepositories.Products;
 using MyStore.Application.IRepositories.Users;
+using MyStore.Application.ISendMail;
 using MyStore.Application.IStorage;
 using MyStore.Application.ModelView;
 using MyStore.Application.Request;
@@ -21,9 +22,11 @@ using MyStore.Domain.Entities;
 using MyStore.Domain.Enumerations;
 using Net.payOS;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq.Expressions;
 using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography.X509Certificates;
 using System.Xml.Linq;
 
 namespace MyStore.Application.Services.Orders
@@ -37,8 +40,6 @@ namespace MyStore.Application.Services.Orders
         private readonly IProductSizeRepository _productSizeRepository;
 
         private readonly IUserVoucherRepository _userVoucherRepository;
-        private readonly IVoucherRepository _voucherRepository;
-        private readonly IPaymentService _paymentService;
         private readonly IPaymentMethodRepository _paymentMethodRepository;
         private readonly IProductReviewRepository _productReviewRepository;
 
@@ -53,6 +54,10 @@ namespace MyStore.Application.Services.Orders
 
         private readonly IFlashSaleService _flashSaleService;
         private readonly IFlashSaleRepository _flashSaleRepository;
+        private readonly ISendMailService _sendMailService;
+        private readonly IUserRepository _userRepository;
+
+        private readonly IPaymentProcessor _paymentProcessor;
 
         private readonly string reviewImagesPath = "assets/images/reviews";
 
@@ -63,12 +68,11 @@ namespace MyStore.Application.Services.Orders
             IProductRepository productRepository,
             IPaymentMethodRepository paymentMethodRepository,
             ITransactionRepository transaction,
-            IPaymentService paymentService,
+            IPaymentProcessor paymentProcessor,
             IProductReviewRepository productReviewRepository,
-            IVoucherRepository voucherRepository,
-            IPaymentMethodRepository methodRepository,
             IFlashSaleService flashSaleService,
-            IFlashSaleRepository flashSaleRepository,
+            ISendMailService sendMailService,
+            IFlashSaleRepository flashSaleRepository, IUserRepository userRepository,
             ICache cache, IVNPayLibrary vnPayLibrary, IFileStorage fileStorage,
             IConfiguration configuration, IServiceScopeFactory serviceScopeFactory,
             IUserVoucherRepository userVoucherRepository, IMapper mapper)
@@ -79,8 +83,6 @@ namespace MyStore.Application.Services.Orders
             _productRepository = productRepository;
             _productSizeRepository = productSizeRepository;
             _userVoucherRepository = userVoucherRepository;
-            _paymentService = paymentService;
-            _voucherRepository = voucherRepository;
             _paymentMethodRepository = paymentMethodRepository;
             _productReviewRepository = productReviewRepository;
             _fileStorage = fileStorage;
@@ -91,10 +93,13 @@ namespace MyStore.Application.Services.Orders
             _serviceScopeFactory = serviceScopeFactory;
             _flashSaleService = flashSaleService;
             _flashSaleRepository = flashSaleRepository;
+            _sendMailService = sendMailService;
+            _userRepository = userRepository;
 
             _mapper = mapper;
             _cache = cache;
             _transaction = transaction;
+            _paymentProcessor = paymentProcessor;
         }
         struct OrderCache
         {
@@ -103,6 +108,7 @@ namespace MyStore.Application.Services.Orders
             public string? vnp_IpAddr { get; set; }
             public string? vnp_CreateDate { get; set; }
             public string? vnp_OrderInfo { get; set; }
+            public DateTime Deadline { get; set; }
         }
 
         public async Task<PagedResponse<OrderDTO>> GetAll(int page, int pageSize, string? keySearch)
@@ -205,7 +211,7 @@ namespace MyStore.Application.Services.Orders
 
             var items = _mapper.Map<IEnumerable<OrderResponse>>(orders).Select(x =>
             {
-                x.PayBackUrl = _cache.Get<OrderCache?>("Order " + x.Id)?.Url;
+                x.PaymentDeadline = _cache.Get<OrderCache?>("Order " + x.Id)?.Deadline;
                 return x;
             });
 
@@ -235,7 +241,7 @@ namespace MyStore.Application.Services.Orders
 
             var items = _mapper.Map<IEnumerable<OrderResponse>>(orders).Select(x =>
             {
-                x.PayBackUrl = _cache.Get<OrderCache?>("Order " + x.Id)?.Url;
+                x.PaymentDeadline = _cache.Get<OrderCache?>("Order " + x.Id)?.Deadline;
                 return x;
             });
 
@@ -248,7 +254,47 @@ namespace MyStore.Application.Services.Orders
             };
         }
 
+        public async Task SendEmailConfirmOrder(Order order, IEnumerable<OrderDetail> orderDetails)
+        {
+            var path = _sendMailService.OrderConfirmEmailPath;
+            var productPath = _sendMailService.ProductListEmailPath;
+            if (File.Exists(path) && File.Exists(productPath))
+            {
+                var user = await _userRepository.SingleAsync(e => e.Id == order.UserId);
+                var storeName = _configuration["Store:Name"];
+                var subject = $"[{storeName}] Xác nhận đặt hàng";
 
+                string body = File.ReadAllText(path);
+                body = body.Replace("{NAME}", user.Fullname);
+                body = body.Replace("{SHOP_NAME}", storeName);
+                if(order.AmountPaid == order.Total)
+                {
+                    body = body.Replace("{ORDER_STATUS}", "đã được thanh toán");
+                }
+                else
+                {
+                    body = body.Replace("{ORDER_STATUS}", "đang được xử lý");
+                }
+                body = body.Replace("{ORDERID}", "#" + order.Id); 
+
+                var culture = new CultureInfo("vi-VN");
+                body = body.Replace("{TOTAL}", order.Total.ToString("C0", culture));
+                body = body.Replace("{RECEIVER}", order.Receiver);
+                body = body.Replace("{DELIVERY_ADDRESS}", order.DeliveryAddress);
+
+                var product_List = File.ReadAllText(productPath);
+                string lstProductBody = "";
+                foreach (var item in orderDetails)
+                {
+                    string kq = product_List.Replace("{PRODUCT_NAME}", item.ProductName);
+                    kq = kq.Replace("{VARIANT}", item.Variant);
+                    kq = kq.Replace("{QUANTITY}", item.Quantity.ToString());
+                    lstProductBody += kq;
+                }
+                body = body.Replace("{PRODUCT_LIST}", lstProductBody);
+                _ = Task.Run(() => _sendMailService.SendMailToOne(user.Email!, subject, body));
+            }
+        }
         private double CalcShip(double price) => price >= 400000 ? 0 : price >= 200000 ? 10000 : 30000;
 
         public async Task<string?> CreateOrder(string userId, OrderRequest request)
@@ -384,7 +430,7 @@ namespace MyStore.Application.Services.Orders
                 await _orderDetailRepository.AddAsync(lstDetails);
                 await _cartItemRepository.DeleteRangeAsync(cartItems);
 
-                if (lstFlashSaleUpdate.Any())
+                if (lstFlashSaleUpdate.Count != 0)
                 {
                     await _flashSaleRepository.UpdateAsync(lstFlashSaleUpdate);
                 }
@@ -398,30 +444,24 @@ namespace MyStore.Application.Services.Orders
                 string? paymentUrl = null;
                 if (method.Name == PaymentMethodEnum.VNPay.ToString())
                 {
-                    var orderInfo = new VNPayOrderInfo
-                    {
-                        OrderId = order.Id,
-                        Amount = total,
-                        CreatedDate = order.OrderDate,
-                        Status = order.OrderStatus?.ToString() ?? "0",
-                        OrderDesc = "Thanh toan don hang: " + order.Id,
-                    };
-
+                    var orderDesc = "Thanh toan don hang: " + order.Id;
                     var userIP = request.UserIP ?? "127.0.0.1";
-                    paymentUrl = _paymentService.GetVNPayURL(orderInfo, userIP);
+                    var deadline = order.OrderDate.AddMinutes(15);
 
+                    paymentUrl = _paymentProcessor.GetVNPayURL(order, deadline, orderDesc, userIP);
                     var orderCache = new OrderCache()
                     {
                         OrderId = order.Id,
                         Url = paymentUrl,
                         vnp_CreateDate = order.OrderDate.ToString("yyyyMMddHHmmss"),
                         vnp_IpAddr = userIP,
-                        vnp_OrderInfo = orderInfo.OrderDesc,
+                        vnp_OrderInfo = orderDesc,
+                        Deadline = deadline
                     };
 
                     var cacheOptions = new MemoryCacheEntryOptions
                     {
-                        AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(15)
+                        AbsoluteExpiration = deadline
                     };
                     cacheOptions.RegisterPostEvictionCallback(OnVNPayDeadline, this);
                     _cache.Set("Order " + order.Id, orderCache, cacheOptions);
@@ -429,32 +469,26 @@ namespace MyStore.Application.Services.Orders
                 }
                 else if(method.Name == PaymentMethodEnum.PayOS.ToString())
                 {
-                    var orders = new PayOSOrderInfo
-                    {
-                        OrderId = order.Id,
-                        Amount = total,
-                        Products = lstDetails.Select(e => new ProductInfo
-                        {
-                            Name = e.ProductName,
-                            Price = e.Price,
-                            Quantity = e.Quantity
-                        })
-                    };
+                    paymentUrl = await _paymentProcessor.GetPayOSURL(order, lstDetails);
 
-                    paymentUrl = await _paymentService.GetPayOSURL(orders);
-
+                    var deadline = order.OrderDate.AddMinutes(15);
                     var orderCache = new OrderCache()
                     {
                         OrderId = order.Id,
                         Url = paymentUrl,
+                        Deadline = deadline
                     };
 
                     var cacheOptions = new MemoryCacheEntryOptions
                     {
-                        AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(15)
+                        AbsoluteExpiration = deadline
                     };
                     cacheOptions.RegisterPostEvictionCallback(OnPayOSDeadline, this);
                     _cache.Set("Order " + order.Id, orderCache, cacheOptions);
+                }
+                else
+                {
+                    await SendEmailConfirmOrder(order, lstDetails);
                 }
                 await transaction.CommitAsync();
                 return paymentUrl;
@@ -518,14 +552,16 @@ namespace MyStore.Application.Services.Orders
                 {
                     bool checkSignature = vnPayLibrary
                         .ValidateQueryDrSignature(queryDrResponse, queryDrResponse.vnp_SecureHash, vnp_HashSecret);
-                    if(checkSignature && queryDrResponse.vnp_ResponseCode == "00")
+                    if(checkSignature)
                     {
                         var order = await orderRepository.FindAsync(data.OrderId);
                         if (order != null)
                         {
                             long vnp_Amount = Convert.ToInt64(queryDrResponse.vnp_Amount) / 100;
 
-                            if (queryDrResponse.vnp_TransactionStatus == "00" && vnp_Amount == order.Total)
+                            if (queryDrResponse.vnp_TransactionStatus == "00" 
+                                && queryDrResponse.vnp_ResponseCode == "00" 
+                                && vnp_Amount == order.Total)
                             {
                                 order.PaymentTranId = queryDrResponse.vnp_TransactionNo;
                                 order.AmountPaid = vnp_Amount;
@@ -547,6 +583,7 @@ namespace MyStore.Application.Services.Orders
             {
                 using var _scope = _serviceScopeFactory.CreateScope();
                 var orderRepository = _scope.ServiceProvider.GetRequiredService<IOrderRepository>();
+                var orderService = _scope.ServiceProvider.GetRequiredService<IOrderService>();
                 var payOS = _scope.ServiceProvider.GetRequiredService<PayOS>();
 
                 var data = (OrderCache) value;
@@ -562,12 +599,12 @@ namespace MyStore.Application.Services.Orders
                             order.PaymentTranId = paymentInfo.id;
                             order.AmountPaid = paymentInfo.amountPaid;
                             order.OrderStatus = DeliveryStatusEnum.Confirmed;
+                            await orderRepository.UpdateAsync(order);
                         }
                         else
                         {
-                            order.OrderStatus = DeliveryStatusEnum.Canceled;
+                            await orderService.CancelOrder(order.Id);
                         }
-                        await orderRepository.UpdateAsync(order);
                     }
                 }
                 else if(paymentInfo.status != "CANCELLED")
@@ -575,6 +612,22 @@ namespace MyStore.Application.Services.Orders
                     await payOS.cancelPaymentLink(data.OrderId);
                 }
             }
+        }
+
+        public async Task<string> Repayment(string userId, long orderId)
+        {
+            var orderInfo = _cache.Get<OrderCache?>("Order " + orderId)
+                ?? throw new InvalidDataException(ErrorMessage.PAYMENT_DUE);
+            var order = await _orderRepository
+                .SingleOrDefaultAsyncInclude(e => e.Id == orderId && e.UserId == userId)
+                ?? throw new InvalidOperationException(ErrorMessage.ORDER_NOT_FOUND);
+
+            var paymentUrl = await _paymentProcessor.GetPayOSURL(order, order.OrderDetails);
+            if (order.PaymentMethodName == PaymentMethodEnum.VNPay.ToString())
+            {
+                paymentUrl = _paymentProcessor.GetVNPayURL(order, orderInfo.Deadline, orderInfo.vnp_OrderInfo, orderInfo.vnp_IpAddr);
+            }
+            return paymentUrl;
         }
 
         public async Task<OrderDTO> UpdateOrder(long id, string userId, UpdateOrderRequest request)

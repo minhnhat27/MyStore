@@ -11,9 +11,7 @@ namespace MyStore.Application.Services.Payments
         Task<PaymentMethodDTO> UpdatePaymentMethod(int id, UpdatePaymentMethodRequest request);
         Task<PaymentMethodDTO> CreatePaymentMethod(CreatePaymentMethodRequest request);
         Task DeletePaymentMethod(int id);
-        string GetVNPayURL(VNPayOrderInfo order, string ipAddress, string? locale = null);
         Task VNPayCallback(VNPayRequest request);
-        Task<string> GetPayOSURL(PayOSOrderInfo orderInfo); 
         Task PayOSCallback(PayOSRequest request);
     }
 }

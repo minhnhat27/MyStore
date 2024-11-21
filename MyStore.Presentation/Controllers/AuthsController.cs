@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MyStore.Application.IRepositories;
 using MyStore.Application.Request;
-using MyStore.Application.Services;
 using MyStore.Domain.Constants;
 using System.Security.Claims;
 

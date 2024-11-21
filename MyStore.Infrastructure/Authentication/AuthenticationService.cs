@@ -15,7 +15,8 @@ using System.Text;
 using MyStore.Application.DTOs;
 using MyStore.Domain.Enumerations;
 using MyStore.Application.IRepositories;
-using MyStore.Application.Services;
+using System.Data;
+using System.Linq;
 
 namespace MyStore.Infrastructure.Authentication
 {
@@ -48,18 +49,17 @@ namespace MyStore.Infrastructure.Authentication
         {
             var roles = await _userManager.GetRolesAsync(user);
             var exps = DateTime.Now.AddHours(24);
-            var isAdmin = roles.Contains("Admin");
+            //var isAdmin = roles.Contains("Admin");
 
             var claims = new List<Claim>
                 {
                     new(JwtRegisteredClaimNames.Jti, user.Id),
                     new(ClaimTypes.NameIdentifier, user.Id),
-                    new(ClaimTypes.Email, user.Email ?? "")
+                    new(ClaimTypes.Email, user.Email ?? ""),
+                    new(ClaimTypes.Name, user.Fullname ?? "")
                 };
-            foreach (var role in roles)
-            {
-                claims.Add(new Claim(ClaimTypes.Role, role));
-            }
+            claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
+
             //if (isRefreshToken)
             //{
             //    claims.Add(new Claim(ClaimTypes.Version, "Refresh Token"));
@@ -79,7 +79,7 @@ namespace MyStore.Infrastructure.Authentication
             {
                 AccessToken = accessToken,
                 Expires = exps,
-                IsAdmin = isAdmin
+                Roles = roles
             };
         }
 
@@ -139,7 +139,7 @@ namespace MyStore.Infrastructure.Authentication
                 return new LoginResponse
                 {
                     AccessToken = accessToken.AccessToken,
-                    IsAdmin = accessToken.IsAdmin,
+                    Roles = accessToken.Roles,
                     Expires = accessToken.Expires,
                     Fullname = user.Fullname,
                     Session = user.ConcurrencyStamp ?? user.Id,
@@ -171,7 +171,7 @@ namespace MyStore.Infrastructure.Authentication
             {
                 AccessToken = myAccessToken.AccessToken,
                 Expires = myAccessToken.Expires,
-                IsAdmin = myAccessToken.IsAdmin,
+                Roles = myAccessToken.Roles,
                 //RefreshToken = refreshToken,
                 Fullname = user.Fullname,
                 Session = user.ConcurrencyStamp ?? user.Id
@@ -197,7 +197,7 @@ namespace MyStore.Infrastructure.Authentication
             {
                 AccessToken = myAccessToken.AccessToken,
                 Expires = myAccessToken.Expires,
-                IsAdmin = myAccessToken.IsAdmin,
+                Roles = myAccessToken.Roles,
                 Fullname = user.Fullname,
                 Session = user.ConcurrencyStamp ?? user.Id
             };
@@ -362,12 +362,19 @@ namespace MyStore.Infrastructure.Authentication
             var code = new Random().Next(100000, 999999).ToString();
             int expire = 30;
             SetCache(authType, email, code, TimeSpan.FromMinutes(expire));
+            var storeName = _configuration["Store:Name"] ?? "Thông báo";
 
-            var subject = code + " is your verification code";
-            var body = $"Hi!<br/><br/>" +
-                $"Your verification code is: {code}.<br/><br/>" +
-                $"Please complete the account verification process in {expire} minutes.<br/><br/>" +
-                "This is an automated email. Please do not reply to this email.";
+            var subject = storeName + " mã xác nhận của bạn.";
+            string body;
+            var path = _sendMailService.SendCodeEmailPath;
+            if (!File.Exists(path))
+            {
+                body = $"{code} là mã xác nhận của bạn. Mã sẽ hết hạn sau {expire} phút.";
+            }
+            body = File.ReadAllText(path);
+            body = body.Replace("{CODE}", code);
+            body = body.Replace("{minute}", expire.ToString());
+            //body = body.Replace("{IMAGE}", Path.Combine(host ?? "", "Logo-t-1x1.png"));
 
             await _sendMailService.SendMailToOne(email, subject, body);
         }

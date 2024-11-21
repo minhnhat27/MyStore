@@ -4,7 +4,7 @@ using MyStore.Application.Response;
 using MyStore.Domain.Entities;
 using MyStore.Domain.Enumerations;
 
-namespace MyStore.Application.Services
+namespace MyStore.Application.IRepositories
 {
     public interface IAuthenticationService
     {

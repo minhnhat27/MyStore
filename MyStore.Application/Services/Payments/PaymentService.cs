@@ -5,11 +5,11 @@ using MyStore.Application.ICaching;
 using MyStore.Application.ILibrary;
 using MyStore.Application.IRepositories.Orders;
 using MyStore.Application.ModelView;
+using MyStore.Application.Services.Orders;
 using MyStore.Domain.Constants;
 using MyStore.Domain.Entities;
 using MyStore.Domain.Enumerations;
 using Net.payOS;
-using Net.payOS.Types;
 
 namespace MyStore.Application.Services.Payments
 {
@@ -19,23 +19,23 @@ namespace MyStore.Application.Services.Payments
         private readonly IMapper _mapper;
         private readonly IConfiguration _configuration;
         private readonly IVNPayLibrary _vnPayLibrary;
-        private readonly IOrderRepository _orderRepository;
-        private readonly ICache _cache;
         private readonly PayOS _payOS;
 
-        public PaymentService(IConfiguration configuration, IVNPayLibrary vnPayLibrary,
-                              IOrderRepository orderRepository, ICache cache,
-                              IPaymentMethodRepository paymentMethodRepository,
-                              PayOS payOS,
-                              IMapper mapper)
+        private readonly IOrderRepository _orderRepository;
+        private readonly IOrderService _orderService;
+        private readonly ICache _cache;
+        public PaymentService(IPaymentMethodRepository paymentMethodRepository, IVNPayLibrary vnPayLibrary,
+            IMapper mapper, IConfiguration configuration, PayOS payOS, 
+            IOrderRepository orderRepository, IOrderService orderService, ICache cache)
         {
             _paymentMethodRepository = paymentMethodRepository;
             _mapper = mapper;
             _configuration = configuration;
             _vnPayLibrary = vnPayLibrary;
-            _orderRepository = orderRepository;
-            _cache = cache;
             _payOS = payOS;
+            _orderRepository = orderRepository;
+            _orderService = orderService;
+            _cache = cache;
         }
 
         public async Task<IEnumerable<PaymentMethodDTO>> GetPaymentMethods()
@@ -43,8 +43,6 @@ namespace MyStore.Application.Services.Payments
             var payment = await _paymentMethodRepository.GetAllAsync();
             return _mapper.Map<IEnumerable<PaymentMethodDTO>>(payment);
         }
-
-
         public async Task<PaymentMethodDTO> CreatePaymentMethod(CreatePaymentMethodRequest request)
         {
             try
@@ -68,8 +66,6 @@ namespace MyStore.Application.Services.Payments
                 throw new Exception(ex.Message);
             }
         }
-
-
         public async Task<PaymentMethodDTO> UpdatePaymentMethod(int id, UpdatePaymentMethodRequest request)
         {
             try
@@ -95,42 +91,7 @@ namespace MyStore.Application.Services.Payments
                 throw new Exception(ex.Message);
             }
         }
-
         public async Task DeletePaymentMethod(int id) => await _paymentMethodRepository.DeleteAsync(id);
-
-        public string GetVNPayURL(VNPayOrderInfo order, string ipAddress, string? locale)
-        {
-            string? vnp_ReturnUrl = _configuration["VNPay:vnp_ReturnUrl"];
-            string? vnp_Url = _configuration["VNPay:vnp_Url"];
-            string? vnp_TmnCode = _configuration["VNPay:vnp_TmnCode"];
-            string? vnp_HashSecret = _configuration["VNPay:vnp_HashSecret"];
-
-            if (string.IsNullOrEmpty(vnp_ReturnUrl) || string.IsNullOrEmpty(vnp_Url)
-                || string.IsNullOrEmpty(vnp_HashSecret) || string.IsNullOrEmpty(vnp_TmnCode))
-            {
-                throw new ArgumentException("Thiếu tham số");
-            }
-
-            var vnpay = new VNPay()
-            {
-                vnp_TmnCode = vnp_TmnCode,
-                vnp_Version = _vnPayLibrary.VERSION,
-                vnp_Locale = locale ?? "vn",
-                vnp_ReturnUrl = vnp_ReturnUrl,
-                vnp_Command = "pay",
-                vnp_Amount = (order.Amount * 100).ToString(),
-                vnp_CreateDate = order.CreatedDate.ToString("yyyyMMddHHmmss"),
-                vnp_CurrCode = "VND",
-                vnp_IpAddr = ipAddress,
-                vnp_OrderInfo = order.OrderDesc,
-                vnp_OrderType = "200000",
-                vnp_TxnRef = order.OrderId.ToString(),
-                vnp_ExpireDate = order.CreatedDate.AddMinutes(15).ToString("yyyyMMddHHmmss"),
-            };
-
-            return _vnPayLibrary.CreateRequestUrl(vnpay, vnp_Url, vnp_HashSecret);
-        }
-
         public async Task<string?> IsActivePaymentMethod(int id)
         {
             var result = await _paymentMethodRepository
@@ -153,7 +114,7 @@ namespace MyStore.Application.Services.Payments
             bool checkSignature = _vnPayLibrary.ValidateSignature(request, vnp_SecureHash, vnp_HashSecret);
             if (checkSignature)
             {
-                var order = await _orderRepository.FindAsync(orderId)
+                var order = await _orderRepository.SingleOrDefaultAsyncInclude(e => e.Id == orderId)
                     ?? throw new ArgumentException($"Order {orderId}" + ErrorMessage.NOT_FOUND);
 
                 if (order.Total == vnp_Amount)
@@ -161,76 +122,70 @@ namespace MyStore.Application.Services.Payments
                     if (vnp_ResponseCode == "00" && vnp_TransactionStatus == "00")
                     {
                         order.PaymentTranId = request.vnp_TransactionNo;
-
                         order.AmountPaid = vnp_Amount;
                         order.OrderStatus = DeliveryStatusEnum.Confirmed;
 
+                        await _orderService.SendEmailConfirmOrder(order, order.OrderDetails);
                         await _orderRepository.UpdateAsync(order);
                         _cache.Remove("Order " + orderId);
                     }
-                    else throw new Exception(ErrorMessage.PAYMENT_FAILED);
+                    else
+                    {
+                        //if (vnp_ResponseCode == "24" || vnp_ResponseCode == "10")
+                        //{
+                        //    await _orderService.CancelOrder(orderId);
+                        //    _cache.Remove("Order " + orderId);
+                        //}
+                        throw new Exception(ErrorMessage.PAYMENT_FAILED);
+                    }
                 }
                 else throw new ArgumentException("Số tiền " + ErrorMessage.INVALID);
             }
         }
-
-        public async Task<string> GetPayOSURL(PayOSOrderInfo orderInfo)
-        {
-            var cancelUrl = _configuration["PayOS:cancelUrl"];
-            var returnUrl = _configuration["PayOS:returnUrl"];
-
-            if (cancelUrl == null || returnUrl == null)
-            {
-                throw new ArgumentNullException(ErrorMessage.ARGUMENT_NULL);
-            }
-
-            List<ItemData> items = orderInfo.Products
-                .Select(e => new ItemData(e.Name, e.Quantity, (int)Math.Floor(e.Price))).ToList();
-
-            PaymentData paymentData = new(orderInfo.OrderId, (int)Math.Floor(orderInfo.Amount),
-                "Thanh toan don hang: " + orderInfo.OrderId, items, cancelUrl, returnUrl);
-
-            CreatePaymentResult createPayment = await _payOS.createPaymentLink(paymentData);
-            return createPayment.checkoutUrl;
-        }
-
         public async Task PayOSCallback(PayOSRequest request)
         {
             if (request.Code == "00")
             {
-                var order = await _orderRepository.FindAsync(request.OrderCode);
-                if (order != null)
+                var order = await _orderRepository.SingleOrDefaultAsyncInclude(e => e.Id == request.OrderCode)
+                    ?? throw new InvalidOperationException(ErrorMessage.NOT_FOUND + " đơn hàng");
+
+                var paymentInfo = await _payOS.getPaymentLinkInformation(request.OrderCode);
+                if (paymentInfo.status == "PAID")
                 {
-                    var paymentInfo = await _payOS.getPaymentLinkInformation(request.OrderCode);
-                    if (request.Cancel || request.Status == "CANCELLED")
+                    if (paymentInfo.amountPaid > 0)
                     {
-                        _cache.Remove("Order " + request.OrderCode);
-                        order.OrderStatus = DeliveryStatusEnum.Canceled;
-                        await _orderRepository.UpdateAsync(order);
-                        throw new InvalidDataException(ErrorMessage.PAYMENT_FAILED);
-                    }
-                    else
-                    {
-                        if (paymentInfo.amount == order.Total)
+                        order.AmountPaid = paymentInfo.amountPaid;
+                        if (paymentInfo.amountPaid >= order.Total)
                         {
-                            if (paymentInfo.status == "PAID")
-                            {
-                                order.PaymentTranId = request.Id;
-                                order.AmountPaid = paymentInfo.amountPaid;
-                                order.OrderStatus = DeliveryStatusEnum.Confirmed;
-                            }
+                            order.PaymentTranId = request.Id;
+                            order.OrderStatus = DeliveryStatusEnum.Confirmed;
+                            _cache.Remove("Order " + request.OrderCode);
                             await _orderRepository.UpdateAsync(order);
+                            await _orderService.SendEmailConfirmOrder(order, order.OrderDetails);
                         }
-                        else throw new ArgumentException("Số tiền " + ErrorMessage.INVALID);
+                        else
+                        {
+                            await _orderRepository.UpdateAsync(order);
+                            throw new ArgumentException("Số tiền " + ErrorMessage.INVALID);
+                        }
                     }
+                    else throw new Exception(ErrorMessage.PAYMENT_FAILED);
                 }
-                else throw new InvalidOperationException(ErrorMessage.NOT_FOUND + " đơn hàng");
+                else
+                {
+                    await _payOS.cancelPaymentLink(order.Id);
+                    _cache.Remove("Order " + request.OrderCode);
+                    await _orderService.CancelOrder(order.Id);
+                    throw new Exception(ErrorMessage.PAYMENT_FAILED);
+                }
             }
             else
             {
                 _cache.Remove("Order " + request.OrderCode);
-                throw new Exception(ErrorMessage.ERROR);
+                await _orderService.CancelOrder(request.OrderCode);
+                throw new Exception(ErrorMessage.PAYMENT_FAILED);
             }
         }
+
     }
 }

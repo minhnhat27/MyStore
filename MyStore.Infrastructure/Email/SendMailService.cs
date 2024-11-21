@@ -18,6 +18,14 @@ namespace MyStore.Infrastructure.Email
     public class SendMailService : ISendMailService
     {
         private readonly SenderSettings _sender;
+
+        private readonly string _templatePath = Path.Combine
+            (Directory.GetParent(Directory.GetCurrentDirectory())!.FullName, "MyStore.Infrastructure", "Email", "Template");
+
+        public string SendCodeEmailPath => Path.Combine(_templatePath, "send-code.txt");
+        public string OrderConfirmEmailPath => Path.Combine(_templatePath, "confirm-order.txt");
+        public string ProductListEmailPath => Path.Combine(_templatePath, "product-list.txt");
+
         public SendMailService(IOptions<SenderSettings> configuration) => _sender = configuration.Value;
 
         public async Task SendMailToOne(string email, string subject, string htmlMessage)
@@ -92,5 +100,6 @@ namespace MyStore.Infrastructure.Email
                 await stmpClient.DisconnectAsync(true);
             }
         }
+    
     }
 }
