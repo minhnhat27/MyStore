@@ -79,8 +79,13 @@ namespace MyStore.Presentation.Controllers
             }
         }
 
+        public struct UploadFile
+        {
+            public IFormFile image { get; set; }
+        }
+
         [HttpPost("search/image")]
-        public async Task<IActionResult> GetSearchProducts([FromForm] IFormFile image)
+        public async Task<IActionResult> GetSearchProducts([FromForm] UploadFile image)
         {
             try
             {
@@ -89,7 +94,7 @@ namespace MyStore.Presentation.Controllers
                 var tempFilePath = Path.GetTempFileName();
                 using(var stream = new FileStream(tempFilePath, FileMode.Create))
                 {
-                    await image.CopyToAsync(stream);
+                    await image.image.CopyToAsync(stream);
                 }
 
                 var result = await _productService.GetSearchProducts(tempFilePath, rootPath);

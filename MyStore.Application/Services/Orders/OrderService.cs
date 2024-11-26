@@ -21,13 +21,9 @@ using MyStore.Domain.Constants;
 using MyStore.Domain.Entities;
 using MyStore.Domain.Enumerations;
 using Net.payOS;
-using System.Diagnostics;
 using System.Globalization;
 using System.Linq.Expressions;
 using System.Net.Http.Json;
-using System.Runtime.CompilerServices;
-using System.Security.Cryptography.X509Certificates;
-using System.Xml.Linq;
 
 namespace MyStore.Application.Services.Orders
 {
@@ -58,7 +54,6 @@ namespace MyStore.Application.Services.Orders
         private readonly IUserRepository _userRepository;
 
         private readonly IPaymentProcessor _paymentProcessor;
-
         private readonly string reviewImagesPath = "assets/images/reviews";
 
         public OrderService(IOrderRepository orderRepository,
@@ -297,7 +292,7 @@ namespace MyStore.Application.Services.Orders
         }
         private double CalcShip(double price) => price >= 400000 ? 0 : price >= 200000 ? 10000 : 30000;
 
-        public async Task<string?> CreateOrder(string userId, OrderRequest request)
+        public async Task<CreateOrderResponse> CreateOrder(string userId, OrderRequest request)
         {
             using var transaction = await _transaction.BeginTransactionAsync();
             try
@@ -491,7 +486,11 @@ namespace MyStore.Application.Services.Orders
                     await SendEmailConfirmOrder(order, lstDetails);
                 }
                 await transaction.CommitAsync();
-                return paymentUrl;
+                return new CreateOrderResponse
+                {
+                    Id = order.Id,
+                    PaymentUrl = paymentUrl
+                };
             }
             catch (Exception)
             {
@@ -664,7 +663,8 @@ namespace MyStore.Application.Services.Orders
             var order = await _orderRepository.SingleOrDefaultAsyncInclude(e => e.Id == orderId && e.UserId == userId)
                 ?? throw new InvalidOperationException(ErrorMessage.ORDER_NOT_FOUND);
             
-            if (order.OrderStatus.Equals(DeliveryStatusEnum.Processing) || order.OrderStatus.Equals(DeliveryStatusEnum.Confirmed))
+            if (order.OrderStatus.Equals(DeliveryStatusEnum.Processing) 
+                || order.OrderStatus.Equals(DeliveryStatusEnum.Confirmed))
             {
                 order.OrderStatus = DeliveryStatusEnum.Canceled;
                 List<Product> lstProductUpdate = new();
@@ -705,7 +705,8 @@ namespace MyStore.Application.Services.Orders
             var order = await _orderRepository.SingleOrDefaultAsyncInclude(e => e.Id == orderId)
                 ?? throw new InvalidOperationException(ErrorMessage.ORDER_NOT_FOUND);
 
-            if (order.OrderStatus.Equals(DeliveryStatusEnum.Processing) || order.OrderStatus.Equals(DeliveryStatusEnum.Confirmed))
+            if (order.OrderStatus.Equals(DeliveryStatusEnum.Processing) 
+                || order.OrderStatus.Equals(DeliveryStatusEnum.Confirmed))
             {
                 order.OrderStatus = DeliveryStatusEnum.Canceled;
                 List<Product> lstProductUpdate = new();

@@ -1,8 +1,13 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
+using MyStore.Application.IRepositories;
 using MyStore.Application.Request;
 using MyStore.Application.Services.Orders;
+using MyStore.Domain.Constants;
+using MyStore.Domain.Entities;
 using MyStore.Domain.Enumerations;
+using MyStore.Presentation.Hubs;
 using System.Security.Claims;
 
 namespace MyStore.Presentation.Controllers
@@ -10,9 +15,12 @@ namespace MyStore.Presentation.Controllers
     [Route("api/orders")]
     [ApiController]
     [Authorize]
-    public class OrdersController(IOrderService orderService) : ControllerBase
+    public class OrdersController(IOrderService orderService, INotificationRepository notificationRepository,
+        IHubContext<MyHub> hubContext) : ControllerBase
     {
         private readonly IOrderService _orderService = orderService;
+        private readonly INotificationRepository _notificationRepository = notificationRepository;
+        private readonly IHubContext<MyHub> _notificationHub = hubContext;
 
         [HttpGet("all")]
         [Authorize(Roles = "Admin,Employee")]
@@ -148,8 +156,16 @@ namespace MyStore.Presentation.Controllers
                 {
                     return Unauthorized();
                 }
-                var orders = await _orderService.CreateOrder(userId, request);
-                return Ok(orders);
+                var res = await _orderService.CreateOrder(userId, request);
+                var message = NotificationMessage.NEW_ORDER + ": " + res.Id;
+                var notification = new Notifications(message);
+                _ = Task.Run(() =>
+                {
+                    _notificationHub.Clients.Group("AdminGroup").SendAsync("notification", notification);
+                    _notificationRepository.AddNotificationAsync(notification);
+                });
+
+                return Ok(res.PaymentUrl);
             }
             catch (ArgumentException ex)
             {

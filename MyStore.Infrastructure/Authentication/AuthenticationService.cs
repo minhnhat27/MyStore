@@ -16,7 +16,6 @@ using MyStore.Application.DTOs;
 using MyStore.Domain.Enumerations;
 using MyStore.Application.IRepositories;
 using System.Data;
-using System.Linq;
 
 namespace MyStore.Infrastructure.Authentication
 {
@@ -53,7 +52,7 @@ namespace MyStore.Infrastructure.Authentication
 
             var claims = new List<Claim>
                 {
-                    new(JwtRegisteredClaimNames.Jti, user.Id),
+                    //new(JwtRegisteredClaimNames.Jti, user.Id),
                     new(ClaimTypes.NameIdentifier, user.Id),
                     new(ClaimTypes.Email, user.Email ?? ""),
                     new(ClaimTypes.Name, user.Fullname ?? "")

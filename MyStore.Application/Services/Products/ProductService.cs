@@ -13,8 +13,8 @@ using MyStore.Domain.Enumerations;
 using System.Linq.Expressions;
 using System.Text.RegularExpressions;
 using System.Text;
-using OpenCvSharp;
 using MyStore.Application.Services.FlashSales;
+using MyStore.Application.ILibrary;
 
 namespace MyStore.Application.Services.Products
 {
@@ -36,7 +36,9 @@ namespace MyStore.Application.Services.Products
         private readonly string path = "assets/images/products";
         private readonly string reviewsPath = "assets/images/reviews";
 
-        public ProductService(IProductRepository productRepository,
+        private readonly IImageFeatureExtractor _imageFeatureExtractor;
+
+        public ProductService(IProductRepository productRepository, IImageFeatureExtractor imageFeatureExtractor,
                               IProductSizeRepository productSizeRepository,
                               IFlashSaleService flashSaleService,
                               IProductColorRepository productColorRepository,
@@ -58,6 +60,8 @@ namespace MyStore.Application.Services.Products
             _mapper = mapper;
 
             _flashSaleService = flashSaleService;
+
+            _imageFeatureExtractor = imageFeatureExtractor;
         }
 
         public async Task<ProductDTO> CreateProductAsync(ProductRequest request, IFormFileCollection images)
@@ -478,28 +482,20 @@ namespace MyStore.Application.Services.Products
             return res;
         }
 
-        private bool CompareImages(Mat grayInputImage, Mat compareImage, double threshold = 1000.0)
-        {
-            var gray1 = new Mat();
-            var gray2 = new Mat();
-            Cv2.CvtColor(compareImage, gray2, ColorConversionCodes.BGR2GRAY);
-
-            return true;
-        }
-
         public async Task<IEnumerable<ProductDTO>> GetSearchProducts(string tempFilePath, string rootPath)
         {
-            var imagesPath = Path.Combine(rootPath, path);
+            var features = _imageFeatureExtractor.ExtractFeatures(tempFilePath);
+            //    var imagesPath = Path.Combine(rootPath, path);
 
-            var resultList = new List<string>();
-            var inputImage = Cv2.ImRead(tempFilePath);
+            //    var resultList = new List<string>();
+            //    var inputImage = Cv2.ImRead(tempFilePath);
 
-            if (inputImage.Empty())
-            {
-                throw new FileNotFoundException(ErrorMessage.NOT_FOUND + " ảnh");
-            }
-            var grayInputImage = new Mat();
-            Cv2.CvtColor(inputImage, grayInputImage, ColorConversionCodes.BGR2GRAY);
+            //    if (inputImage.Empty())
+            //    {
+            //        throw new FileNotFoundException(ErrorMessage.NOT_FOUND + " ảnh");
+            //    }
+            //    var grayInputImage = new Mat();
+            //    Cv2.CvtColor(inputImage, grayInputImage, ColorConversionCodes.BGR2GRAY);
 
             //var gray1 = new Mat();
             //var blur = new Mat();

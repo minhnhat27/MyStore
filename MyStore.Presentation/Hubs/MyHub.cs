@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using MongoDB.Bson;
-using MongoDB.Driver.Core.Connections;
 using MyStore.Application.DTOs;
 using MyStore.Application.IRepositories;
+using MyStore.Domain.Entities;
 using MyStore.Presentation.Hubs.ConnectionManager;
 using System.Security.Claims;
 
@@ -16,10 +16,13 @@ namespace MyStore.Presentation.Hubs
         public bool Closed { get; set; }
     }
 
-    public class ChatBox(IConversationRepository conversationRepository, IConnectionManager connectionManager) : Hub
+    public class MyHub(IConversationRepository conversationRepository, 
+        INotificationRepository notificationRepository,
+        IConnectionManager connectionManager) : Hub
     {
         private readonly IConversationRepository _conversationRepository = conversationRepository;
         private readonly IConnectionManager _connectionManager = connectionManager;
+        private readonly INotificationRepository _notificationRepository = notificationRepository;
        
         public bool GetAdminOnline()
                     => _connectionManager.AdminCount > 0;
@@ -107,6 +110,32 @@ namespace MyStore.Presentation.Hubs
         public async Task ReadMessage(string session)
             => await _conversationRepository.UpdateUnread(session, true);
 
+        //notifications
+
+        [Authorize(Roles = "Admin,Employee")]
+        public async Task<IEnumerable<Notifications>> GetNotification(int page, int pageSize)
+            => await _notificationRepository.GetNotificationsAsync(page, pageSize);
+
+        [Authorize(Roles = "Admin,Employee")]
+        public async Task<long> TotalUnreadNotification()
+            => await _notificationRepository.GetNotIsRead();
+
+        [Authorize(Roles = "Admin,Employee")]
+        public async Task ReadNotification(string id)
+            => await _notificationRepository.UpdateIsReadAsync(id);
+
+        [Authorize(Roles = "Admin,Employee")]
+        public async Task ReadAllNotification()
+            => await _notificationRepository.UpdateAllIsReadAsync();
+
+        [Authorize(Roles = "Admin")]
+        public async Task DeleteNotification(string id)
+            => await _notificationRepository.DeleteNotificationAsync(id);
+
+        [Authorize(Roles = "Admin")]
+        public async Task DeleteAllNotification()
+            => await _notificationRepository.DeleteNotIsReadNotificationAsync();
+
         public override async Task OnConnectedAsync()
         {
             var roles = Context.User?.FindAll(ClaimTypes.Role).Select(e => e.Value);
@@ -128,13 +157,6 @@ namespace MyStore.Presentation.Hubs
                 _connectionManager.TryRemoveAdmin(Context.ConnectionId);
                 await Groups.RemoveFromGroupAsync(Context.ConnectionId, adminGroup);
             }
-
-            //else
-            //{
-            //    //_messageManager.StopChatting(Context.ConnectionId);
-            //    await Clients.Group(adminGroup).SendAsync("USER_DISCONNECT", Context.ConnectionId);
-            //}
-
             await base.OnDisconnectedAsync(exception);
         }
     }

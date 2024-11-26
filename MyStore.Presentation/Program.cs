@@ -97,7 +97,7 @@ builder.Services.AddAuthentication(opt =>
             var accessToken = context.Request.Query["access_token"];
 
             var path = context.HttpContext.Request.Path;
-            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/chat"))
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hub"))
             {
                 context.Token = accessToken;
             }
@@ -117,6 +117,9 @@ builder.Services.AddSingleton<ICache, Cache>();
 builder.Services.AddSingleton<IConnectionManager, ConnectionManager>();
 builder.Services.AddSingleton<IConversationRepository, ConversationRepository>();
 builder.Services.AddSingleton<INotificationRepository, NotificationRepository>();
+
+builder.Services.AddSingleton<IImageFeatureExtractor, ImageFeatureExtractor>();
+builder.Services.AddHostedService<StartUpService>();
 
 PayOS payOS = new(builder.Configuration["PayOS:clientId"] ?? throw new Exception(ErrorMessage.ARGUMENT_NULL),
                         builder.Configuration["PayOS:apiKey"] ?? throw new Exception(ErrorMessage.ARGUMENT_NULL),
@@ -185,7 +188,7 @@ app.UseCors("MyCors");
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapHub<ChatBox>("/chat");
+app.MapHub<MyHub>("/hub");
 
 app.MapControllers();
 
