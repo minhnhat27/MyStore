@@ -4,6 +4,7 @@ using MyStore.Application.DTOs;
 using MyStore.Application.Request;
 using MyStore.Application.Services.Products;
 using System;
+using System.Diagnostics;
 
 namespace MyStore.Presentation.Controllers
 {
@@ -79,27 +80,18 @@ namespace MyStore.Presentation.Controllers
             }
         }
 
-        public struct UploadFile
-        {
-            public IFormFile image { get; set; }
-        }
-
         [HttpPost("search/image")]
-        public async Task<IActionResult> GetSearchProducts([FromForm] UploadFile image)
+        public async Task<IActionResult> GetSearchProducts([FromForm] IFormFile image)
         {
+            var tempFilePath = Path.GetTempFileName();
             try
             {
-                var rootPath = Path.Combine(_environment.WebRootPath);
-
-                var tempFilePath = Path.GetTempFileName();
                 using(var stream = new FileStream(tempFilePath, FileMode.Create))
                 {
-                    await image.image.CopyToAsync(stream);
+                    await image.CopyToAsync(stream);
                 }
 
-                var result = await _productService.GetSearchProducts(tempFilePath, rootPath);
-                System.IO.File.Delete(tempFilePath);
-
+                var result = await _productService.GetSearchProductsByImage(tempFilePath);
                 return Ok(result);
             }
             catch(FileNotFoundException ex)
@@ -109,6 +101,13 @@ namespace MyStore.Presentation.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, ex.Message);
+            }
+            finally
+            {
+                if (System.IO.File.Exists(tempFilePath))
+                {
+                    System.IO.File.Delete(tempFilePath);
+                }
             }
         }
 
@@ -216,5 +215,21 @@ namespace MyStore.Presentation.Controllers
                 return StatusCode(500, ex.Message);
             }
         }
+
+        [HttpGet("retrain")]
+        [Authorize(Roles = "Admin")]
+        public IActionResult Retrain()
+        {
+            try
+            {
+                Task.Run(_productService.RetrainForAllProduct);
+            }
+            catch(Exception ex)
+            {
+                Trace.WriteLine(ex);
+            }
+            return Ok("Retraining started in the background.");
+        }
+
     }
 }

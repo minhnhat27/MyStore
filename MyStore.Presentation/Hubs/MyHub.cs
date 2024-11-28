@@ -113,8 +113,8 @@ namespace MyStore.Presentation.Hubs
         //notifications
 
         [Authorize(Roles = "Admin,Employee")]
-        public async Task<IEnumerable<Notifications>> GetNotification(int page, int pageSize)
-            => await _notificationRepository.GetNotificationsAsync(page, pageSize);
+        public async Task<IEnumerable<Notifications>> GetNotification()
+            => await _notificationRepository.GetNotificationsAsync();
 
         [Authorize(Roles = "Admin,Employee")]
         public async Task<long> TotalUnreadNotification()

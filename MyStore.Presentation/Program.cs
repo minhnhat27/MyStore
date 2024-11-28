@@ -152,6 +152,7 @@ builder.Services.AddScoped<IUserVoucherRepository, UserVoucherRepository>();
 builder.Services.AddScoped<IDeliveryAddressRepository, DeliveryAddressRepository>();
 builder.Services.AddScoped<IFlashSaleRepository, FlashSaleRepository>();
 builder.Services.AddScoped<IProductFlashSaleRepository, ProductFlashSaleRepository>();
+builder.Services.AddScoped<IProductFeatureRepository, ProductFeatureRepository>();
 
 builder.Services.AddScoped<IBrandService, BrandService>();
 builder.Services.AddScoped<ISizeService, SizeService>();

@@ -13,7 +13,9 @@ namespace MyStore.Application.Services.Products
         Task<PagedResponse<ProductDTO>> GetFilterProductsAsync(ProductFiltersRequest filters);
 
         Task<IEnumerable<ProductDTO>> GetSearchProducts(string key);
-        Task<IEnumerable<ProductDTO>> GetSearchProducts(string tempFilePath, string rootPath);
+        Task<IEnumerable<ProductDTO>> GetSearchProductsByImage(string tempFilePath);
+
+        Task RetrainForAllProduct();
 
         Task<ProductDetailsResponse> GetProductAsync(long id);
         Task<ProductDTO> UpdateProductAsync(long id, ProductRequest request, IFormFileCollection images);

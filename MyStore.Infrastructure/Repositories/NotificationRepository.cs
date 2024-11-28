@@ -16,6 +16,12 @@ namespace MyStore.Infrastructure.Repositories
             _notificationCollection = mongoDatabase.GetCollection<Notifications>(options.Value.CollectionNotifications);
         }
 
+        public async Task<IEnumerable<Notifications>> GetNotificationsAsync()
+            => await _notificationCollection
+                .Find(_ => true)
+                .SortByDescending(notification => notification.CreatedAt)
+                .ToListAsync();
+
         public async Task<IEnumerable<Notifications>> GetNotificationsAsync(int page, int pageSize)
             => await _notificationCollection
                 .Find(_ => true)

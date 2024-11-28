@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MyStore.Infrastructure.DbContext;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MyStore.Infrastructure.Migrations
 {
     [DbContext(typeof(MyDbContext))]
-    partial class MyDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241127113229_add-productFeatures")]
+    partial class addproductFeatures
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -600,7 +603,7 @@ namespace MyStore.Infrastructure.Migrations
                     b.ToTable("ProductFavorites");
                 });
 
-            modelBuilder.Entity("MyStore.Domain.Entities.ProductFeature", b =>
+            modelBuilder.Entity("MyStore.Domain.Entities.ProductFeatures", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -610,9 +613,6 @@ namespace MyStore.Infrastructure.Migrations
 
                     b.Property<double>("Blue")
                         .HasColumnType("double precision");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp without time zone");
 
                     b.Property<double>("Green")
                         .HasColumnType("double precision");
@@ -625,9 +625,6 @@ namespace MyStore.Infrastructure.Migrations
 
                     b.Property<double>("Red")
                         .HasColumnType("double precision");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp without time zone");
 
                     b.HasKey("Id");
 
@@ -1089,7 +1086,7 @@ namespace MyStore.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("MyStore.Domain.Entities.ProductFeature", b =>
+            modelBuilder.Entity("MyStore.Domain.Entities.ProductFeatures", b =>
                 {
                     b.HasOne("MyStore.Domain.Entities.Product", "Product")
                         .WithMany("ProductFeatures")

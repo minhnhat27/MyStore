@@ -15,6 +15,7 @@ using System.Text.RegularExpressions;
 using System.Text;
 using MyStore.Application.Services.FlashSales;
 using MyStore.Application.ILibrary;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace MyStore.Application.Services.Products
 {
@@ -33,10 +34,14 @@ namespace MyStore.Application.Services.Products
         private readonly IFileStorage _fileStorage;
         private readonly IMapper _mapper;
 
-        private readonly string path = "assets/images/products";
-        private readonly string reviewsPath = "assets/images/reviews";
+        private readonly string path = Path.Combine("assets", "images", "products");
+        private readonly string reviewsPath = Path.Combine("assets", "images", "reviews");
+        private readonly string rootPath = Path.Combine(Environment.CurrentDirectory, "wwwroot");
 
         private readonly IImageFeatureExtractor _imageFeatureExtractor;
+        private readonly IProductFeatureRepository _productFeatureRepository;
+
+        private readonly IServiceScopeFactory _serviceScopeFactory;
 
         public ProductService(IProductRepository productRepository, IImageFeatureExtractor imageFeatureExtractor,
                               IProductSizeRepository productSizeRepository,
@@ -47,6 +52,8 @@ namespace MyStore.Application.Services.Products
                               IImageRepository imageRepository,
                               IFileStorage fileStorage,
                               ITransactionRepository transactionRepository,
+                              IProductFeatureRepository productFeatureRepository,
+                              IServiceScopeFactory serviceScopeFactory,
                               IMapper mapper)
         {
             _productRepository = productRepository;
@@ -62,6 +69,8 @@ namespace MyStore.Application.Services.Products
             _flashSaleService = flashSaleService;
 
             _imageFeatureExtractor = imageFeatureExtractor;
+            _productFeatureRepository = productFeatureRepository;
+            _serviceScopeFactory = serviceScopeFactory;
         }
 
         public async Task<ProductDTO> CreateProductAsync(ProductRequest request, IFormFileCollection images)
@@ -71,7 +80,7 @@ namespace MyStore.Application.Services.Products
             {
                 var product = _mapper.Map<Product>(request);
                 await _productRepository.AddAsync(product);
-                var productPath = path + "/" + product.Id;
+                var productPath = Path.Combine(path, product.Id.ToString());
 
                 List<string> colorFileNames = new();
                 List<IFormFile> colorImages = new();
@@ -134,15 +143,35 @@ namespace MyStore.Application.Services.Products
                 colorFileNames.AddRange(commonFileNames);
 
                 await _fileStorage.SaveAsync(productPath, colorImages, colorFileNames);
-
+                var features = colorFileNames.Select(name =>
+                {
+                    var fullPath = Path.Combine(rootPath, productPath, name);
+                    var feature = _imageFeatureExtractor.ImageClassificationPrediction(fullPath);
+                    if (feature != null )
+                    {
+                        return new ProductFeature
+                        {
+                            Label = feature.PredictedLabelValue,
+                            Green = feature.Green,
+                            Red = feature.Red,
+                            Blue = feature.Blue,
+                            ProductId = product.Id
+                        };
+                    }
+                    return null;
+                });
+                var lstProductFeature = features.Where(item => item != null).Distinct();
+                if (lstProductFeature != null && lstProductFeature.Any())
+                {
+                    await _productFeatureRepository.AddAsync(lstProductFeature!);
+                }
                 await transaction.CommitAsync();
 
                 var res = _mapper.Map<ProductDTO>(product);
-
                 var image = imgs.FirstOrDefault();
                 if (image != null)
                 {
-                    res.ImageUrl = image.ImageUrl; ;
+                    res.ImageUrl = image.ImageUrl;
                 }
                 return res;
             }
@@ -482,76 +511,37 @@ namespace MyStore.Application.Services.Products
             return res;
         }
 
-        public async Task<IEnumerable<ProductDTO>> GetSearchProducts(string tempFilePath, string rootPath)
+        public async Task<IEnumerable<ProductDTO>> GetSearchProductsByImage(string tempFilePath)
         {
-            var features = _imageFeatureExtractor.ExtractFeatures(tempFilePath);
-            //    var imagesPath = Path.Combine(rootPath, path);
+            var features = _imageFeatureExtractor.ImageClassificationPrediction(tempFilePath);
+            IEnumerable<Product> products = new List<Product>();
+            if(features != null)
+            {
+                double maxColorDeviation = 10.0;
 
-            //    var resultList = new List<string>();
-            //    var inputImage = Cv2.ImRead(tempFilePath);
-
-            //    if (inputImage.Empty())
-            //    {
-            //        throw new FileNotFoundException(ErrorMessage.NOT_FOUND + " ảnh");
-            //    }
-            //    var grayInputImage = new Mat();
-            //    Cv2.CvtColor(inputImage, grayInputImage, ColorConversionCodes.BGR2GRAY);
-
-            //var gray1 = new Mat();
-            //var blur = new Mat();
-            //Cv2.CvtColor(inputImage, gray1, ColorConversionCodes.BGR2GRAY);
-            //Cv2.GaussianBlur(gray1, blur, new OpenCvSharp.Size(5, 5), 0);
-            //var canny = new Mat();
-            //Cv2.Canny(blur, canny, 15, 120);
-            //Cv2.Dilate(canny, canny, new Mat(), null, 3);
-            //Point[][] contours;
-            //HierarchyIndex[] hierarchyIndices;
-
-            //Cv2.FindContours(canny, out contours, out hierarchyIndices,
-            //    RetrievalModes.External, method: ContourApproximationModes.ApproxSimple);
-
-            //foreach(var contour in contours)
-            //{
-            //    var rect = Cv2.BoundingRect(contour);
-            //    Cv2.Rectangle(inputImage, new Point(rect.X, rect.Y), new Point(rect.X + rect.Width, rect.Y + rect.Height), Scalar.DarkRed, 2);
-            //}
-            //gray1.Release();
-            //canny.Release();
-            //blur.Release();
-            //try
-            //{
-            //    Window.ShowImages(inputImage);
-            //}
-            //catch (Exception ex)
-            //{
-            //    Console.WriteLine(ex.Message);
-            //}
-
-            //var productImagePaths = Directory.GetDirectories(imagesPath)
-            //    .SelectMany(dir => Directory.GetFiles(dir, "*.*", SearchOption.TopDirectoryOnly))
-            //    .ToList();
-
-            //if(productImagePaths != null)
-            //{
-            //    foreach (var productImagePath in productImagePaths)
-            //    {
-            //        var productImage = Cv2.ImRead(productImagePath);
-            //        if (productImage.Empty())
-            //            continue;
-            //        if (CompareImages(grayInputImage, productImage))
-            //        {
-            //            resultList.Add(productImagePath.Split(Path.DirectorySeparatorChar)[^2]);
-            //        }
-            //    }
-            //}
-
-            //var products = await _productRepository.GetPagedAsync(1, 10, e => resultList.Any(x => x.Equals(e.Id)), e => e.Name);
-            //var products = await _productRepository
-            //    .GetPagedAsync(1, 10, e => resultList.Contains(e.Id.ToString()), e => e.Name);
-
-            //return _mapper.Map<IEnumerable<ProductDTO>>(products);
-            throw new NotImplementedException();
+                var productFeatures = await _productFeatureRepository.GetAsync(e =>
+                     e.Label == features.PredictedLabelValue &&
+                     Math.Abs(e.Red - features.Red) <= maxColorDeviation &&
+                     Math.Abs(e.Green - features.Green) <= maxColorDeviation &&
+                     Math.Abs(e.Blue - features.Blue) <= maxColorDeviation
+                 );
+                if (!productFeatures.Any())
+                {
+                    maxColorDeviation = 5.0;
+                    productFeatures = await _productFeatureRepository.GetAsync(e =>
+                         e.Label == features.PredictedLabelValue &&
+                         Math.Abs(e.Red - features.Red) <= maxColorDeviation ||
+                         Math.Abs(e.Green - features.Green) <= maxColorDeviation ||
+                         Math.Abs(e.Blue - features.Blue) <= maxColorDeviation
+                     );
+                }
+                var productFeatureIds = productFeatures.Select(e => e.ProductId);
+                products = await _productRepository
+                    .GetPagedAsync(1, 10, product => productFeatureIds.Contains(product.Id), e => e.Name);
+            }
+            return _mapper.Map<IEnumerable<ProductDTO>>(products);
         }
+        
         public async Task<ProductDetailsResponse> GetProductAsync(long id)
         {
             var product = await _productRepository.SingleOrDefaultAsyncInclude(e => e.Id == id);
@@ -888,6 +878,56 @@ namespace MyStore.Application.Services.Products
             {
                 await transaction.RollbackAsync();
                 throw;
+            }
+        }
+
+        public async Task RetrainForAllProduct()
+        {
+            using var scope = _serviceScopeFactory.CreateScope();
+            var transactionRepository = scope.ServiceProvider.GetRequiredService<ITransactionRepository>();
+            var productFeatureRepository = scope.ServiceProvider.GetRequiredService<IProductFeatureRepository>();
+            var imageRepository = scope.ServiceProvider.GetRequiredService<IImageRepository>();
+            var imageFeatureExtractor = scope.ServiceProvider.GetRequiredService<IImageFeatureExtractor>();
+
+            var transaction = await transactionRepository.BeginTransactionAsync();
+            try
+            {
+                await productFeatureRepository.DeleteAll();
+                var images = await imageRepository.GetAllAsync();
+
+                var features = images.Select(img =>
+                {
+                    var fullPath = Path.Combine(rootPath, img.ImageUrl);
+                    var feature = imageFeatureExtractor.ImageClassificationPrediction(fullPath);
+
+                    if (feature != null)
+                    {
+                        string path = img.ImageUrl;
+                        string id = path.Split(['/', '\\'])[3];
+                        return new ProductFeature
+                        {
+                            Label = feature.PredictedLabelValue,
+                            Green = feature.Green,
+                            Red = feature.Red,
+                            Blue = feature.Blue,
+                            ProductId = long.Parse(id),
+                        };
+                    }
+                    return null;
+                });
+
+                var lstProductFeature = features.Where(item => item != null).Distinct();
+
+                if (lstProductFeature != null && lstProductFeature.Any())
+                {
+                    await productFeatureRepository.AddAsync(lstProductFeature!);
+                }
+                await transaction.CommitAsync();
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                Console.WriteLine($"Transaction failed: {ex.Message}");
             }
         }
     }

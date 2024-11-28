@@ -91,6 +91,14 @@ namespace MyStore.Presentation.Controllers
         {
             try
             {
+                //test notification
+                //var message = NotificationMessage.NEW_ORDER + ": ";
+                //var notification = new Notifications(message);
+                //_ = Task.Run(() =>
+                //{
+                //    _notificationHub.Clients.Group("AdminGroup").SendAsync("notification", notification);
+                //});
+
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 if (userId == null)
                 {

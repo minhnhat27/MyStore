@@ -33,6 +33,7 @@ namespace MyStore.Infrastructure.DbContext
         public virtual DbSet<UserVoucher> UserVouchers { get; set; }
         public virtual DbSet<FlashSale> FlashSales { get; set; }
         public virtual DbSet<ProductFlashSale> ProductFlashSales { get; set; }
+        public virtual DbSet<ProductFeature> ProductFeatures { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
