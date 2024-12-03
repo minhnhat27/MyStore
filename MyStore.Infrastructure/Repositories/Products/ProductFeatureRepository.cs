@@ -10,8 +10,8 @@ namespace MyStore.Infrastructure.Repositories.Products
         private readonly MyDbContext _dbContext = dbcontext;
         public async Task DeleteAll()
         {
-            var entities = await _dbContext.ProductFeatures.ToArrayAsync();
-            _dbContext.ProductFeatures.RemoveRange(entities);
+            await _dbContext.ProductFeatures.ExecuteDeleteAsync();
+            await _dbContext.SaveChangesAsync();
         }
     }
 }

@@ -27,14 +27,12 @@ namespace MyStore.Application.Services.Statistics
             var orders = await _orderRepository.CountAsync();
             var products = await _productRepository.CountAsync();
             var users = await _userRepository.CountAsync();
-            var canceledOrders = await _orderRepository.CountAsync(e => e.OrderStatus == DeliveryStatusEnum.Canceled);
 
             return new GeneralStatistics
             {
                 TotalOrders = orders,
                 TotalProducts = products,
                 TotalUsers = users,
-                TotalCanceledOrders = canceledOrders
             };
         }
 
@@ -42,10 +40,25 @@ namespace MyStore.Application.Services.Statistics
         public async Task<StatisticData> GetRevenue()
         {
             Expression<Func<Order, bool>>
-               expression = e => e.OrderStatus == DeliveryStatusEnum.Received;
+               expression = e => e.OrderStatus != DeliveryStatusEnum.Canceled;
 
             var revenue = await _orderRepository
                 .GetRevenue(expression);
+            var total = await _orderRepository.CountAsync(expression);
+            return new StatisticData
+            {
+                Revenue = revenue,
+                TotalOrders = total
+            };
+        }
+
+        public async Task<StatisticData> GetRevenue(DateTime date)
+        {
+            Expression<Func<Order, bool>>
+               expression = e => e.OrderStatus != DeliveryStatusEnum.Canceled &&
+               e.OrderDate.Date.Equals(date.Date);
+
+            var revenue = await _orderRepository.GetRevenue(expression);
             var total = await _orderRepository.CountAsync(expression);
             return new StatisticData
             {
@@ -58,7 +71,7 @@ namespace MyStore.Application.Services.Statistics
         {
             Expression<Func<Order, bool>>
                 expression = e => e.ReceivedDate >= start && e.ReceivedDate <= end 
-                && e.OrderStatus == DeliveryStatusEnum.Received;
+                && e.OrderStatus != DeliveryStatusEnum.Canceled;
 
             var revenue = await _orderRepository
                 .GetRevenue(expression);
@@ -74,7 +87,7 @@ namespace MyStore.Application.Services.Statistics
         {
             Expression<Func<Order, bool>>
                 expression = e => 
-                //e.OrderStatus == DeliveryStatusEnum.Received &&
+                e.OrderStatus != DeliveryStatusEnum.Canceled &&
                 e.OrderDate.Month.Equals(month) && 
                 e.OrderDate.Year.Equals(year);
 
@@ -93,7 +106,7 @@ namespace MyStore.Application.Services.Statistics
         public async Task<StatisticData> GetRevenue(int year)
         {
             Expression<Func<Order, bool>>
-                expression = e => e.OrderStatus == DeliveryStatusEnum.Received &&
+                expression = e => e.OrderStatus != DeliveryStatusEnum.Canceled &&
                 e.ReceivedDate.HasValue &&
                 e.ReceivedDate.Value.Year.Equals(year);
 
@@ -115,7 +128,7 @@ namespace MyStore.Application.Services.Statistics
 
             Expression<Func<Order, bool>>
                 expression = e =>
-                //e.OrderStatus == DeliveryStatusEnum.Received &&
+                e.OrderStatus != DeliveryStatusEnum.Canceled &&
                 e.OrderDate.Year.Equals(year);
 
             var revenues = await _orderRepository.GetRevenue12Month(expression);
@@ -137,16 +150,6 @@ namespace MyStore.Application.Services.Statistics
                 Statistics = revenueList,
                 Total = revenueList.Sum(e => e.Revenue)
             };
-        }
-
-        public Task<int> OrderNumber()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<int> OrderNumber(int month, int year)
-        {
-            throw new NotImplementedException();
         }
     }
 }

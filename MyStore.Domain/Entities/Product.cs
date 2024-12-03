@@ -10,7 +10,6 @@ namespace MyStore.Domain.Entities
         [MaxLength(155)]
         public string Name { get; set; }
 
-        [MaxLength(5000)]
         public string? Description { get; set; }
 
         public bool Enable { get; set; }

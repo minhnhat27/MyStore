@@ -514,7 +514,7 @@ namespace MyStore.Application.Services.Products
         public async Task<IEnumerable<ProductDTO>> GetSearchProductsByImage(string tempFilePath)
         {
             var features = _imageFeatureExtractor.ImageClassificationPrediction(tempFilePath);
-            IEnumerable<Product> products = new List<Product>();
+            IEnumerable<Product> products = [];
             if(features != null)
             {
                 double maxColorDeviation = 10.0;
@@ -525,14 +525,15 @@ namespace MyStore.Application.Services.Products
                      Math.Abs(e.Green - features.Green) <= maxColorDeviation &&
                      Math.Abs(e.Blue - features.Blue) <= maxColorDeviation
                  );
+
                 if (!productFeatures.Any())
                 {
-                    maxColorDeviation = 5.0;
+                    maxColorDeviation = 15.0;
                     productFeatures = await _productFeatureRepository.GetAsync(e =>
-                         e.Label == features.PredictedLabelValue &&
-                         Math.Abs(e.Red - features.Red) <= maxColorDeviation ||
-                         Math.Abs(e.Green - features.Green) <= maxColorDeviation ||
-                         Math.Abs(e.Blue - features.Blue) <= maxColorDeviation
+                         //e.Label == features.PredictedLabelValue 
+                         (Math.Abs(e.Red - features.Red) <= maxColorDeviation &&
+                         Math.Abs(e.Green - features.Green) <= maxColorDeviation &&
+                         Math.Abs(e.Blue - features.Blue) <= maxColorDeviation)
                      );
                 }
                 var productFeatureIds = productFeatures.Select(e => e.ProductId);
@@ -887,23 +888,31 @@ namespace MyStore.Application.Services.Products
             var transactionRepository = scope.ServiceProvider.GetRequiredService<ITransactionRepository>();
             var productFeatureRepository = scope.ServiceProvider.GetRequiredService<IProductFeatureRepository>();
             var imageRepository = scope.ServiceProvider.GetRequiredService<IImageRepository>();
+            //var productColorRepository = scope.ServiceProvider.GetRequiredService<IProductColorRepository>();
             var imageFeatureExtractor = scope.ServiceProvider.GetRequiredService<IImageFeatureExtractor>();
+
+            using var scope1 = _serviceScopeFactory.CreateScope();
+            var productColorRepository = scope1.ServiceProvider.GetRequiredService<IProductColorRepository>();
 
             var transaction = await transactionRepository.BeginTransactionAsync();
             try
             {
-                await productFeatureRepository.DeleteAll();
-                var images = await imageRepository.GetAllAsync();
+                var taskImages = imageRepository.GetAllAsync();
+                var taskProductColors = productColorRepository.GetAllAsync();
+                await Task.WhenAll(taskImages, taskProductColors);
 
-                var features = images.Select(img =>
+                var imageColors = (await taskProductColors).Select(e => e.ImageUrl);
+                var images = (await taskImages).Select(e => e.ImageUrl).ToList();
+                images.AddRange(imageColors);
+
+                var features = images.Select(url =>
                 {
-                    var fullPath = Path.Combine(rootPath, img.ImageUrl);
+                    var fullPath = Path.Combine(rootPath, url);
                     var feature = imageFeatureExtractor.ImageClassificationPrediction(fullPath);
 
                     if (feature != null)
                     {
-                        string path = img.ImageUrl;
-                        string id = path.Split(['/', '\\'])[3];
+                        string id = url.Split(['/', '\\'])[3];
                         return new ProductFeature
                         {
                             Label = feature.PredictedLabelValue,
@@ -917,12 +926,12 @@ namespace MyStore.Application.Services.Products
                 });
 
                 var lstProductFeature = features.Where(item => item != null).Distinct();
-
                 if (lstProductFeature != null && lstProductFeature.Any())
                 {
+                    await productFeatureRepository.DeleteAll();
                     await productFeatureRepository.AddAsync(lstProductFeature!);
+                    await transaction.CommitAsync();
                 }
-                await transaction.CommitAsync();
             }
             catch (Exception ex)
             {

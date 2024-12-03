@@ -53,6 +53,21 @@ namespace MyStore.Presentation.Controllers
             }
         }
 
+        [HttpGet("revenue/today")]
+        public async Task<IActionResult> GetRevenueToday()
+        {
+            try
+            {
+                var today = DateTime.Today;
+                var results = await _statisticsService.GetRevenue(today);
+                return Ok(results);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
         [HttpGet("revenue/{year}/{month}")]
         public async Task<IActionResult> GetRevenueInMonth(int year, int month)
         {

@@ -175,7 +175,11 @@ namespace MyStore.Presentation.Controllers
 
                 return Ok(res.PaymentUrl);
             }
-            catch (ArgumentException ex)
+            catch (InvalidDataException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (InvalidOperationException ex)
             {
                 return NotFound(ex.Message);
             }
@@ -229,6 +233,14 @@ namespace MyStore.Presentation.Controllers
                         return Unauthorized();
                     }
                     await _orderService.CancelOrder(id, userId);
+                    var message = NotificationMessage.USER_CANCEL_ORDER + ": " + id;
+                    var notification = new Notifications(message);
+                    _ = Task.Run(() =>
+                    {
+                        _notificationHub.Clients.Group("AdminGroup").SendAsync("notification", notification);
+                        _notificationRepository.AddNotificationAsync(notification);
+                    });
+
                     return Ok();
                 }
             }

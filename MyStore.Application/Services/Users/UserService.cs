@@ -6,6 +6,7 @@ using MyStore.Application.IRepositories.Products;
 using MyStore.Application.IRepositories.Users;
 using MyStore.Application.Request;
 using MyStore.Application.Response;
+using MyStore.Application.Services.FlashSales;
 using MyStore.Domain.Constants;
 using MyStore.Domain.Entities;
 using MyStore.Domain.Enumerations;
@@ -22,6 +23,7 @@ namespace MyStore.Application.Services.Users
         private readonly IProductFavoriteRepository _productFavoriteRepository;
         private readonly IAuthenticationService _authenticationService;
         private readonly ITransactionRepository _transactionRepository;
+        private readonly IFlashSaleService _flashSaleService;
 
         private readonly IMapper _mapper;
 
@@ -30,6 +32,7 @@ namespace MyStore.Application.Services.Users
             IDeliveryAddressRepository deliveryAddressRepository,
             IProductFavoriteRepository productFavoriteRepository,
             ITransactionRepository transactionRepository,
+            IFlashSaleService flashSaleService,
             IAuthenticationService authenticationService)
         {
             _userManager = userManager;
@@ -39,6 +42,7 @@ namespace MyStore.Application.Services.Users
             _productFavoriteRepository = productFavoriteRepository;
             _authenticationService = authenticationService;
             _transactionRepository = transactionRepository;
+            _flashSaleService = flashSaleService;
         }
 
         public async Task<PagedResponse<UserResponse>> GetAllUsersAsync(int page, int pageSize, string? keySearch)
@@ -105,7 +109,7 @@ namespace MyStore.Application.Services.Users
 
             var items = _mapper.Map<IEnumerable<UserResponse>>(users).Select(e =>
             {
-                var user = users.FirstOrDefault(e => e.Id == e.Id);
+                var user = users.FirstOrDefault(x => x.Id == e.Id);
                 if(user != null)
                 {
                     e.Roles = user.UserRoles.Select(e => e.Role.Name ?? "");
@@ -233,21 +237,26 @@ namespace MyStore.Application.Services.Users
 
             var total = await _productFavoriteRepository.CountAsync(e => e.UserId == userId);
 
-            var products = favorites.Select(e => e.Product).ToList();
+            var products = favorites.Select(e => e.Product);
+            var res = _mapper.Map<IEnumerable<ProductDTO>>(products);
 
-            var items = _mapper.Map<IEnumerable<ProductDTO>>(products).Select(x =>
+            var productFlashSale = (await _flashSaleService.GetFlashSaleProductsThisTime()).Products;
+            if (productFlashSale.Any())
             {
-                var image = products.Single(e => e.Id == x.Id).Images.FirstOrDefault();
-                if (image != null)
+                res = res.Select(e =>
                 {
-                    x.ImageUrl = image.ImageUrl;
-                }
-                return x;
-            });
+                    var saleProduct = productFlashSale.FirstOrDefault(s => s.Id == e.Id);
+                    if (saleProduct != null)
+                    {
+                        e.FlashSaleDiscountPercent = saleProduct.FlashSaleDiscountPercent;
+                    }
+                    return e;
+                });
+            }
 
             return new PagedResponse<ProductDTO>
             {
-                Items = items,
+                Items = res,
                 Page = page.Page,
                 PageSize = page.PageSize,
                 TotalItems = total

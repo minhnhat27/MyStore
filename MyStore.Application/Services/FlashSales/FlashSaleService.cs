@@ -171,7 +171,7 @@ namespace MyStore.Application.Services.FlashSales
             var hours = DateTime.Now.Hour;
 
             //test
-            //return date.AddHours(23);
+            //return date.AddHours(20);
             //return null;
 
             return hours switch

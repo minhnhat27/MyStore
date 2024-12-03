@@ -37,7 +37,7 @@ namespace MyStore.Infrastructure.Repositories
             => await _notificationCollection.InsertOneAsync(notification);
 
         public async Task DeleteNotificationAsync(string id)
-            => await _notificationCollection.DeleteOneAsync(x => x.Id == id);
+            => await _notificationCollection.DeleteOneAsync(x => x.Id == id && x.IsRead);
 
         public async Task DeleteNotIsReadNotificationAsync()
             => await _notificationCollection.DeleteManyAsync(x => x.IsRead);

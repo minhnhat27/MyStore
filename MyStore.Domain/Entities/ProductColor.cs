@@ -11,6 +11,7 @@ namespace MyStore.Domain.Entities
         public long ProductId { get; set; }
         public Product Product { get; set; }
 
+        [MaxLength(200)]
         public string ImageUrl { get; set; }
 
         public ICollection<ProductSize> ProductSizes { get; } = new HashSet<ProductSize>();

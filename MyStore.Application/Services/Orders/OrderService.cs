@@ -334,15 +334,19 @@ namespace MyStore.Application.Services.Orders
                 {
                     if (!cartItem.Product.Enable)
                     {
-                        throw new Exception($"{cartItem.Product.Name} không tồn tại hoặc đã bị ẩn.");
+                        throw new InvalidOperationException($"{cartItem.Product.Name} không tồn tại hoặc đã bị ẩn.");
                     }
 
                     var size = await _productSizeRepository
                         .SingleAsyncInclude(e => e.ProductColorId == cartItem.ColorId && e.SizeId == cartItem.SizeId);
 
+                    if(size.InStock == 0)
+                    {
+                        throw new InvalidDataException($"{cartItem.Product.Name} " + ErrorMessage.SOLDOUT);
+                    }
                     if (size.InStock < cartItem.Quantity)
                     {
-                        throw new Exception($"{cartItem.Product.Name} " + ErrorMessage.SOLDOUT);
+                        throw new InvalidDataException($"{cartItem.Product.Name} chỉ còn lại {size.InStock} sản phẩm");
                     }
                     var discount = cartItem.Product.DiscountPercent;
 
@@ -396,7 +400,7 @@ namespace MyStore.Application.Services.Orders
                         || voucher.Voucher.EndDate < now
                         || voucher.Voucher.MinOrder > total)
                     {
-                        throw new ArgumentException(ErrorMessage.INVALID_VOUCHER);
+                        throw new InvalidDataException(ErrorMessage.INVALID_VOUCHER);
                     }
 
                     voucherDiscount = voucher.Voucher.DiscountPercent.HasValue
@@ -417,7 +421,7 @@ namespace MyStore.Application.Services.Orders
 
                 if (total != request.Total)
                 {
-                    throw new Exception(ErrorMessage.BAD_REQUEST);
+                    throw new InvalidDataException(ErrorMessage.BAD_REQUEST);
                 }
 
                 await _productSizeRepository.UpdateAsync(lstpSizeUpdate);
@@ -507,7 +511,7 @@ namespace MyStore.Application.Services.Orders
                 var orderRepository = _scope.ServiceProvider.GetRequiredService<IOrderRepository>();
                 var vnPayLibrary = _scope.ServiceProvider.GetRequiredService<IVNPayLibrary>();
                 var configuration = _scope.ServiceProvider.GetRequiredService<IConfiguration>();
-
+                var orderService = _scope.ServiceProvider.GetRequiredService<IOrderService>();
 
                 var data = (OrderCache) value;
                 var vnp_QueryDrUrl = configuration["VNPay:vnp_QueryDrUrl"] ?? throw new Exception(ErrorMessage.ERROR);
@@ -565,12 +569,13 @@ namespace MyStore.Application.Services.Orders
                                 order.PaymentTranId = queryDrResponse.vnp_TransactionNo;
                                 order.AmountPaid = vnp_Amount;
                                 order.OrderStatus = DeliveryStatusEnum.Confirmed;
+
+                                await orderRepository.UpdateAsync(order);
                             }
                             else
                             {
-                                order.OrderStatus = DeliveryStatusEnum.Canceled;
+                                await orderService.CancelOrder(order.Id);
                             }
-                            await orderRepository.UpdateAsync(order);
                         }
                     }
                 }

@@ -39,12 +39,12 @@ namespace MyStore.Application.Services.Sizes
             }
         }
 
-        public async Task DeleteSizeAsync(int id)
+        public async Task DeleteSizeAsync(long id)
         {
             await _sizeRepository.DeleteAsync(id);
         }
 
-        public async Task<SizeDTO> UpdateSizeAsync(int id, string name)
+        public async Task<SizeDTO> UpdateSizeAsync(long id, string name)
         {
             var size = await _sizeRepository.FindAsync(id);
             if(size != null)

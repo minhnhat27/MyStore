@@ -35,7 +35,7 @@ namespace MyStore.Infrastructure.Library
         private string _modelPath => Path.Combine(_assetsPath, "fashionmnist_cnn_model.onnx");
         private string[] _outputColumnNames => ["dense_1"];
         private string[] _inputColumnNames => ["conv2d_input"];
-        private string _testFile => Path.Combine(_imagesFolder, "products", "16", "6cc529da-6108-4b15-a572-fb111f3b78dd.jpg");
+        //private string _testFile => Path.Combine(_imagesFolder, "products", "16", "6cc529da-6108-4b15-a572-fb111f3b78dd.jpg");
         //private string _testFile => Path.Combine(_imagesFolder, "products", "3", "dd642b09-0b49-43d0-af4f-eca76dc7a0e5.webp");
 
         //private string _trainTagsTsv => Path.Combine(_imagesFolder, "tags.tsv");
